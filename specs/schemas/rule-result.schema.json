@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/binhvugia1997-ui/app-ch-p-nh/specs/schemas/rule-result.schema.json",
+  "title": "RuleResult",
+  "description": "What one rule evaluation emits. Rules abstain rather than guess; every result states whether it was evaluated and why not.",
+  "type": "object",
+  "required": ["ruleId", "category", "evaluated", "severity", "confidence", "actor", "thresholdStatus", "persistenceFrames"],
+  "additionalProperties": false,
+  "properties": {
+    "ruleId": { "type": "string", "pattern": "^(FRAME|COMP|POSE|LIGHT|READY|INFO)_[A-Z0-9_]+$" },
+    "category": { "enum": ["FRAMING", "COMPOSITION", "POSE", "LIGHTING", "READINESS", "INFORMATION"] },
+    "evaluated": { "type": "boolean" },
+    "abstainReason": {
+      "enum": [
+        "NONE",
+        "NOT_APPLICABLE_SHOT_TYPE",
+        "INSUFFICIENT_VISIBILITY",
+        "SUBJECT_ABSENT",
+        "SOURCE_STALE",
+        "SOURCE_UNAVAILABLE",
+        "LOW_LIGHT_OR_DEGRADED_FRAME",
+        "AE_UNSTABLE",
+        "REGION_TOO_SMALL",
+        "TEMPLATE_NOT_ACTIVE",
+        "SUBJECT_MOVING_FAST",
+        "MODE_NOT_ACTIONABLE",
+        "COOLDOWN_ACTIVE"
+      ]
+    },
+    "severity": { "enum": ["INFO", "NUDGE", "IMPORTANT", "BLOCKING"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "measurement": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "RATIO_OF_FRAME_HEIGHT", "RATIO_OF_FRAME_WIDTH", "NORMALIZED_DISTANCE", "DEGREES",
+            "FRACTION_OF_PIXELS", "LUMA_MEDIAN", "LUMA_SPREAD", "SCORE_0_1", "COUNT", "BOOLEAN"
+          ]
+        },
+        "value": { "type": "number" },
+        "secondaryValue": { "type": ["number", "null"] },
+        "landmarkRefs": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" }
+      }
+    },
+    "targetRange": {
+      "type": ["array", "null"],
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "suggestedAction": {
+      "type": ["string", "null"],
+      "description": "Semantic instruction ID; never user-visible text."
+    },
+    "actor": { "enum": ["PHOTOGRAPHER", "SUBJECT", "BOTH", "NONE"] },
+    "sceneContext": { "type": ["string", "null"] },
+    "thresholdStatus": { "enum": ["SETTLED", "CALIBRATION_REQUIRED", "DEVICE_TUNED"] },
+    "persistenceFrames": { "type": "integer", "minimum": 0, "description": "How many consecutive frames the condition has held (stateful wrapper)." },
+    "humanExplanationKey": { "type": ["string", "null"], "description": "Localized 'why?' explanation key, resolved by :app." }
+  }
+}

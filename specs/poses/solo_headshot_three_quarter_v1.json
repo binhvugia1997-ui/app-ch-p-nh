@@ -1,0 +1,53 @@
+{
+  "id": "solo_headshot_three_quarter_v1",
+  "name": { "vi": "Ảnh chân dung cận mặt, nghiêng 3/4", "en": "Three-quarter headshot (close crop)" },
+  "peopleCount": 1,
+  "shotTypes": ["HEADSHOT", "CLOSE_PORTRAIT"],
+  "contextTags": ["indoor", "studio_plain", "home_interior", "wall_close"],
+  "difficulty": "TRIVIAL",
+  "mirrorAllowed": true,
+  "orientationExpectation": { "torsoYawDeg": 40, "toleranceDeg": 15 },
+  "frame": {
+    "cameraHeight": "EYE",
+    "cameraDistanceHint": "1.2-2.5 m",
+    "headroomBand": [0.04, 0.14],
+    "subjectHeightFraction": [0.55, 1.0]
+  },
+  "landmarks": [
+    { "id": "nose",           "x":  0.05, "y": -1.44, "weight": 1.0, "required": true, "component": "HEAD" },
+    { "id": "left_eye",       "x":  0.14, "y": -1.42, "weight": 0.7, "required": true, "component": "HEAD" },
+    { "id": "right_eye",      "x": -0.04, "y": -1.45, "weight": 0.7, "required": true, "component": "HEAD" },
+    { "id": "left_ear",       "x":  0.22, "y": -1.46, "weight": 0.5, "component": "HEAD" },
+    { "id": "right_ear",      "x": -0.16, "y": -1.47, "weight": 0.5, "component": "HEAD" },
+    { "id": "mouth_left",     "x":  0.09, "y": -1.52, "weight": 0.4, "component": "HEAD" },
+    { "id": "mouth_right",    "x": -0.02, "y": -1.53, "weight": 0.4, "component": "HEAD" },
+    { "id": "left_shoulder",  "x":  0.28, "y": -1.00, "weight": 1.0, "required": true, "component": "TORSO" },
+    { "id": "right_shoulder", "x": -0.36, "y": -0.97, "weight": 1.0, "required": true, "component": "TORSO" },
+    { "id": "left_elbow",     "x":  0.44, "y": -0.36, "weight": 0.5, "component": "LEFT_ARM" },
+    { "id": "right_elbow",    "x": -0.50, "y": -0.34, "weight": 0.5, "component": "RIGHT_ARM" },
+    { "id": "left_wrist",     "x":  0.50, "y": -0.05, "weight": 0.3, "component": "LEFT_ARM" },
+    { "id": "right_wrist",    "x": -0.54, "y": -0.05, "weight": 0.3, "component": "RIGHT_ARM" }
+  ],
+  "jointAngles": [
+    { "joint": "left_elbow",  "value": 150, "tolerance": 25, "weight": 0.4 },
+    { "joint": "right_elbow", "value": 155, "tolerance": 25, "weight": 0.4 },
+    { "joint": "neck_tilt",   "value": 3,   "tolerance": 12, "weight": 0.6 }
+  ],
+  "relativeVectors": [
+    { "from": "left_shoulder",  "to": "left_elbow",  "dir": [0.33, 0.94], "weight": 0.6 },
+    { "from": "right_shoulder", "to": "right_elbow", "dir": [-0.30, 0.95], "weight": 0.6 },
+    { "from": "nose",           "to": "left_ear",    "dir": [0.80, -0.10], "weight": 0.5 }
+  ],
+  "componentWeights": { "HEAD": 0.55, "TORSO": 0.35, "LEFT_ARM": 0.05, "RIGHT_ARM": 0.05 },
+  "bodyOrientation": { "shoulderAngleDeg": -3, "hipAngleDeg": 0, "facingDeg": 40 },
+  "cameraRecommendations": ["EYE_LEVEL", "SLIGHTLY_ABOVE_EYE"],
+  "compositionRecommendations": ["EYES_UPPER_THIRD", "HEADSHOT_TIGHT_CROP"],
+  "intentFlags": { "suppressLockedJointWarning": true, "suppressSymmetryWarning": true },
+  "provenance": {
+    "source": "craft consensus: three-quarter headshot, chin slightly forward/down, long neck (docs/pose-taxonomy.md 2.14b)",
+    "status": "SEED_UNVALIDATED",
+    "calibration": "partial-body template: verify that the matcher reports coverage correctly and that arm components do not dominate the score; verify head-yaw estimation against the face transformation matrix",
+    "author": "GitHub Agent",
+    "date": "2026-10-02"
+  }
+}
