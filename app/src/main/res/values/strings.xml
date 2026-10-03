@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">AI Photographer</string>
+    <string name="permission_title">Camera access</string>
+    <string name="permission_explanation">Allow camera access to preview and take photos. Frames are processed on this phone. You can continue using this screen without granting access.</string>
+    <string name="permission_allow">Allow camera</string>
+    <string name="permission_settings">Open app settings</string>
+    <string name="capture">Take photo</string>
+    <string name="switch_camera">Switch camera</string>
+    <string name="starting">Starting camera…</string>
+    <string name="full_mode">Camera ready</string>
+    <string name="analysis_only">Capture temporarily pauses analysis on this camera.</string>
+    <string name="capture_only">Capture-only mode: analysis is unavailable on this camera.</string>
+    <string name="camera_error">Camera unavailable. Retry or switch cameras.</string>
+    <string name="retry">Retry</string>
+    <string name="saving">Saving…</string>
+    <string name="saved">Photo saved: %1$s</string>
+    <string name="save_error">Could not save the photo. Try again.</string>
+    <string name="licences">Licences</string>
+    <string name="close">Close</string>
+</resources>

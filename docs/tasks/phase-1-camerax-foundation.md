@@ -1,7 +1,7 @@
 # Task Brief — Phase 1: CameraX Foundation
 
-> **STATUS: PREPARED, DO NOT START.** Phase 1 begins only after the human owner approves Phase 0
-> (`docs/phase-status.md` → "NEXT APPROVAL REQUIRED").
+> **STATUS: IMPLEMENTED; PHYSICAL-DEVICE VERIFICATION PENDING.** The human owner approved Phase 0 and
+> authorized Phase 1 on 2026-10-03; see `docs/phase-status.md`. Acceptance remains pending.
 
 Owner: **Codex Local**. Reviewer: GitHub Agent (against this brief and the referenced specs).
 

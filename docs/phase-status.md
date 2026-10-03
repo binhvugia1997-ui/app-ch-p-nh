@@ -3,15 +3,17 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-03** by **GitHub Agent** (owner review round 1 applied).
+Last updated: **2026-10-03** by **Codex Local** (Phase 1 implementation session).
 
 ---
 
 ## CURRENT PHASE
 
-**PHASE 0 — RESEARCH + ARCHITECTURE — COMPLETE, AWAITING HUMAN APPROVAL.**
+**PHASE 0 — ACCEPTED by the human owner.** Owner explicitly reported PR #1 merged and authorized
+"START PHASE 1" on 2026-10-03.
 
-Phase 1 has **not** started. No Android code exists in this repository.
+**PHASE 1 — PARTIAL: IMPLEMENTED AND LOCALLY VERIFIED; PHYSICAL-DEVICE BASELINE BLOCKED.**
+Phase 1 is not accepted. Phase 2 has not started.
 
 ---
 
@@ -31,8 +33,8 @@ Phase 1 has **not** started. No Android code exists in this repository.
 | Test plan | ✅ done (`docs/test-plan.md`) |
 | Roadmap | ✅ done (`docs/roadmap.md`) |
 | Phase 0 report | ✅ done (`docs/phase-0-report.md`) |
-| Phase 1 task brief (prepared, not started) | ✅ done (`docs/tasks/phase-1-camerax-foundation.md`) |
-| **Phase 1 implementation** | ⛔ **blocked pending approval** |
+| Phase 1 task brief | Authorized by owner; implementation handed back for review |
+| **Phase 1 implementation** | ✅ local build/JVM/instrumented emulator checks; ⛔ physical-device acceptance pending |
 
 ---
 
@@ -202,28 +204,19 @@ without a new explicit owner decision.
 
 ## TASKS FOR CODEX LOCAL
 
-**None yet — Phase 1 is blocked pending approval.** The prepared brief is
-`docs/tasks/phase-1-camerax-foundation.md`; read it, do not start it.
+Implement and verify only `docs/tasks/phase-1-camerax-foundation.md`. Phase 0 owner approval is recorded above.
 
-When approved, the first work items are, in order:
+Remaining Phase 1 work:
 
-0. Run `python3 specs/validation/validate_specs.py` (needs `pip install jsonschema`) and keep it green in CI;
-   add any new spec file to the validator when it is created.
-1. Create the Gradle project skeleton with **only the Phase 1 modules** (`architecture.md` §2.1: `:app`,
-   `:core:model`, `:core:geometry`, `:feature:camera`, `:perception:image`), Java/Kotlin toolchain,
-   minSdk 24, Compose + CameraX dependencies pinned, and the module-dependency test that keeps the graph
-   honest.
-2. Implement `:core:geometry` coordinate transforms **with unit tests first**.
-3. Implement CameraX preview + analysis + capture (3-use-case session) and the `FrameRouter`.
-4. Implement the luma-grid producer (`:perception:image`) and the dev/perf overlay.
-5. Implement `CapabilityReport` v1 (tier micro-benchmark, delegate probe, camera capability query).
-6. Record measured numbers in this file (device, Android version, latency, FPS, memory, thermal).
+1. Connect the MEDIUM reference phone, authorize ADB, and record exact model/Android build.
+2. Follow `docs/phase-1-verification.md` for physical camera/permission/capture/lifecycle and crosshair checks.
+3. Record the two resolution baselines, cold start, RSS/thermal and 10-minute session with Perfetto evidence.
+4. Ask GitHub Agent to review and the owner to accept Phase 1. Do not proceed to Phase 2 beforehand.
 
 ---
 
 ## DO NOT IMPLEMENT YET
 
-* CameraX (Phase 1 — blocked)
 * MediaPipe integration (Phase 2)
 * Dashed guide rendering (Phase 3)
 * Pose matching (Phase 4)
@@ -236,15 +229,99 @@ When approved, the first work items are, in order:
 
 ## NEXT APPROVAL REQUIRED
 
-The human owner must review **Phase 0** and explicitly approve it before Phase 1 starts.
+The human owner approved Phase 0 and authorized Phase 1 on 2026-10-03. The next approval is
+**Phase 1 acceptance**, after device evidence and GitHub Agent review. Codex Local must not accept it.
 Suggested review checklist (round 1 corrections are already applied; see the review notes in this file):
 
 - [x] Architecture and module boundaries (`docs/architecture.md`) — **reviewed in round 1**, module phasing
-      added (§2.1): Phase 1 creates five modules, not fifteen.
+      added (§2.1): Phase 1 creates four modules with image production folded into camera (ADR-014).
 - [x] MVP definition (Phases 1–5) matches the product intent; product decisions D1–D8 recorded above.
 - [x] Model choices and the licence gate (`docs/ai-models.md`, `docs/model-licenses.md`) are acceptable.
 - [x] Non-rules (rule of thirds, aesthetic scoring, "ideal" camera angles) — the app will not nag about taste.
-- [ ] **Round 2 review:** the mirror contract (`pose-system.md` §4.4), the usability/confidence mapping
+- [x] **Round 2 review:** owner reported Phase 0 reviewed/approved on 2026-10-03; the mirror contract (`pose-system.md` §4.4), the usability/confidence mapping
       (§4.1.1), the performance classes (`performance-strategy.md` §0) and the owner decisions (D1–D8).
-- [ ] **Phase 1 approval:** explicit "start Phase 1" from the owner. Until then Codex Local must not write
-      Android code.
+- [x] **Phase 1 start approval:** explicit "START PHASE 1" from the owner on 2026-10-03.
+
+---
+
+## PHASE 1 IMPLEMENTATION HANDOFF — 2026-10-03, Codex Local
+
+PHASE: 1
+STATUS: partial
+BRANCH: `codex/phase-1-camerax-foundation` (based on merged main `5f8bbc9`)
+FILES: Gradle wrapper/catalog/root scripts; `app/`; `core/model/`; `core/geometry/`;
+`feature/camera/`; `lint.xml`; `third_party/`; `tools/phase1-perfetto.pbtxt`;
+`docs/architecture.md`; `docs/model-licenses.md`; `docs/tasks/phase-1-camerax-foundation.md`;
+`docs/phase-1-verification.md`; this handoff.
+DEVICES TESTED: **no physical phone**. Functional checks only on `Medium_Phone_API_37.0` AVD,
+`sdk_gphone64_x86_64`, Android 17/API 37, debug APK; emulator is not MEDIUM hardware evidence.
+MEASURED: **NOT_MEASURED on physical hardware**. Emulator timing/FPS logs are invalid for L4/L5 gates.
+DEVIATIONS FROM SPEC: ADR-014 records image production folded into camera, capability UI in app,
+schema-preserving luma envelope, supported CameraX/Camera2 API equivalents, and instrumentation limits.
+BLOCKERS: no reference phone attached/authorized; mandatory G-P1a baseline and physical camera gates
+cannot be satisfied. Owner acceptance is pending, not granted by this agent. The owner supplied Git
+author identity for this repository only; the implementation is ready for the local Phase 1 commit.
+QUESTIONS: none.
+NEXT PROPOSED: connect the MEDIUM phone and execute `docs/phase-1-verification.md`, then GitHub Agent
+review and owner Phase 1 acceptance. No Phase 2 work is authorized by this handoff.
+
+### Implemented state
+
+- Four modules only. JVM core has no Android/feature/perception dependencies; a test inspects the actual
+  exported Gradle module graph. Geometry tests were authored before camera consumption.
+- CameraX shared-viewport Preview + KEEP_ONLY_LATEST ImageAnalysis + ImageCapture; lifecycle binding,
+  front/back selector, torch off, permission explanation/recovery, camera error/retry state and JPEG saving.
+  Fallback order: lower analysis size → analysis-only with serial capture → capture-only.
+- One analyzer executor, per-stage cadence/in-flight scheduler, disabled future-source slots, always-close
+  ImageProxy handling, named Perfetto sections and bounded p50/p95 latency histograms.
+- Upright unmirrored crop geometry, empty subjects, luma snapshot at 2 Hz, gravity/rotation-vector adapter,
+  nullable uncalibrated IMU stability, RAM tier heuristic, GL/emulator preflight and camera size/session query.
+- Debug-only crosshair/HUD, configurable 480p/720p requests and opt-in reusable ARGB/rotation benchmark.
+  Release/profile omit the HUD/marker; `profile` uses release optimization with debug signing for testing.
+- Vietnamese primary resources + English fallback; no analysis/domain user-facing strings, no model,
+  guidance, pose matching, dashed pose template or automatic shutter.
+- Third-party licences/notices bundled and displayed offline; exact 101-component runtime registry checked
+  by the build. No project open-source licence added. Backup/transfer excluded for private images.
+
+### Local validation evidence
+
+| Check | Actual result |
+| --- | --- |
+| `assembleDebug`, `assembleRelease`, `assembleProfile` | PASS; release/profile R8 + resource shrinking enabled |
+| JVM tests | PASS: geometry 5, actual module graph 1, scheduler/histogram 2, plane stride/crop/conversion 3 (11 total) |
+| App lint debug/release/profile; camera lint debug | PASS, no issues; no lint baseline |
+| `connectedDebugAndroidTest` | PASS: 2 tests on the API 37 AVD only (8 crosshair renderer combinations; proxy closure success/skip/failure) |
+| Spec validator | PASS, 0 errors / 0 warnings; workspace-local Python 3.13 + jsonschema used because python3 was a Store alias |
+| Packaged permissions (`aapt dump permissions`) | CAMERA + AndroidX app-local signature receiver permission; no INTERNET; unused inherited ACCESS_NETWORK_STATE removed |
+| Emulator functional startup | Vietnamese no-permission screen and synthetic camera preview inspected; FULL session reported; manual shutter saved a synthetic JPEG to MediaStore; no AndroidRuntime/Phase1Camera startup error |
+| Latest preview layout | Rebuilt and screenshot rechecked after BoxWithConstraints sizing fix; back 4:3 and front 16:9 previews, markers and diagnostics fit within visible bounds |
+
+Generated evidence: JVM XML under module `build/test-results/`; instrumentation XML under
+`app/build/outputs/androidTest-results/connected/debug/`; lint reports under module `build/reports/`;
+local emulator screenshots under ignored `device-evidence/`. These are local evidence, not physical-device
+acceptance. Reproduction commands and raw data collection are in `docs/phase-1-verification.md`.
+The accidentally canceled Gradle run was resumed from the existing tree; final rebuild/lint passed.
+
+### Required physical baselines — none obtained
+
+| Device / build / method | Metric | 480p | 720p | Reason |
+| --- | --- | --- | --- | --- |
+| Reference MEDIUM / optimized profile / Perfetto 60 s | Preview displayed FPS and camera capture callback FPS | NOT_MEASURED | NOT_MEASURED | No physical phone |
+| Same | Analysis delivery FPS, luma cadence, router skips, CameraX drops | NOT_MEASURED | NOT_MEASURED | No physical phone; internal CameraX drops are not exposed |
+| Same | Luma p50/p95 ms + sample count | NOT_MEASURED | NOT_MEASURED | No physical phone |
+| Same | YUV→ARGB + rotation p50/p95 ms + sample count | NOT_MEASURED | NOT_MEASURED | No physical phone |
+| Same | Router p50/p95 ms + sample count | NOT_MEASURED | NOT_MEASURED | No physical phone |
+| Same / `am start -W` + preview trace | Launch → first displayed preview frame | NOT_MEASURED | NOT_MEASURED | No physical phone; STREAMING log is a proxy |
+| Same / process stats + dumpsys | RSS/high-water mark | NOT_MEASURED | NOT_MEASURED | No physical phone |
+| Same / thermalservice + 10-minute session | Thermal progression, battery delta, crash/ANR | NOT_MEASURED | NOT_MEASURED | No physical phone |
+| Physical cameras / screenshots + JPEG inspection | Both cameras/orientations/aspects, capture rotation/exposure/storage | NOT_MEASURED | NOT_MEASURED | Synthetic emulator cannot prove camera correctness |
+| Reference phone / HUD + logs | Tier, GL, camera resolutions, combination support/fallback | NOT_MEASURED | NOT_MEASURED | No physical phone |
+| LOW / HIGH physical hardware | All targets | NOT_MEASURED | NOT_MEASURED | No LOW/HIGH devices |
+
+The raw latency table intentionally has no invented values. Was the three-use-case combination supported
+on every tested **physical** device? **UNKNOWN — none tested.** Which fallback was required on physical
+hardware? **UNKNOWN.** YUV conversion cost at 480p and 720p? **NOT_MEASURED.** Preview ≥30 FPS and cold start
+≤1.2 s remain targets, not achieved claims. All heuristic/unmeasured calibration requirements remain open.
+
+**Confirmed:** Phase 2 was NOT started; no INTERNET permission, cloud API, or MediaPipe dependency was
+added. Auto-capture remains OFF (not implemented in Phase 1). Nothing is pushed to main or merged here.

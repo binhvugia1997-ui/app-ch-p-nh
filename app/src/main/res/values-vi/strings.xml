@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">AI Photographer</string>
+    <string name="permission_title">Quyền truy cập máy ảnh</string>
+    <string name="permission_explanation">Cho phép dùng máy ảnh để xem trước và chụp ảnh. Khung hình được xử lý trên điện thoại này. Bạn vẫn có thể dùng màn hình này khi chưa cấp quyền.</string>
+    <string name="permission_allow">Cho phép máy ảnh</string>
+    <string name="permission_settings">Mở cài đặt ứng dụng</string>
+    <string name="capture">Chụp ảnh</string>
+    <string name="switch_camera">Đổi máy ảnh</string>
+    <string name="starting">Đang mở máy ảnh…</string>
+    <string name="full_mode">Máy ảnh sẵn sàng</string>
+    <string name="analysis_only">Chụp ảnh sẽ tạm dừng phân tích trên máy ảnh này.</string>
+    <string name="capture_only">Chế độ chỉ chụp ảnh: máy ảnh này không hỗ trợ phân tích.</string>
+    <string name="camera_error">Máy ảnh không khả dụng. Hãy thử lại hoặc đổi máy ảnh.</string>
+    <string name="retry">Thử lại</string>
+    <string name="saving">Đang lưu…</string>
+    <string name="saved">Đã lưu ảnh: %1$s</string>
+    <string name="save_error">Không thể lưu ảnh. Hãy thử lại.</string>
+    <string name="licences">Giấy phép</string>
+    <string name="close">Đóng</string>
+</resources>
