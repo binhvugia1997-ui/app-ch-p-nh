@@ -142,6 +142,105 @@ detected landmarks (ANALYSIS space)
 **Never** use raw pixel distance as the score. Raw distance is proportional to subject size, penalizes
 taller people, and rewards standing still close to the camera.
 
+### 4.1.1 Usability, confidence and unknown landmarks (normative for every engine)
+
+MediaPipe reports `visibility` and `presence` in `[0,1]`. They are **model scores, not calibrated
+probabilities**, and they must not be silently re-shaped into something that *looks* like a probability
+(no unexplained sigmoid — a sigmoid on a value already in `[0,1]` compresses the top of the range and
+lets a badly occluded landmark keep most of its weight). The mapping is therefore explicit, conservative
+and linear above the floor:
+
+```
+gate            = 0.50                                  # usability floor        [CALIBRATION_REQUIRED]
+u_unknown       = 0.50                                  # both channels missing  # [CALIBRATION_REQUIRED]
+
+g(l) =
+    min(visibility_l, presence_l)      if both were reported        # conservative combination
+    visibility_l  or  presence_l       if exactly one was reported  # use the available channel, flag it
+    (unknown)                          if neither was reported
+
+usable U(l) =
+    0                                  if g(l) < gate               # UNUSABLE: contributes nothing
+    (g(l) − gate) / (1 − gate)         otherwise                    # linear 0..1, no compression
+
+bands:  U ≥ 0.60  → USABLE     0.25 ≤ U < 0.60 → MARGINAL      U < 0.25 → UNUSABLE
+```
+
+Rules that follow from this definition:
+
+* `min()` is the conservative choice: a landmark that is present but occluded (`visibility` low) is not
+  usable, and a landmark that is visible but probably outside the frame (`presence` low) is not usable
+  either. Neither channel can talk the other one up.
+* **The floor is a floor, not a smooth penalty.** A landmark below `gate` contributes *nothing* to any
+  measurement — no angles, no directions, no positions, and no coverage weight. It is reported as
+  "unknown" in the result (`unknownLandmarks`) rather than as a bad value.
+* **Unknown ≠ wrong.** A landmark whose channels were never reported (a runtime that omits confidence, or
+  a body part genuinely out of frame) is `u_unknown` (MARGINAL) and is flagged, so a downstream rule can
+  abstain instead of guessing. A landmark reported as *unusable* contributes nothing but is also *not*
+  a failed criterion.
+* **Component coverage**
+
+  ```
+  coverage(c) = Σ_l w(l)·U(l) / Σ_l w(l)          # w = the template's landmark weights (§2)
+  ```
+
+  A component is **evaluated** only if `coverage(c) ≥ 0.35` (`CALIBRATION_REQUIRED`) **and** at least 3 of
+  its landmarks are usable (a 2D rotation cannot be estimated from fewer). Otherwise it is
+  `notEvaluated` and is excluded from *both* the numerator and the denominator of the aggregation — this
+  is the mechanism that stops one invisible ankle from destroying the score.
+* **Aggregation** (α = 1 in the MVP, `CALIBRATION_REQUIRED`):
+
+  ```
+  score = Σ_evaluated_c W(c)·coverage(c)·componentScore(c)
+          ──────────────────────────────────────────────────
+          Σ_evaluated_c W(c)·coverage(c)
+  ```
+* **If nothing is evaluable** — no component reaches the coverage floor, or the hard gates below fail —
+  the result is `PoseStatus.UNVERIFIABLE` with **no score**, never a low score. A low score means
+  "I can see you and you are in the wrong pose"; `UNVERIFIABLE` means "I cannot see enough to judge".
+* **`visibleFraction`** (used by `Subject` and the hard gate) is `#(core landmarks with U > 0) / #(core
+  landmarks)`, core = torso + limbs + head core (§2 landmark roles). Hard gates:
+
+  ```
+  visibleFraction(subject) ≥ 0.5                                  # [CALIBRATION_REQUIRED]
+  Torso evaluated  AND  at least one other component evaluated
+  every template `required` landmark that is inside the frame must have U > 0
+  ```
+* **Confidence is reported separately from the score**, so the UI can distinguish "wrong pose" from
+  "can't tell":
+
+  ```
+  matchConfidence = mean(U over template landmarks with w > 0)
+                    × Σ_evaluated_c W(c) / Σ_all_c W(c)
+  ```
+
+  Guidance requires `matchConfidence ≥ 0.5`; readiness requires `≥ 0.7`.
+
+**Worked examples (these are the unit tests, `test-plan.md` §3.1)** — `gate = 0.5`:
+
+| `visibility` | `presence` | `g` | `U` | Band | Effect |
+| --- | --- | --- | --- | --- | --- |
+| `1.00` | `1.00` | 1.00 | **1.00** | USABLE | full weight |
+| `0.90` | `0.90` | 0.90 | **0.80** | USABLE | full weight |
+| `0.80` | `0.70` | 0.70 | **0.40** | MARGINAL | counted at 40 % weight; its own angle/position terms are still computed but capped |
+| `0.50` | `0.50` | 0.50 | **0.00** | UNUSABLE | excluded (exactly at the floor) |
+| `0.20` | `1.00` | 0.20 | **0.00** | UNUSABLE | occluded beats "in frame": no contribution |
+| `0.40` | `0.30` | 0.30 | **0.00** | UNUSABLE | excluded |
+| `0.90` | not reported | 0.90 | **0.80** | USABLE | single channel used, `singleChannel = true` flagged |
+| not reported | not reported | — | **0.50** | MARGINAL | `unknown = true`; rules may abstain, must not fail a criterion |
+
+Consequences that the tests must pin down:
+
+* **A partially visible body still scores.** With `U = 0` for both ankles, `LEFT_LEG`/`RIGHT_LEG` drop
+  below the coverage floor, are excluded, and a subject whose upper body matches the template keeps a
+  high score with `notEvaluated = [LEFT_LEG, RIGHT_LEG]` — the "one invisible limb must not ruin the
+  score" requirement.
+* **A mostly invisible body is not scored at all.** Below `visibleFraction = 0.5` the matcher returns
+  `PoseStatus.UNVERIFIABLE`, so "60 % of the body hidden" can never be reported as a *low* score.
+* **Unknown channels never fake confidence.** A runtime that reports no visibility/presence at all yields
+  MARGINAL everywhere and a `matchConfidence` that cannot clear the guidance gate, rather than a
+  confident score.
+
 ### 4.2 Terms (in order of robustness)
 
 1. **Joint-angle similarity** (most robust to body proportions, moderately robust to roll)
@@ -180,28 +279,61 @@ pos_tol ≈ 0.35 torso units for extremities, 0.15 for hips/shoulders     [CALIB
 
 Given detected landmarks in SUBJECT space and the template (already in SUBJECT space):
 
-1. **Handedness:** if the template allows mirroring, compute the score for both handedness assignments and
-   take the better one. Mirroring is a discrete flip of `x` on all landmarks — cheap and exact.
-2. **Rotation:** solve a 2D orthogonal Procrustes problem (Kabsch in 2D) over `required` landmarks only,
-   **without scaling** (scaling is already handled by the torso normalization), and **clamp the rotation to
+1. **Handedness:** if the template allows mirroring (`mirrorAllowed: true`), compute the score for both
+   handedness assignments and take the better one. Mirroring is a discrete flip of `x` on all landmarks —
+   cheap and exact. If `mirrorAllowed: false`, only the template as written is evaluated (§4.4).
+2. **Scale reference:** the template's torso-unit scale must be recovered from the subject. Use the
+   template's `normalizationReference.preferred` span if its landmarks are usable; otherwise fall back in
+   this fixed order and report which reference was used:
+
+   | Order | Span | Landmarks | Sensitivity |
+   | --- | --- | --- | --- |
+   | 1 | `TORSO_LENGTH` | mid-shoulder → mid-hip | most stable, least foreshortening-prone |
+   | 2 | `SHOULDER_WIDTH` | `left_shoulder` → `right_shoulder` | proportion-dependent (shoulder/torso ratio varies between people), foreshortened when the torso turns |
+   | 3 | `INTEROCULAR` | `left_eye` → `right_eye` | smallest span, most noise, head-yaw sensitive |
+
+   Partial templates (e.g. a headshot without hips) declare reference 2 or 3. A score computed from
+   reference 2 or 3 carries the same number but a *narrower* meaning: the matcher reports
+   `scaleReference` in its result so the dev screen and the calibration work can see it, and the
+   tolerance for the position terms is widened by `1.5×` for reference 3 (`CALIBRATION_REQUIRED`).
+3. **Rotation:** solve a 2D orthogonal Procrustes problem (Kabsch in 2D) over `required` landmarks only,
+   **without scaling** (scaling is already handled by the scale reference), and **clamp the rotation to
    ±25°** so that a wildly wrong body rotation cannot be "aligned away" into a false match.
-3. **Translation:** after normalization, the hip midpoint is already the origin for both — no additional
+4. **Translation:** after normalization, the hip midpoint is already the origin for both — no additional
    translation is needed except for partial templates (below).
-4. **Partial templates (head-and-shoulders only):** align on the available `required` landmarks and record
+5. **Partial templates (head-and-shoulders only):** align on the available `required` landmarks and record
    `coverage` (see §4.5). Never align on a single landmark (degenerate rotation).
 
 > Rationale for the rotation clamp: without it, a subject lying at 90° could be mathematically rotated into
 > a standing template and score 1.0. The clamp encodes "the photographer is not going to rotate the whole
 > world for you" while still tolerating a slightly tilted camera.
 
-### 4.4 Mirroring
+### 4.4 Mirroring — one contract, no penalties
 
-* Templates declare `mirrorAllowed`. When true, the matcher evaluates both handedness assignments and keeps
-  the better score, and the *guide* is drawn in the winning handedness.
-* When false, mirroring is only considered with a score penalty (`× 0.85`, `CALIBRATION_REQUIRED`).
-* Guidance wording must respect the winning handedness: "raise your left arm" must refer to the subject's
+A template is either **symmetric** or **handed**, and `mirrorAllowed` says which:
+
+| `mirrorAllowed` | Meaning | Matcher | Guide | Corrections |
+| --- | --- | --- | --- | --- |
+| `true` | The pose reads the same either way round (near-symmetric geometry, `maxAsymmetry ≤ 0.30` torso units) | Scores the subject against the template **and** against its x-mirror; keeps the better score. Mirroring is a discrete, exact flip of `x` | Drawn in the winning handedness | Sides are emitted in the subject's *anatomical* left/right for the winning handedness |
+| `false` | The pose is handed: which side does what **is** the pose | **Does not evaluate the mirrored pose at all.** A subject standing in the mirrored pose simply scores as a different pose (no penalty factor, no partial credit) | Never drawn mirrored | Never silently swap sides |
+
+* There is **no mirror penalty and no mirror tolerance**. The earlier draft of this document mentioned a
+  `× 0.85` penalty; that contract is withdrawn (it made "not this pose" and "almost this pose" the same
+  number). `pose-template.schema.json` no longer carries `mirrorPenalty`.
+* If both handed versions should be accepted, there are exactly two legal moves:
+  1. set `mirrorAllowed: true` — allowed only when the geometry is near-symmetric (`maxAsymmetry ≤ 0.30`);
+  2. author an **explicit mirrored variant** whose id ends in `_m1`, whose landmark x values are the exact
+     negation of the base template's, and which points back at the base template through
+     `mirroredVariantId`. Both files ship in the library and are offered as separate choices.
+  The validator enforces existence, the back-reference and the exact mirror.
+* `maxAsymmetry` is the largest `|x_left + x_right|` over anatomical pairs (and `|2x|` for unpaired
+  landmarks) in torso units. It is authored/measured by the authoring tool; the Phase 0 seeds carry
+  measured values. `mirrorAllowed: true` with `maxAsymmetry > 0.30` is rejected by the validator.
+* A handed template (`mirrorAllowed: false`) must carry `intentFlags.suppressSymmetryWarning: true`: the
+  pose is asymmetric **on purpose**, so `POSE_EXCESSIVE_SYMMETRY` must not fire against it.
+* Guidance wording must respect the winning handedness: "raise your left arm" refers to the subject's
   anatomical left, and the overlay must show the correct side even for a mirrored front-camera preview
-  (see `architecture.md` §5 rule 3–4).
+  (see `architecture.md` §5 rules 3–4).
 
 ### 4.5 Component scoring and partial visibility
 
@@ -237,7 +369,7 @@ Hard gates before a score is published:
 * `visibleFraction(subject) ≥ 0.5`
 * at least `Torso` + one other component evaluated
 * all template `required` landmarks that lie inside the frame must be `usable` (otherwise report
-  `POSE_UNVERIFIABLE`, not a low score)
+  `PoseStatus.UNVERIFIABLE`, not a low score)
 
 ### 4.6 Score bands (for UI and readiness)
 

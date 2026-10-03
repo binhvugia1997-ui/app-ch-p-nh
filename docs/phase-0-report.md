@@ -1,6 +1,7 @@
 # PHASE 0 REPORT — AI Photographer
 
-Date: 2026-10-02 · Agent: GitHub Agent (Research, Architecture, Specification, Review)
+Date: 2026-10-03 · Agent: GitHub Agent (Research, Architecture, Specification, Review)
+Review: this report reflects the owner's round-1 review corrections (see `docs/phase-status.md`).
 Phase 1: **NOT started.** Android implementation: **not started** (by design).
 
 ---
@@ -92,6 +93,12 @@ spacing variance, occlusion, frame coverage).
 
 ## Pose Representation
 
+Mirror contract, one rule and no penalties (`pose-system.md` §4.4): `mirrorAllowed: true` means the pose is
+near-symmetric (`maxAsymmetry ≤ 0.30` torso units) and the matcher scores both handednesses and keeps the
+better; `mirrorAllowed: false` means **the mirrored pose is never evaluated** and an explicit `_m1` twin must
+exist instead (validated as an exact x-mirror with a back-reference). The seed library therefore ships
+`solo_weight_shift_standing_v1` plus its mirror `solo_weight_shift_standing_v1_m1` as the worked example.
+
 Normalized geometry, never raster images: JSON templates in **SUBJECT space** (hip-mid origin, y down,
 unit = torso length), anatomical landmark ids, per-landmark weights and `required` flags, component
 weights, joint angles with tolerances floored at the measurement-noise level, relative unit vectors,
@@ -101,14 +108,22 @@ Four seed templates are authored in `specs/poses/`.
 
 ## Pose Matching Strategy
 
-usability mask → SUBJECT normalization → handedness selection → 2D Kabsch/Procrustes with translation +
-rotation only, **clamped to ±25°** (so a lying body cannot be "aligned" into a standing template) →
-component scoring (Head/Torso/arms/legs) using joint angles, limb directions, body orientation and
-normalized positions → coverage-weighted aggregation where components with `coverage < 0.35` are excluded
-rather than scored zero → hard gate (`visibleFraction ≥ 0.5`, torso + one more component, all in-frame
-`required` landmarks usable) else `POSE_UNVERIFIABLE`. Bands: MATCHED ≥ 0.85, CLOSE 0.70–0.85,
-DIFFERENT 0.45–0.70, FAR (**all `CALIBRATION_REQUIRED`**). Body-proportion robustness comes from using
-directions/angles as the primary terms and torso-length self-normalization for positions.
+usability mask → scale reference → handedness → 2D Kabsch/Procrustes with translation + rotation only,
+**clamped to ±25°** (so a lying body cannot be "aligned" into a standing template) → component scoring
+(Head/Torso/arms/legs) using joint angles, limb directions, body orientation and normalized positions →
+coverage-weighted aggregation where components with `coverage < 0.35` are excluded rather than scored zero
+→ hard gate (`visibleFraction ≥ 0.5`, torso + one more component, all in-frame `required` landmarks usable)
+else `PoseStatus.UNVERIFIABLE`. Bands: MATCHED ≥ 0.85, CLOSE 0.70–0.85, DIFFERENT 0.45–0.70, FAR (**all
+`CALIBRATION_REQUIRED`**). Body-proportion robustness comes from directions/angles as the primary terms,
+torso-length self-normalization for positions, and a declared scale-reference fallback order
+(torso length → shoulder width → inter-ocular) for partial templates.
+
+**Usability is explicit and gated** (`pose-system.md` §4.1.1): `g = min(visibility, presence)` (or the single
+reported channel), a hard floor at `gate = 0.5`, then `U = (g − 0.5) / 0.5` — no sigmoid, because re-shaping
+an already-normalized score compresses the top of the range and over-weights occluded landmarks. Landmarks in
+the `unknown` case (no channels reported) are MARGINAL and flagged, not failed; landmarks below the floor
+contribute nothing and are reported as unknown. Worked examples at 0.0 / low / medium / high confidence are
+part of the test plan (`test-plan.md` §3.3).
 
 ## Composition Engine Strategy
 
@@ -173,8 +188,19 @@ v1" on size/licence/maintenance; DINOv2 as optional.
 
 ## Performance Strategy
 
-Targets: preview ≥ 30 FPS untouched by analysis; guidance latency p95 ≤ 250 ms; pose 15 FPS on MEDIUM /
-10 FPS on LOW; memory ≤ 250 MB (LOW); APK ≤ 40 MB; ≤ 12 % battery per 10-minute session.
+Every performance number now carries a class (`performance-strategy.md` §0): **[REQ] product requirement**,
+**[TGT] unmeasured engineering target**, **[GATE] measured acceptance threshold**, **[DEV] device-tuned**.
+Only `[GATE]` numbers may fail a phase; an unmeasured target is recorded as `NOT_MEASURED`, never claimed.
+
+Unmeasured targets (all `[TGT]` until Codex Local measures them on a device): preview ≥ 30 FPS untouched by
+analysis; guidance latency p95 ≤ 250 ms; pose 15 FPS on MEDIUM / 10 FPS on LOW; memory ≤ 250 MB (LOW);
+APK ≤ 40 MB; ≤ 12 % battery per 10-minute session; the stage budget table (the `~0.2 ms` luma grid is a
+design assumption, not a measurement).
+
+Device policy: the owner has **one physical MEDIUM device**, which is the reference device and the mandatory
+measurement target; extra devices are aspirational, and LOW/HIGH numbers stay `NOT_MEASURED` until such a
+device exists. Phase 1's mandatory gate is the *baseline* (measured and recorded), not the target value; the
+Phase 1 brief was rewritten accordingly.
 Device tiers LOW/MEDIUM/HIGH with a first-launch micro-benchmark (vendor specs do not predict MediaPipe
 performance). Cadence: pose 15–30 FPS, face 5–15 FPS adaptive, lighting 2 FPS from the Y plane only,
 scene 0.5–2 FPS, hands on demand. An 8-step **degradation ladder** (scene → hands → face cadence →
@@ -223,9 +249,19 @@ face recognition.
 
 ## Open Questions
 
-Who holds the phone (mode); auto-capture default; portrait-lock vs landscape; minimum supported tier;
-first pose-library size; repository licence; language scope (vi only vs vi+en); applicationId/display name.
-Full list with proposed defaults in `docs/architecture.md` §14 and `docs/phase-status.md`.
+The eight original questions were answered by the owner on 2026-10-03 and are now recorded as decisions
+D1–D8 in `docs/phase-status.md`: photographer mode is the MVP default (tripod/self-shooting later);
+auto-capture OFF by default; portrait-first UX with a landscape-capable architecture; MEDIUM primary tier
+with graceful LOW degradation and optional HIGH extras; a 20-pose solo library specification (8 standing
+full-body, 4 three-quarter, 4 half-body/portrait, 2 sitting, 2 walking/leaning); the repository stays public
+with **no** open-source licence added (public ≠ permission to reuse) and the third-party licence audit
+continues; Vietnamese primary with English authored in parallel and no Vietnamese strings in
+domain/analysis logic; package `com.aiphotographer.app` (Codex Local must inspect any existing Android
+project before renaming).
+
+Still open (non-blocking, owner input): which four authored seeds are promoted first when the library is
+built; the reference device model/Android version to quote in measurement rows; the LOW-tier support claim
+if no LOW device becomes available; and the release/testing-track and data-safety wording.
 
 ## Files Created / Updated
 
@@ -234,8 +270,10 @@ Full list with proposed defaults in `docs/architecture.md` §14 and `docs/phase-
 `guidance-engine.md`, `lighting-engine.md`, `scene-understanding.md`, `ai-models.md`,
 `model-licenses.md`, `performance-strategy.md`, `test-plan.md`, `roadmap.md`, `phase-status.md`,
 `phase-0-report.md`, `research-sources.md`, `glossary.md`, `tasks/phase-1-camerax-foundation.md`.
-Under `specs/`: `README.md`, six JSON Schemas, `rules/mvp-rules.json` (30 authored rules), four seed pose
-templates, `fixtures/README.md`.
+Under `specs/`: `README.md`, seven JSON Schemas, `rules/mvp-rules.json` (30 authored rules),
+`i18n/messages.json` (localization contract: 51 actions, 87 keys in vi + en, one explanation per rule),
+`validation/validate_specs.py` (cross-file validator), 5 pose templates (4 seeds + 1 mirrored twin),
+`fixtures/README.md`.
 
 ## Tasks Prepared for Codex Local
 
@@ -259,4 +297,8 @@ What is **not** ready, and must not be claimed: any statement about real-device 
 thermal behaviour or user experience. Those are Phase 1/2 measurements and the phase status will record
 them as they arrive.
 
-**Phase 1 must not start until the owner answers the review checklist in `docs/phase-status.md`.**
+**Phase 1 must not start until the owner explicitly approves it after this round-2 review**
+(`docs/phase-status.md` → "NEXT APPROVAL REQUIRED"). The product decisions that were blocking design work
+are recorded; the corrections requested in review round 1 (cross-spec validation, mirror contract,
+usability math, performance classes, module scope) are applied and validated by
+`python3 specs/validation/validate_specs.py` (0 errors, 0 warnings).

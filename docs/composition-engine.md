@@ -152,6 +152,8 @@ rules that depend on a low-confidence shot type abstain rather than guess.
 
 ## 5. Threshold policy
 
+* User-visible text never appears here: rules emit instruction ids and the UI resolves them
+  through `specs/i18n/messages.json` (vi primary, en later).
 * Every **rule** numeric constant lives in a single `Thresholds` object (generated from
   `specs/rules/mvp-rules.json`), never inline in rule code. Non-rule engine constants — shot-type estimator
   cut-offs (`T_*`), guidance dwell/cooldown, readiness holds, cadences — are specified in their engine docs

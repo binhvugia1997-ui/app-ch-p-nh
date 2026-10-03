@@ -88,6 +88,31 @@ Rules of the graph (enforced by module dependencies):
 * `app` is the only module that knows about all of them.
 * Anything that needs a `Context` lives in `perception:*`, `feature:*`, or `app`.
 
+### 2.1 Phasing: which modules exist when (owner review, 2026-10-03)
+
+Creating fifteen Gradle modules on day one buys nothing and costs build complexity, review noise and
+dependency-graph churn. The graph above is the **target**, not the Phase 1 checklist. Modules are created
+when their first real dependency exists:
+
+| Phase | Modules created | Why this is the minimum |
+| --- | --- | --- |
+| **1** | `:app`, `:core:model`, `:core:geometry`, `:core:image`*(see note)*, `:feature:camera` | The Phase 1 deliverables are: a camera session, the ANALYSIS→PREVIEW transform with unit tests, a minimal `FrameAnalysis` (empty subjects + luma grid), `CapabilityReport`, and a dev/perf screen. That needs the app shell, the pure data types, pure geometry, the luma/Y-plane producer, and the camera feature. `:core:geometry` must be a separate module **now** because it is the module whose unit tests are the Phase 1 exit evidence. |
+| **2** | `:perception:api`, `:perception:mediapipe`, `:core:photography` | The interfaces and the MediaPipe implementation appear together with the first landmark source; the framing rules (subject presence/size) land with them. Splitting `api` from `mediapipe` exists to keep the Android dependency out of the interfaces. |
+| **3** | `:core:pose`, `:feature:guide`, `:tools:pose-authoring` | The template loader/matcher domain and the overlay UI appear with the dashed guide. The authoring tool ships with the first templates that need validating. |
+| **4–5** | `:core:guidance`, `:core:light`, `:feature:settings`*, `:feature:poselib` | Guidance/readiness and the lighting engine are their own pure domains; settings hosts the mode switch and the capability report UI; the pose library UI arrives with the library. |
+| **6+** | `:feature:poselib` (if not earlier), `:benchmark` | Macrobenchmark only becomes meaningful when there is enough pipeline to measure (Phase 6+ / Phase 10). |
+| **never in MVP** | `:perception:image` as a *separate* module (fold the Y-plane producer into `:perception:api`'s implementation until it needs to be swapped), `:tools:*` beyond the authoring tool | Avoid a module whose only consumer is itself. |
+
+Two guards replace "create everything now":
+
+1. **A dependency-rule test from Phase 1** (a JVM test enumerating module dependencies) so the graph cannot
+   drift while it is still small — this is what actually protects the architecture.
+2. **A written rule in `AGENTS.md`:** a new module is created when a new boundary or a new dependency
+   direction is needed, and the phase brief must say which module it adds; "we will need it later" is not a
+   reason (the ETA of a folder is zero).
+
+Consequence for Phase 1: the brief's module list is the table above, not the full graph.
+
 > Rationale: pose matching, composition rules, guidance arbitration and readiness logic are where the
 > product risk lives. They must be unit-testable as pure functions with synthetic skeletons — no camera,
 > no emulator, no flakiness.
@@ -251,12 +276,20 @@ interface SceneSource { /* LATER: zero-shot scene tags */ }
 Confidence semantics (must be documented in the interface KDoc, since MediaPipe's numbers are
 model-specific and not calibrated probabilities):
 
-* `visibility ∈ [0,1]` — probability the keypoint is in frame and not occluded.
-* `presence ∈ [0,1]` — probability the keypoint is in frame (regardless of occlusion).
-* Engines aggregate as `usable = sigmoid(visibility) * sigmoid(presence)`, then apply a per-landmark floor.
-* **A landmark below the floor may not contribute to a measurement**; it contributes as "unknown" plus an
-  uncertainty penalty instead. (This is the mechanism that stops one invisible ankle from destroying the
-  pose score — see `pose-system.md`.)
+* `visibility ∈ [0,1]` — model score: the keypoint is in frame and not occluded. **Not** a calibrated
+  probability.
+* `presence ∈ [0,1]` — model score: the keypoint is in frame (regardless of occlusion).
+* These are consumed through **one** mapping, defined once and normatively in `pose-system.md` §4.1.1:
+  `g = min(visibility, presence)` (or the single reported channel), then a hard floor `gate = 0.5`
+  (`CALIBRATION_REQUIRED`) below which `usable U = 0`, else `U = (g − gate) / (1 − gate)`.
+  There is deliberately **no sigmoid**: re-shaping an already-normalized score compresses the top of the
+  range and gives badly occluded landmarks too much weight.
+* **A landmark with `U = 0` may not contribute to a measurement** — no angles, no directions, no coverage
+  weight. It is reported as *unknown*, not as a bad value, so rules can abstain instead of guessing. A
+  landmark whose channels were never reported is MARGINAL and flagged (`unknown = true`); unknown must
+  never be scored as failure. Coverage gating and aggregation are specified in the same section, and
+  `test-plan.md` §3.1 pins the boundary behaviour at 0.0 / low / medium / high confidence.
+* `pose-system.md` §4.1.1 is the single source of truth for this math: engines must not re-derive it.
 
 ---
 
@@ -314,7 +347,9 @@ Capture itself uses CameraX `ImageCapture` on the **same `Camera` session** as P
 ## 11. Localization and messaging
 
 * Engines emit **message IDs + typed parameters**, never text:
-  `MessageId("guidance.pose.arm_left_far_from_torso", mapOf("amount" to 0.12f))`.
+  `MessageId("guidance.pose.arm_far_from_torso.left", mapOf("amount" to 0.12f))`.
+  The key registry, the per-action allowed keys and the vi/en text live in `specs/i18n/messages.json`;
+  `specs/validation/validate_specs.py` fails the build if a key is not registered there.
 * `:app` owns the resource files: `res/values/strings.xml` (English fallback) and
   `res/values-vi/strings.xml` (default product language).
 * Terminology (headroom, lead room, S-curve…) is defined once in `docs/glossary.md` so translations stay

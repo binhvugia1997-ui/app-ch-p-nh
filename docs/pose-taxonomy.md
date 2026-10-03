@@ -467,20 +467,25 @@ Group sizes:
 
 ---
 
-## 6. Template authoring backlog (Phase 6 seed set)
+## 6. Template authoring backlog (owner decision 2026-10-03)
 
-| # | Template id | Family | People | Priority |
-| --- | --- | --- | --- | --- |
-| 1 | `solo_weight_shift_standing_v1` | 2.1 | 1 | MVP |
-| 2 | `solo_a_pose_relaxed_v1` | 2.2 | 1 | MVP |
-| 3 | `solo_hands_in_pockets_v1` | 2.3 | 1 | MVP |
-| 4 | `solo_hands_on_hips_v1` | 2.4 | 1 | NEXT |
-| 5 | `solo_headshot_three_quarter_v1` | 2.14(b) | 1 | MVP |
-| 6 | `solo_headshot_hand_near_face_v1` | 2.12 | 1 | NEXT |
-| 7 | `solo_sitting_edge_forward_lean_v1` | 2.7 | 1 | NEXT |
-| 8 | `solo_walking_mid_stride_v1` | 2.9 | 1 | NEXT |
-| 9 | `solo_lean_wall_v1` | 2.6 | 1 | LATER |
-| 10 | `pair_couple_close_staggered_v1` | 3.1 | 2 | LATER (Phase 8) |
+**Target library: 20 high-quality SOLO poses**, distributed exactly as the owner specified. Every template
+must ship as normalized geometry (`pose-system.md` §3), be calibrated against real captures, and reach
+`provenance.status = VALIDATED` before it is offered to users.
 
-Templates 1–3, 5 are authored as seeds in `specs/poses/` (see that directory's README for the
-`SEED_UNVALIDATED` policy).
+| Group (owner target) | Count | Families to use (`§2`) | Template ids |
+| --- | --- | --- | --- |
+| Standing, full body | 8 | 2.1 weight shift, 2.2 relaxed A-pose, 2.3 hands in pockets, 2.4 hands on hips, 2.5 arms crossed, 2.6 leaning on a wall, 2.9 walking mid-stride *(standing variant)*, 2.10 look back over shoulder | `solo_weight_shift_standing_v1` ✅, `solo_a_pose_relaxed_v1` ✅, `solo_hands_in_pockets_v1` ✅, `solo_hands_on_hips_v1`, `solo_arms_crossed_v1`, `solo_lean_wall_v1`, `solo_walking_mid_stride_v1`, `solo_look_back_shoulder_v1` |
+| Three-quarter (body turned, waist-up framing) | 4 | 2.11 three-quarter body, 2.13 hands near hair, 2.6 lean, 2.1 weight shift *(three-quarter crop)* | `solo_three_quarter_hands_hair_v1`, `solo_three_quarter_weight_shift_v1`, `solo_three_quarter_lean_v1`, `solo_three_quarter_look_down_v1` |
+| Half-body / portrait | 4 | 2.14(a) headshot square, 2.14(b) three-quarter headshot, 2.12 hand near face (close crop), 2.15 environmental half-body | `solo_headshot_three_quarter_v1` ✅, `solo_headshot_square_v1`, `solo_portrait_hand_near_face_v1`, `solo_half_body_environmental_v1` |
+| Sitting | 2 | 2.7 seated on a chair edge, 2.8 sitting on the ground/steps | `solo_sitting_edge_forward_lean_v1`, `solo_sitting_ground_crossed_v1` |
+| Walking / leaning | 2 | 2.9 mid-stride, 2.6 lean on wall/railing | `solo_walking_toward_camera_v1`, `solo_lean_railing_relaxed_v1` |
+
+✅ = authored as a Phase 0 seed (4 templates + 1 mirrored twin in `specs/poses/`); it still has to be
+calibrated and promoted to `VALIDATED` in Phase 6 like every other template.
+
+Two-person templates are **not** part of this target: they belong to Phase 8 (`pair_couple_close_staggered_v1`
+is listed there), consistent with the single-person MVP.
+
+Handed poses (weight shift, lean, look-back) must follow the mirror contract: `mirrorAllowed: false` plus an
+explicit `_m1` twin (`pose-system.md` §4.4). `solo_weight_shift_standing_v1_m1` is the worked example.

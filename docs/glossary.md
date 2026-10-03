@@ -53,7 +53,7 @@ Vietnamese terms are **proposed** UI wording; a native-speaker copy review happe
 | Landmark | One detected body/face point with x, y, z, visibility, presence | Điểm mốc |
 | Visibility | Probability the point is in frame and not occluded | Độ nhìn thấy |
 | Presence | Probability the point is inside the frame at all | Độ hiện diện |
-| Usability | `sigmoid(visibility) × sigmoid(presence)`, our per-landmark trust value | Độ tin cậy điểm mốc |
+| Usability `U(l)` | Our per-landmark trust value: `g = min(visibility, presence)`, a hard floor at 0.5, then `U = (g − 0.5)/0.5`. Normative definition: `pose-system.md` §4.1.1. No sigmoid | Độ dùng được của điểm mốc |
 | Subject | One detected person (`trackId`, landmarks, bbox, face, shot type, stability) | Chủ thể |
 | Analysis frame | The upright, unmirrored camera frame the engines operate on | Khung phân tích |
 | Preview space | What the user sees (upright, aspect-filled, mirrored for the front camera) | Không gian hiển thị |
@@ -67,6 +67,12 @@ Vietnamese terms are **proposed** UI wording; a native-speaker copy review happe
 | One Euro filter | Adaptive low-pass filter used for landmark smoothing | Bộ lọc One Euro |
 | Abstain | A rule deliberately emits nothing because its inputs are untrustworthy | Không kết luận |
 | Calibration required | A threshold with no verified value yet; must not be user-visible | Cần hiệu chỉnh |
+| Mirror contract | `mirrorAllowed: true` = score both handednesses and keep the better; `false` = the mirrored pose is never evaluated and a `_m1` twin must be authored instead. No mirror penalty exists | Quy tắc gương |
+| `maxAsymmetry` | How handed a template is (largest `|x_left + x_right|`, torso units); > 0.30 forbids `mirrorAllowed: true` | Độ bất đối xứng |
+| `normalizationReference` | The body span a template's scale is recovered from: torso length → shoulder width → inter-ocular | Mốc chuẩn hóa tỉ lệ |
+| Explanations map | Catalog map from rule id → the "why?" message key (`guidance.why.*`) | Bản đồ giải thích |
+| `[REQ] / [TGT] / [GATE] / [DEV]` | Performance number classes: product requirement, unmeasured target, measured acceptance threshold, device-tuned constant (`performance-strategy.md` §0) | Phân loại số liệu hiệu năng |
+| Reference device | The developer's own physical device; the mandatory measurement target | Thiết bị tham chiếu |
 | Tier (`LOW`/`MEDIUM`/`HIGH`) | Device capability class driving cadence and model variant | Phân hạng thiết bị |
 | Degradation ladder | The ordered list of features to disable when the device struggles | Thang giảm tải |
 | Message ID | Stable localization key emitted by engines (`guidance.pose.…`) | Mã thông điệp |
@@ -79,7 +85,7 @@ Vietnamese terms are **proposed** UI wording; a native-speaker copy review happe
 | --- | --- |
 | `PHOTOGRAPHER_MODE` | Another person holds the phone; both camera and subject instructions are actionable |
 | `SELF_MODE` | The phone is on a tripod/stand, or the subject holds it; camera instructions must be re-expressed as subject actions (or suppressed) |
-| `HYBRID_UNKNOWN` | Mode not chosen yet; the app asks once (proposed) |
+| `HYBRID_UNKNOWN` | Mode not chosen yet; the engine behaves as `PHOTOGRAPHER_MODE` until the user changes it (owner decision: photographer mode is the MVP default) |
 
 ---
 
@@ -87,8 +93,10 @@ Vietnamese terms are **proposed** UI wording; a native-speaker copy review happe
 
 * Rule IDs: `UPPER_SNAKE` with the category prefix (`FRAME_`, `COMP_`, `POSE_`, `LIGHT_`, `READY_`, `INFO_`).
 * Instruction IDs: `UPPER_SNAKE` verb-first (`MOVE_CAMERA_LEFT`, `RAISE_LEFT_ARM`).
-* Message IDs: dotted lowercase, namespaced by domain and channel
-  (`guidance.frame.reduce_headroom`, `guidance.pose.arm_far_from_torso.left`, `ui.state.detecting`).
+* Message IDs: dotted lowercase, namespaced by domain and channel, with the **variant as the final
+  segment** (`guidance.frame.reduce_headroom`, `guidance.pose.arm_far_from_torso.left`,
+  `guidance.why.pose_feet_merging`, `ui.state.detecting`). The registry is
+  `specs/i18n/messages.json`; a key that is not registered fails validation.
 * Correction codes: `UPPER_SNAKE`, body-part-first (`LEFT_ARM_TOO_CLOSE_TO_TORSO`).
 * Vietnamese strings never appear in `core:*` modules; the only text in the engine layer is a `messageId`
   plus numeric parameters.

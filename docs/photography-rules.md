@@ -79,13 +79,18 @@ Additionally, measurement-noise reasoning is used to size tolerances:
 ## 4. Confidence model (shared by all rules)
 
 ```
-usable(l)         = sigmoid(visibility_l) * sigmoid(presence_l)          # per landmark
-quality(rule)     = f( min/mean usable over required landmarks,
+usable U(l)       = (g(l) − 0.5) / 0.5   when g(l) ≥ 0.5, else 0     # g = min(visibility, presence)
+                    (normative definition, boundary examples and coverage gating: pose-system.md §4.1.1)
+quality(rule)     = f( mean of U over the rule's required landmarks,
                        staleness of the source (< 200 ms full credit),
                        subject stability,
                        shot-type confidence, scene/lighting confidence )
 confidence(rule)  = min( quality(rule), classCap(rule.class) )
 ```
+
+Landmarks with `U = 0` are **unknown**, not failed: a rule whose required landmarks are unknown must
+abstain (report `abstained = true` with a reason) instead of firing at low confidence. There is no sigmoid
+anywhere in this chain; see `pose-system.md` §4.1.1 for why.
 
 | `class` | `classCap` | Rationale |
 | --- | --- | --- |
@@ -179,7 +184,7 @@ Rules with `confidence < 0.5` do not generate guidance. Rules with `confidence <
 | Math | `t_joint = 0.15`, `d_joint = 0.03 × frameHeight` `CALIBRATION_REQUIRED` |
 | Threshold Strategy | Flag only high-confidence cases (both conditions) to avoid annoying false positives |
 | Possible Corrections | `MOVE_CAMERA_AWAY`, `REFRAME`, `SUBJECT_MOVE_INWARD` |
-| Conflicting Rules | `FRAME_SUBJECT_TOO_SMALL`, `FRAME_FILL_FRAME_*` |
+| Conflicting Rules | `FRAME_SUBJECT_TOO_SMALL`, `FRAME_SUBJECT_TOO_LARGE` |
 | Failure Cases | Occluded landmarks producing a wrong segment geometry; crouching/sitting poses where legs are legitimately cut |
 | Confidence Strategy | `DETERMINISTIC` with visibility gating |
 | Complexity / Priority / Class | M / **MVP** (as advisory only) / DETERMINISTIC |
@@ -269,8 +274,8 @@ the pose dimension and the main driver of the dashed guide. Complexity L, priori
 ### POSE_ELBOW_LOCKED (one rule, elbows and knees)
 
 *Statement:* fully straight joints ("locked") look stiff; practitioners repeat "if it bends, bend it".
-Elbows and knees share the same measurement and the same fix, so they are **one rule** (`POSE_ELBOW_LOCKED`);
-`POSE_KNEE_LOCKED` is not a separate rule ID.
+Elbows and knees share the same measurement and the same fix, so they are **one rule**: `POSE_ELBOW_LOCKED`,
+whose entry covers knees as well. No separate knee-lock rule identifier exists.
 *Measurement:* joint angle `θ = angle(proximal→joint, joint→distal)`; locked when `θ > 170°`.
 *Classification:* **context-dependent**. Fully extended limbs are *correct* in elongation/elongation-style
 poses, in mid-stride walking, and in formal portraits. Therefore this rule is only ever active
@@ -451,8 +456,7 @@ Phase 5 is the last MVP phase (`roadmap.md`). Each rule also carries `implementa
 | --- | --- | --- |
 | **MVP** — in `specs/rules/mvp-rules.json` | `READY_SUBJECT_STABLE`, `READY_CAMERA_STABLE`, `FRAME_SUBJECT_PRESENT`, `FRAME_SUBJECT_TOO_SMALL/LARGE`, `FRAME_HEADROOM_EXCESSIVE/INSUFFICIENT`, `FRAME_EDGE_MARGIN`, `FRAME_CAMERA_TILT`, `FRAME_SUBJECT_OFF_CENTER_EXTREME`, `FRAME_JOINT_CROP`, `FRAME_BRIGHT_BLOB_BEHIND_HEAD` (cheap luma variant), `POSE_MATCH_SCORE`, `POSE_ARM_TORSO_GAP_TOO_SMALL`, `POSE_WEIGHT_SHIFT_AMBIGUOUS`, the six basic `LIGHT_*` (`LIGHT_FACE_UNDEREXPOSED`, `LIGHT_FACE_OVEREXPOSED`, `LIGHT_HIGHLIGHT_CLIPPING`, `LIGHT_SHADOW_CRUSHING`, `LIGHT_LOW_CONTRAST`, `LIGHT_BACKLIT_SUBJECT`) | 2–5 |
 | **NEXT** — in `specs/rules/mvp-rules.json` | `POSE_ELBOW_LOCKED`, `POSE_WRIST_ANGLE_EXTREME`, `POSE_LIMB_FORESHORTENED`, `POSE_FEET_MERGING`, `POSE_SHOULDERS_SQUARE`, `POSE_EXCESSIVE_SYMMETRY`, `POSE_HANDS_HIDDEN_UNINTENTIONALLY`, `COMP_EYE_LINE_PLACEMENT`, `COMP_LEAD_ROOM` | 6 |
-| **NEXT** — specified in prose (`§5`–`§8`), entry added to the rule file when its phase starts | `POSE_HIPS_LEVEL`, `POSE_STANCE_TOO_NARROW`, `POSE_HEAD_TILT`, `POSE_CHIN_TUCK`, `POSE_GAZE_DIRECTION`, `POSE_CONTRAVERSION_DETECTED`, `LIGHT_UNEVEN_FACE`, `READY_FACE_ACCEPTABLE`, `FRAME_HORIZON_THROUGH_HEAD` | 6–7 |
-| **LATER** | `FRAME_BACKGROUND_MERGER`, `FRAME_BACKGROUND_CLUTTER`, `FRAME_BACKGROUND_SEPARATION`, `FRAME_EDGE_DISTRACTION`, `COMP_HORIZON_PLACEMENT`, `COMP_*` scene-dependent rules, `LIGHT_HARD_LIGHT`, group rules | 7–8 |
+| **NEXT/LATER** — specified in prose (`§5`–`§8`), entry added to the rule file when its phase starts | `POSE_HIPS_LEVEL`, `POSE_STANCE_TOO_NARROW`, `POSE_HEAD_TILT`, `POSE_CHIN_TUCK`, `POSE_GAZE_DIRECTION`, `POSE_CONTRAVERSION_DETECTED`, `POSE_HAND_OVER_FACE`, `POSE_LIMB_MERGE`, `LIGHT_UNEVEN_FACE`, `LIGHT_FLAT_FACIAL_LIGHT`, `LIGHT_HARD_LIGHT`, `LIGHT_COLOR_CAST`, `READY_FACE_ACCEPTABLE`, `FRAME_HORIZON_THROUGH_HEAD`, `FRAME_BACKGROUND_MERGER`, `FRAME_BACKGROUND_CLUTTER`, `FRAME_BACKGROUND_SEPARATION`, `FRAME_EDGE_DISTRACTION`, `COMP_HORIZON_PLACEMENT`, `COMP_RULE_OF_THIRDS_SUBJECT_PLACEMENT`, `COMP_NEGATIVE_SPACE_BALANCE`, `COMP_VISUAL_WEIGHT`, `COMP_FOREGROUND_LAYERING`, `COMP_DEPTH`, `COMP_LEADING_LINES`, `COMP_SYMMETRY`, `COMP_FRAME_IN_FRAME` | 6–8 |
 | **EXPERIMENTAL** | `LIGHT_COLOR_CAST`, aesthetic scoring, VLM scene reasoning, LLM phrasing | 9+ |
 | **REJECT** | see §9 | — |
 

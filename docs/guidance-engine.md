@@ -32,7 +32,9 @@ data class GuidanceInstruction(
 )
 ```
 
-Semantic action IDs (internal, stable, no text):
+Semantic action IDs (internal, stable, no text). This list is the **closed set**: the enum in
+`specs/schemas/guidance-instruction.schema.json` is generated from it, and a rule may only suggest an action
+that appears here (enforced by `specs/validation/validate_specs.py`).
 
 ```
 MOVE_CAMERA_LEFT / RIGHT / UP / DOWN
@@ -40,11 +42,11 @@ MOVE_CLOSER / MOVE_FARTHER
 ZOOM_IN / ZOOM_OUT                     (advisory in MVP, no programmatic zoom)
 ROTATE_CAMERA_CW / CCW                 (device rotation in hand)
 LEVEL_CAMERA
-REFRAME                                (generic: recompose, used when the fix is not a single axis)
-INCREASE_HEADROOM / DECREASE_HEADROOM
+REFRAME                                (generic: recompose; also used for joint-crop and background fixes)
+INCREASE_HEADROOM / DECREASE_HEADROOM  (increase = more space above the head)
 ADJUST_EYE_LINE
 SUBJECT_MOVE_LEFT / RIGHT / INWARD
-SUBJECT_STEP_BACK / STEP_FORWARD
+SUBJECT_STEP_BACK / STEP_FORWARD / STAND_TALLER
 SUBJECT_TURN_LEFT / RIGHT
 SUBJECT_SHIFT_WEIGHT_LEFT / RIGHT
 SUBJECT_WIDEN_STANCE / NARROW_STANCE
@@ -53,9 +55,16 @@ MOVE_ARM_AWAY_FROM_TORSO (side param)
 HAND_ON_HIP / HAND_IN_POCKET / HAND_AWAY_FROM_FACE
 TURN_HEAD_LEFT / RIGHT / TILT_HEAD_LEFT / RIGHT / CHIN_DOWN / CHIN_UP
 LOOK_AT_CAMERA / LOOK_AWAY
-TURN_ON_LIGHT / MOVE_TO_BETTER_LIGHT / MOVE_OUT_OF_BACKLIGHT
-HOLD_STILL / WAIT
+TURN_ON_LIGHT / MOVE_TO_BETTER_LIGHT / MOVE_OUT_OF_BACKLIGHT / TURN_SUBJECT_TOWARD_LIGHT
+HOLD_STILL (subject) / HOLD_CAMERA_STEADY (photographer)
+WAIT
+COMPOSITE                              (two merged fixes rendered as one instruction)
 ```
+
+**What each action may say is also closed.** `specs/i18n/messages.json` maps every id to its actor and to the
+message keys it may be rendered as (a key with a variant, e.g. `…hand_on_hip.left`, is listed as a variant of
+the same action), and to the explanation key used by the "why?" sheet. A rule cannot invent wording, and no
+engine can emit a key that is not in the catalog.
 
 The engine emits `InstructionId` + `messageId` + `params`; `:app` maps `messageId` to
 `strings.xml`/`values-vi/strings.xml`. **No literal text anywhere in `:core:guidance`.**
@@ -70,14 +79,17 @@ The engine emits `InstructionId` + `messageId` + `params`; `:app` maps `messageI
 | `SELF_MODE` | nobody (tripod/stand) or the subject | the subject (they move the phone/prop) | the subject |
 | `HYBRID_UNKNOWN` | not yet known | — | — |
 
-Product decision (Phase 0 recommendation, needs human confirmation): on first launch ask once
-("Ai đang cầm máy ảnh?"), remember it, allow switching.
+**Owner decision (2026-10-03): `PHOTOGRAPHER_MODE` is the MVP default** — another person holds the phone.
+Tripod/self-shooting is a future secondary mode. No first-launch question is required for the MVP: the
+default is photographer mode, the switch lives in settings (and, later, may be set automatically when the
+device is detected on a tripod).
 
 Consequences for the engine:
 
 * In `PHOTOGRAPHER_MODE`, both actors are available → at most **one instruction per actor**, max two total.
-* In `SELF_MODE`, camera instructions are meaningless unless the subject physically moves the phone; the
-  engine therefore **re-expresses** camera actions as subject actions where possible:
+* `SELF_MODE` is specified but out of MVP scope (`roadmap.md` Phases 6–9). When it is implemented, camera
+  instructions are meaningless unless the subject physically moves the phone, so the engine **re-expresses**
+  camera actions as subject actions where possible:
   `MOVE_CLOSER` → `SUBJECT_STEP_FORWARD`; `MOVE_CAMERA_DOWN` → `SUBJECT_STAND_TALLER`/`SUBJECT_STEP_BACK`
   (whichever is compatible), and suppresses the rest with a `modeNotActionable` reason.
 * In `SELF_MODE` with a tripod, the app may also use **audio cues** (`LATER`) and a countdown
@@ -154,27 +166,39 @@ if) it targets a *different actor* and its score is within 20 % of the primary. 
 
 ### 5.4 Resolution compatibility (how conflicts are actually solved)
 
-Two candidates are **compatible** when a single physical action satisfies both. The engine knows a small
-curated table (this is product knowledge, not ML):
+Two candidates are **compatible** when a single physical action satisfies both.
 
-| A | B | Merged instruction |
+**The machine-readable source of truth for "which rule may ask for what" is the rule database itself:**
+every rule carries `allowedActions` (the closed set of instruction ids it may emit) and `suggestedActions`
+(the ordered candidates it prefers, whose first entry is its primary fix). Both are validated against the
+instruction id enum and the message catalog by `specs/validation/validate_specs.py`, which means the table
+below is *explanation*, not data the implementation has to parse.
+
+Curated merges (each is one physical fix, so it must be one sentence):
+
+| A | B | Resolution |
 | --- | --- | --- |
-| `MOVE_CLOSER` | `INCREASE_HEADROOM` | `STEP_BACK_AND_TILT_DOWN` → rendered as "move closer, camera slightly lower"? → **prefer** the action that solves both: `MOVE_CAMERA_DOWN` + slight step in — implemented as `COMPOSITE(move closer; lower camera)` with one message id |
-| `MOVE_CLOSER` | `DECREASE_HEADROOM` | `MOVE_CLOSER` (framing tighter also reduces headroom) |
+| `MOVE_CLOSER` | `SUBJECT_STAND_TALLER`-style vertical fix (`DECREASE_HEADROOM`) | `MOVE_CLOSER` — coming closer also reduces headroom |
+| `MOVE_CLOSER` | `INCREASE_HEADROOM` | `COMPOSITE` — "come closer and lower the camera", one message id (`guidance.frame.move_closer_lower_camera`) |
 | `MOVE_FARTHER` | `INCREASE_HEADROOM` | `MOVE_FARTHER` |
-| `MOVE_FARTHER` | `DECREASE_HEADROOM` | `MOVE_CAMERA_DOWN` (stepping back increases headroom, so prefer the vertical fix) |
-| `ADJUST_EYE_LINE` (down) | `INCREASE_HEADROOM` | same action → merge |
-| `SUBJECT_TURN_LEFT` | `TURN_HEAD_RIGHT` | they are different components; allowed together (torso vs head) only if template intent says so, otherwise the higher-scoring one wins |
-| two `POSE` candidates, same limb | — | keep the larger magnitude; drop the other (never ask two things of one limb) |
+| `MOVE_FARTHER` | `DECREASE_HEADROOM` | `MOVE_CAMERA_DOWN` (stepping back adds headroom, so prefer the vertical fix) |
+| `ADJUST_EYE_LINE` | `INCREASE_HEADROOM` / `DECREASE_HEADROOM` | same physical action → keep the headroom one, which is the more concrete statement |
+| `TURN_HEAD_LEFT` | `SUBJECT_TURN_RIGHT` | different components (head vs torso); allowed together **only** if the active template's `intentFlags` say the combination is intended, otherwise the higher-scoring one wins |
+| two `POSE` candidates on the same limb or the same joint angle | — | keep the larger magnitude, drop the other (never ask for two things from one limb) |
+| any two candidates from the same component with opposite directions | — | impossible by construction: a component's deviation has one sign; if it happens, it is a bug — log it and keep the older instruction |
 
-If no compatible mapping exists and both are `IMPORTANT`, the arbiter picks the one with the higher score
-and **suppresses the other for `cooldownMs`** — it will be offered again after that, once the first is
-resolved. Sequencing, not simultaneity, is how real photographers teach.
+**Tie-break when no merge exists:** if both candidates are `IMPORTANT`, the arbiter picks the higher score
+and suppresses the other for `cooldownMs`; the loser is re-offered once the winner resolves. Sequencing, not
+simultaneity, is how real photographers teach. Two candidates that both change the *same measurement* in
+opposite directions within `flipGuardMs` (1.5 s) are both discarded and the previous instruction is held —
+never "move left" immediately followed by "move right".
 
 ### 5.5 Explanation and trust
 
 Every instruction retains `ruleIds`, `measurement`s and `confidence`. The UI may expose a small "?" that
-shows a plain-language reason (localized). This is cheap and dramatically increases trust in a
+shows a plain-language reason (localized): the reminder resolves the instruction's `ruleIds[0]` through the
+catalog's `explanations` map (`specs/i18n/messages.json`), so the "why?" text is always a registered key and
+never a string built in an engine. This is cheap and dramatically increases trust in a
 directive app.
 
 ---

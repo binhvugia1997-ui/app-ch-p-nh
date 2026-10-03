@@ -48,9 +48,15 @@ capture, correct coordinate handling, a structured frame pipeline, and a hard pe
 
 **Exit gates**
 
-* G-P1: preview ≥ 30 FPS with analysis bound on a MEDIUM device; cold start ≤ 1.2 s.
-* 3-use-case session verified on at least LOW, MEDIUM and HIGH devices (model + Android version recorded).
-* Rotation/mirroring correctness demonstrated on the two cameras of at least two devices.
+* **G-P1a (baseline, mandatory):** preview FPS, analysis FPS, per-stage latency (p50/p95), cold start,
+  memory and thermal measured on the reference device and recorded with the method.
+* **G-P1b (target, [TGT] → [GATE] once measured):** preview ≥ 30 FPS with analysis bound, cold start
+  ≤ 1.2 s. A miss is a recorded decision, not a blocked phase (`performance-strategy.md` §0).
+* 3-use-case session verified on the reference device (model + Android version recorded); an owner who can
+  borrow other devices may extend this, but one physical device is sufficient (§9.1).
+* Rotation/mirroring correctness demonstrated on both cameras of the reference device, portrait and
+  landscape (the UX is portrait-first, but the transforms must be correct for both, per the owner decision
+  that the architecture stays landscape-capable).
 
 **NOT in this phase:** any ML model, any guidance, any overlay beyond the debug marker.
 
@@ -75,7 +81,8 @@ capture, correct coordinate handling, a structured frame pipeline, and a hard pe
 **Exit gates**
 
 * Pose ≥ 15 FPS on MEDIUM, ≥ 10 FPS on LOW; combined pose+face guidance latency p95 ≤ 250 ms.
-* Skeleton alignment verified visually on 3 devices, both cameras, portrait and landscape.
+* Skeleton alignment verified visually on the reference device (both cameras, portrait and landscape); more devices if available.
+* LOW-tier numbers are `NOT_MEASURED` unless a LOW device is available — record that honestly instead of extrapolating.
 * Full-body detection at 3–4 m: success rate recorded, and the resolution decision documented.
 * Thermal behaviour over a 5-minute run recorded.
 
@@ -90,7 +97,7 @@ partial bodies and stable anchoring.
 
 **Deliverables**
 
-1. Pose template loader/validator + 3–5 seed templates (`specs/poses/`).
+1. Pose template loader/validator + the seed templates already authored in `specs/poses/` (4 solo seeds + 1 mirrored twin).
 2. `:core:pose` guide geometry generation (anchor, scale clamp, handedness, per-component emphasis).
 3. Compose `Canvas` renderer with dashed bones, joint rings, arrows/arcs, occlusion styling.
 4. Anchoring modes (`ANCHOR_TO_SUBJECT/FACE/FRAME`) with EMA smoothing and handedness hysteresis.
@@ -101,7 +108,7 @@ partial bodies and stable anchoring.
 * G-P3: overlay 60 FPS while perception runs at 15 FPS.
 * Guide is visually correct for: front camera mirrored, arm raised on either side, headshot partial
   template, subject at 2 m and 4 m.
-* A human can identify the target pose from the guide alone (L6 test, 3 participants).
+* A human can identify the target pose from the guide alone (L6 test; ≥ 3 participants when available, minimum 1 with the limitation recorded).
 
 **NOT in this phase:** match scoring, corrections, guidance text.
 
@@ -115,7 +122,7 @@ partial bodies and stable anchoring.
 
 1. Full matcher per `pose-system.md` §4 (angles, directions, orientation, positions, coverage gating,
    Procrustes with rotation clamp, mirroring).
-2. Component scoring + bands + `POSE_UNVERIFIABLE` gate.
+2. Component scoring + bands + `PoseStatus.UNVERIFIABLE` gate.
 3. Correction generator with latch/hysteresis and the top-k policy.
 4. Score smoothing and per-component bands exposed for the guide's solid/dashed emphasis.
 5. Message IDs + Vietnamese/English strings for the correction catalogue.
@@ -150,7 +157,7 @@ manual capture (auto-capture implemented but off).
 
 * G-P4: full pipeline ≤ 35 ms per analysed frame on MEDIUM.
 * One-primary invariant holds over a 60-second scripted session (no flicker, no contradictory pair).
-* L6: 3–5 novices produce measurably better framing (size/headroom/crop) after 60 seconds of guidance.
+* L6: novices produce measurably better framing (size/headroom/crop) after 60 seconds of guidance (≥ 3 participants when available, minimum 1 with the limitation recorded).
 * Zero false-positive framing errors on a set of 30 deliberately-good photos (audited by a human).
 
 **NOT in this phase:** pose library browsing, scene, lighting beyond the six basic rules, groups.
@@ -167,8 +174,10 @@ manual capture (auto-capture implemented but off).
 thumbnail generation from geometry, user selection UI, ranking by scene tags (Phase 7) and shot type,
 favourites/history (local only).
 
-**Exit gates:** ≥ 12 validated templates; matcher calibration per template; library navigation usable
-without explanation (L6).
+**Exit gates:** the owner's target library is complete — **20 high-quality SOLO poses** — and every template
+is `VALIDATED`: 8 standing full-body, 4 three-quarter, 4 half-body/portrait, 2 sitting, 2 walking/leaning
+(`pose-taxonomy.md` §6 maps these onto the pose families, and the 4 authored seeds count towards it).
+Matcher calibration per template; library navigation usable without explanation (L6).
 
 ---
 

@@ -134,8 +134,14 @@ Legend — **SHIP**: `OK` / `TEST` (dev-only) / `REVIEW` / `REJECT`.
 4. **Places365 small-model ports** — several community ports are GPL-3.0; if we ever want places-like
    tags, prefer retraining a MobileNet on a licence-clean dataset or using SigLIP zero-shot instead.
 5. **moondream2** — determine which releases are Apache-2.0 and which are not (if we ever want a VLM).
-6. **Repository licence for our own code** — the owner must choose (Apache-2.0 and MIT are the natural
-   options given the dependencies). This is a human decision, deliberately not made by the agent.
+6. **Repository licence for our own code** — **RESOLVED by owner decision (2026-10-03): the repository is
+   public and no open-source licence is added for now.** Consequences the agents must respect:
+   * public visibility is **not** a licence — without a `LICENSE` file the default is "all rights reserved";
+   * do not add a licence automatically, and do not describe the project as open source anywhere;
+   * the third-party licence audit continues unchanged (this file), and the *absence* of a licence for our
+     own code must not be confused with the licences of the models we ship;
+   * re-opening the decision is the owner's call, at which point this file and `README.md` get updated
+     together.
 
 ---
 

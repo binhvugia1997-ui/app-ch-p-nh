@@ -38,17 +38,22 @@
           "value": 0.55,
           "unit": "ratio",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.6
+          "exitValue": 0.6,
+          "firesWhen": "below"
         },
         {
           "name": "N_absent",
           "value": 15,
           "unit": "frames@30fps",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.95,
       "suggestedActions": [
+        "WAIT"
+      ],
+      "allowedActions": [
         "WAIT"
       ],
       "conflictingRules": [],
@@ -70,7 +75,7 @@
       "detectability": "DETERMINISTIC",
       "actor": "PHOTOGRAPHER",
       "severity": "IMPORTANT",
-      "blockingAllowed": true,
+      "blockingAllowed": false,
       "applicableShotTypes": [
         "FULL_BODY",
         "THREE_QUARTER",
@@ -96,14 +101,16 @@
           "unit": "ratio_of_frame_height",
           "status": "CALIBRATION_REQUIRED",
           "source": "PRACTITIONER/CALIBRATION",
-          "exitValue": 0.79
+          "exitValue": 0.79,
+          "firesWhen": "below"
         },
         {
           "name": "extremeWarnOnly",
           "value": 0.25,
           "unit": "ratio_of_frame_height",
           "status": "CALIBRATION_REQUIRED",
-          "source": "used when no shot type is selected"
+          "source": "used when no shot type is selected",
+          "firesWhen": "below"
         }
       ],
       "confidenceCap": 0.95,
@@ -111,8 +118,15 @@
         "MOVE_CLOSER",
         "ZOOM_IN"
       ],
+      "allowedActions": [
+        "MOVE_CLOSER",
+        "ZOOM_IN"
+      ],
       "conflictingRules": [
+        "FRAME_EDGE_MARGIN",
         "FRAME_HEADROOM_EXCESSIVE",
+        "FRAME_HEADROOM_INSUFFICIENT",
+        "FRAME_JOINT_CROP",
         "FRAME_SUBJECT_TOO_LARGE"
       ],
       "failureCases": [
@@ -133,7 +147,7 @@
       "detectability": "DETERMINISTIC",
       "actor": "PHOTOGRAPHER",
       "severity": "IMPORTANT",
-      "blockingAllowed": true,
+      "blockingAllowed": false,
       "applicableShotTypes": [
         "FULL_BODY",
         "THREE_QUARTER",
@@ -154,7 +168,8 @@
           "value": 0.98,
           "unit": "ratio_of_frame_height",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.94
+          "exitValue": 0.94,
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.95,
@@ -162,9 +177,14 @@
         "MOVE_FARTHER",
         "ZOOM_OUT"
       ],
+      "allowedActions": [
+        "MOVE_FARTHER",
+        "ZOOM_OUT"
+      ],
       "conflictingRules": [
+        "FRAME_EDGE_MARGIN",
         "FRAME_JOINT_CROP",
-        "FRAME_EDGE_MARGIN"
+        "FRAME_SUBJECT_TOO_SMALL"
       ],
       "failureCases": [
         "deliberate tight crop",
@@ -209,27 +229,34 @@
           "unit": "ratio_of_frame_height",
           "status": "CALIBRATION_REQUIRED",
           "source": "PRACTITIONER; crafting convention 1/8-1/4 for head-and-shoulders",
-          "exitValue": 0.11
+          "exitValue": 0.11,
+          "firesWhen": "above"
         },
         {
           "name": "fullBodyMax",
           "value": 0.2,
           "unit": "ratio_of_frame_height",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.16
+          "exitValue": 0.16,
+          "firesWhen": "above"
         },
         {
           "name": "headTopK",
           "value": 1.45,
           "unit": "dimensionless",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.85,
       "suggestedActions": [
-        "INCREASE_HEADROOM"
+        "DECREASE_HEADROOM"
+      ],
+      "allowedActions": [
+        "DECREASE_HEADROOM"
       ],
       "conflictingRules": [
+        "COMP_EYE_LINE_PLACEMENT",
         "FRAME_SUBJECT_TOO_SMALL"
       ],
       "failureCases": [
@@ -274,23 +301,28 @@
           "value": 0.04,
           "unit": "ratio_of_frame_height",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.055
+          "exitValue": 0.055,
+          "firesWhen": "below"
         },
         {
           "name": "fullBodyMin",
           "value": 0.03,
           "unit": "ratio_of_frame_height",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.045
+          "exitValue": 0.045,
+          "firesWhen": "below"
         }
       ],
       "confidenceCap": 0.85,
       "suggestedActions": [
-        "DECREASE_HEADROOM"
+        "INCREASE_HEADROOM"
+      ],
+      "allowedActions": [
+        "INCREASE_HEADROOM"
       ],
       "conflictingRules": [
-        "FRAME_SUBJECT_TOO_SMALL",
-        "COMP_EYE_LINE_PLACEMENT"
+        "COMP_EYE_LINE_PLACEMENT",
+        "FRAME_SUBJECT_TOO_SMALL"
       ],
       "failureCases": [
         "head outside the frame (abstain, do not report)",
@@ -330,16 +362,23 @@
           "value": 0.02,
           "unit": "ratio_of_frame",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.03
+          "exitValue": 0.03,
+          "firesWhen": "below"
         }
       ],
       "confidenceCap": 0.9,
       "suggestedActions": [
-        "ZOOM_OUT",
+        "REFRAME",
         "SUBJECT_MOVE_INWARD",
-        "REFRAME"
+        "ZOOM_OUT"
+      ],
+      "allowedActions": [
+        "REFRAME",
+        "SUBJECT_MOVE_INWARD",
+        "ZOOM_OUT"
       ],
       "conflictingRules": [
+        "FRAME_SUBJECT_TOO_LARGE",
         "FRAME_SUBJECT_TOO_SMALL"
       ],
       "failureCases": [
@@ -379,22 +418,30 @@
           "name": "t_joint",
           "value": 0.15,
           "unit": "ratio_along_segment",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
         },
         {
           "name": "d_joint",
           "value": 0.03,
           "unit": "ratio_of_frame_height",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
         }
       ],
       "confidenceCap": 0.9,
       "suggestedActions": [
-        "ZOOM_OUT",
+        "REFRAME",
         "SUBJECT_MOVE_INWARD",
-        "REFRAME"
+        "ZOOM_OUT"
+      ],
+      "allowedActions": [
+        "REFRAME",
+        "SUBJECT_MOVE_INWARD",
+        "ZOOM_OUT"
       ],
       "conflictingRules": [
+        "FRAME_SUBJECT_TOO_LARGE",
         "FRAME_SUBJECT_TOO_SMALL"
       ],
       "failureCases": [
@@ -433,11 +480,16 @@
           "value": 0.55,
           "unit": "ratio_of_half_frame",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.45
+          "exitValue": 0.45,
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.9,
       "suggestedActions": [
+        "REFRAME",
+        "SUBJECT_MOVE_INWARD"
+      ],
+      "allowedActions": [
         "REFRAME",
         "SUBJECT_MOVE_INWARD"
       ],
@@ -479,11 +531,15 @@
           "value": 1.5,
           "unit": "degrees",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 1.0
+          "exitValue": 1.0,
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.95,
       "suggestedActions": [
+        "LEVEL_CAMERA"
+      ],
+      "allowedActions": [
         "LEVEL_CAMERA"
       ],
       "conflictingRules": [],
@@ -498,7 +554,7 @@
     {
       "ruleId": "FRAME_BRIGHT_BLOB_BEHIND_HEAD",
       "name": "Bright region behind the head",
-      "category": "COMPOSITION",
+      "category": "FRAMING",
       "purpose": "Cheap, deterministic proxy for a distracting bright background.",
       "class": "CONTEXT_DEPENDENT_ISSUE",
       "detectability": "DETERMINISTIC",
@@ -525,17 +581,22 @@
           "name": "blobLuma",
           "value": 0.85,
           "unit": "normalized_luma",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         },
         {
           "name": "blobAreaRatio",
           "value": 0.5,
           "unit": "ratio",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.6,
       "suggestedActions": [
+        "REFRAME"
+      ],
+      "allowedActions": [
         "REFRAME"
       ],
       "conflictingRules": [],
@@ -573,50 +634,86 @@
           "name": "bandMatched",
           "value": 0.85,
           "unit": "score",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
         },
         {
           "name": "bandClose",
           "value": 0.7,
           "unit": "score",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
         },
         {
           "name": "bandDifferent",
           "value": 0.45,
           "unit": "score",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
         },
         {
           "name": "minCoveragePerComponent",
           "value": 0.35,
           "unit": "ratio",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
         },
         {
           "name": "visibleFractionGate",
           "value": 0.5,
           "unit": "ratio",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
         },
         {
           "name": "rotationClamp",
           "value": 25,
           "unit": "degrees",
           "status": "SETTLED",
-          "source": "design decision, docs/pose-system.md §4.3"
+          "source": "design decision, docs/pose-system.md §4.3",
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.95,
       "suggestedActions": [],
+      "allowedActions": [
+        "SUBJECT_MOVE_LEFT",
+        "SUBJECT_MOVE_RIGHT",
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT",
+        "SUBJECT_SHIFT_WEIGHT_LEFT",
+        "SUBJECT_SHIFT_WEIGHT_RIGHT",
+        "SUBJECT_WIDEN_STANCE",
+        "SUBJECT_NARROW_STANCE",
+        "SUBJECT_STEP_BACK",
+        "SUBJECT_STEP_FORWARD",
+        "SUBJECT_STAND_TALLER",
+        "RAISE_LEFT_ARM",
+        "RAISE_RIGHT_ARM",
+        "LOWER_LEFT_ARM",
+        "LOWER_RIGHT_ARM",
+        "MOVE_ARM_AWAY_FROM_TORSO",
+        "HAND_ON_HIP",
+        "HAND_IN_POCKET",
+        "HAND_AWAY_FROM_FACE",
+        "TURN_HEAD_LEFT",
+        "TURN_HEAD_RIGHT",
+        "TILT_HEAD_LEFT",
+        "TILT_HEAD_RIGHT",
+        "CHIN_DOWN",
+        "CHIN_UP",
+        "LOOK_AT_CAMERA",
+        "LOOK_AWAY"
+      ],
       "conflictingRules": [],
       "failureCases": [
-        "more than 60% of the body invisible (report POSE_UNVERIFIABLE, not a low score)",
+        "more than 60% of the body invisible (report PoseStatus.UNVERIFIABLE, not a low score)",
         "template degeneracy"
       ],
       "implementationPriority": "MVP",
       "phase": 4,
-      "complexity": "L"
+      "complexity": "L",
+      "notes": "Not a fixed action: guidance for this rule is generated from the top-k PoseCorrections (docs/pose-system.md §5), whose codes map onto the actions listed in allowedActions. The empty suggestedActions is therefore intentional."
     },
     {
       "ruleId": "POSE_ARM_TORSO_GAP_TOO_SMALL",
@@ -651,7 +748,8 @@
           "value": 0.1,
           "unit": "ratio_of_torso_length",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.125
+          "exitValue": 0.125,
+          "firesWhen": "below"
         },
         {
           "name": "armTorsoAngleMin",
@@ -659,15 +757,22 @@
           "unit": "degrees",
           "status": "CALIBRATION_REQUIRED",
           "source": "floored by pose angle noise (~8-11 deg RMSE)",
-          "exitValue": 15
+          "exitValue": 15,
+          "firesWhen": "below"
         }
       ],
       "confidenceCap": 0.8,
       "suggestedActions": [
         "MOVE_ARM_AWAY_FROM_TORSO",
-        "HAND_ON_HIP",
         "RAISE_LEFT_ARM",
-        "RAISE_RIGHT_ARM"
+        "RAISE_RIGHT_ARM",
+        "HAND_ON_HIP"
+      ],
+      "allowedActions": [
+        "MOVE_ARM_AWAY_FROM_TORSO",
+        "RAISE_LEFT_ARM",
+        "RAISE_RIGHT_ARM",
+        "HAND_ON_HIP"
       ],
       "conflictingRules": [
         "templates that intend arms close to the body (formal A-pose)"
@@ -711,11 +816,16 @@
           "value": 170,
           "unit": "degrees",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 165
+          "exitValue": 165,
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.8,
       "suggestedActions": [
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "allowedActions": [
         "SUBJECT_TURN_LEFT",
         "SUBJECT_TURN_RIGHT"
       ],
@@ -760,21 +870,28 @@
           "value": 150,
           "unit": "degrees",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 155
+          "exitValue": 155,
+          "firesWhen": "below"
         },
         {
           "name": "wristMax",
           "value": 200,
           "unit": "degrees",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 195
+          "exitValue": 195,
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.7,
       "suggestedActions": [
+        "HAND_AWAY_FROM_FACE",
         "MOVE_ARM_AWAY_FROM_TORSO",
-        "HAND_ON_HIP",
-        "HAND_AWAY_FROM_FACE"
+        "HAND_ON_HIP"
+      ],
+      "allowedActions": [
+        "HAND_AWAY_FROM_FACE",
+        "MOVE_ARM_AWAY_FROM_TORSO",
+        "HAND_ON_HIP"
       ],
       "conflictingRules": [],
       "failureCases": [
@@ -816,18 +933,24 @@
           "value": 0.45,
           "unit": "ratio",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.5
+          "exitValue": 0.5,
+          "firesWhen": "below"
         },
         {
           "name": "rFoot",
           "value": 0.35,
           "unit": "ratio",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.4
+          "exitValue": 0.4,
+          "firesWhen": "below"
         }
       ],
       "confidenceCap": 0.7,
       "suggestedActions": [
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "allowedActions": [
         "SUBJECT_TURN_LEFT",
         "SUBJECT_TURN_RIGHT"
       ],
@@ -870,12 +993,17 @@
           "value": 0.25,
           "unit": "ratio_of_shoulder_width",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.3
+          "exitValue": 0.3,
+          "firesWhen": "below"
         }
       ],
       "confidenceCap": 0.8,
       "suggestedActions": [
         "SUBJECT_WIDEN_STANCE"
+      ],
+      "allowedActions": [
+        "SUBJECT_WIDEN_STANCE",
+        "SUBJECT_STEP_BACK"
       ],
       "conflictingRules": [],
       "failureCases": [
@@ -918,18 +1046,24 @@
           "value": 3,
           "unit": "degrees",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 4.5
+          "exitValue": 2.0,
+          "firesWhen": "above"
         },
         {
           "name": "facingMax",
           "value": 10,
           "unit": "degrees",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 14
+          "exitValue": 7.5,
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.8,
       "suggestedActions": [
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "allowedActions": [
         "SUBJECT_TURN_LEFT",
         "SUBJECT_TURN_RIGHT"
       ],
@@ -973,13 +1107,20 @@
           "value": 0.94,
           "unit": "score",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.92
+          "exitValue": 0.92,
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.7,
       "suggestedActions": [
         "SUBJECT_SHIFT_WEIGHT_LEFT",
         "SUBJECT_SHIFT_WEIGHT_RIGHT"
+      ],
+      "allowedActions": [
+        "SUBJECT_SHIFT_WEIGHT_LEFT",
+        "SUBJECT_SHIFT_WEIGHT_RIGHT",
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
       ],
       "conflictingRules": [
         "templates that intend symmetry (formal portraits)"
@@ -1021,19 +1162,26 @@
           "value": 0.35,
           "unit": "probability",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.45
+          "exitValue": 0.45,
+          "firesWhen": "below"
         },
         {
           "name": "frames",
           "value": 3,
           "unit": "frames",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.75,
       "suggestedActions": [
         "HAND_ON_HIP",
         "MOVE_ARM_AWAY_FROM_TORSO"
+      ],
+      "allowedActions": [
+        "HAND_ON_HIP",
+        "MOVE_ARM_AWAY_FROM_TORSO",
+        "HAND_IN_POCKET"
       ],
       "conflictingRules": [
         "hands-in-pockets templates"
@@ -1074,17 +1222,23 @@
           "name": "weightAmbiguous",
           "value": 0.1,
           "unit": "ratio_of_stance_width",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         },
         {
           "name": "contrappostoMin",
           "value": 5,
           "unit": "degrees",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.9,
       "suggestedActions": [
+        "SUBJECT_SHIFT_WEIGHT_LEFT",
+        "SUBJECT_SHIFT_WEIGHT_RIGHT"
+      ],
+      "allowedActions": [
         "SUBJECT_SHIFT_WEIGHT_LEFT",
         "SUBJECT_SHIFT_WEIGHT_RIGHT"
       ],
@@ -1128,20 +1282,27 @@
           "value": 0.333,
           "unit": "ratio_of_frame_height",
           "status": "SETTLED",
-          "source": "PRACTITIONER convention; advisory only"
+          "source": "PRACTITIONER convention; advisory only",
+          "firesWhen": "above"
         },
         {
           "name": "tolerance",
           "value": 0.08,
           "unit": "ratio_of_frame_height",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.75,
       "suggestedActions": [
         "ADJUST_EYE_LINE",
-        "DECREASE_HEADROOM",
-        "INCREASE_HEADROOM"
+        "INCREASE_HEADROOM",
+        "DECREASE_HEADROOM"
+      ],
+      "allowedActions": [
+        "ADJUST_EYE_LINE",
+        "INCREASE_HEADROOM",
+        "DECREASE_HEADROOM"
       ],
       "conflictingRules": [
         "FRAME_HEADROOM_EXCESSIVE",
@@ -1188,19 +1349,28 @@
           "name": "yawGate",
           "value": 15,
           "unit": "degrees",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         },
         {
           "name": "leadRatio",
           "value": 0.5,
           "unit": "ratio",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.6
+          "exitValue": 0.6,
+          "firesWhen": "below"
         }
       ],
       "confidenceCap": 0.75,
       "suggestedActions": [
         "REFRAME",
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "allowedActions": [
+        "REFRAME",
+        "MOVE_CAMERA_LEFT",
+        "MOVE_CAMERA_RIGHT",
         "SUBJECT_TURN_LEFT",
         "SUBJECT_TURN_RIGHT"
       ],
@@ -1224,7 +1394,7 @@
       "detectability": "DETERMINISTIC",
       "actor": "PHOTOGRAPHER",
       "severity": "IMPORTANT",
-      "blockingAllowed": true,
+      "blockingAllowed": false,
       "applicableShotTypes": [
         "ANY"
       ],
@@ -1246,21 +1416,29 @@
           "value": 0.22,
           "unit": "normalized_luma",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.26
+          "exitValue": 0.26,
+          "firesWhen": "below"
         },
         {
           "name": "faceBgDeltaMax",
           "value": 0.18,
           "unit": "normalized_luma",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.15
+          "exitValue": 0.15,
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.8,
       "suggestedActions": [
-        "MOVE_OUT_OF_BACKLIGHT",
         "MOVE_TO_BETTER_LIGHT",
         "TURN_ON_LIGHT",
+        "MOVE_OUT_OF_BACKLIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT"
+      ],
+      "allowedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "TURN_ON_LIGHT",
+        "MOVE_OUT_OF_BACKLIGHT",
         "TURN_SUBJECT_TOWARD_LIGHT"
       ],
       "conflictingRules": [],
@@ -1283,7 +1461,7 @@
       "detectability": "DETERMINISTIC",
       "actor": "PHOTOGRAPHER",
       "severity": "IMPORTANT",
-      "blockingAllowed": true,
+      "blockingAllowed": false,
       "applicableShotTypes": [
         "ANY"
       ],
@@ -1302,18 +1480,25 @@
           "value": 0.98,
           "unit": "normalized_luma",
           "status": "SETTLED",
-          "source": "coding convention (~250/255)"
+          "source": "coding convention (~250/255)",
+          "firesWhen": "above"
         },
         {
           "name": "faceClipMax",
           "value": 0.02,
           "unit": "fraction_of_pixels",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.01
+          "exitValue": 0.01,
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.85,
       "suggestedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "MOVE_OUT_OF_BACKLIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT"
+      ],
+      "allowedActions": [
         "MOVE_TO_BETTER_LIGHT",
         "MOVE_OUT_OF_BACKLIGHT",
         "TURN_SUBJECT_TOWARD_LIGHT"
@@ -1355,20 +1540,25 @@
           "unit": "fraction_of_pixels",
           "status": "CALIBRATION_REQUIRED",
           "source": "convention reported by tooling documentation, unverified",
-          "exitValue": 0.04
+          "exitValue": 0.04,
+          "firesWhen": "above"
         },
         {
           "name": "clipNudge",
           "value": 0.02,
           "unit": "fraction_of_pixels",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.015
+          "exitValue": 0.015,
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.85,
       "suggestedActions": [
-        "REFRAME",
         "MOVE_TO_BETTER_LIGHT"
+      ],
+      "allowedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT"
       ],
       "conflictingRules": [],
       "failureCases": [
@@ -1404,7 +1594,8 @@
           "name": "clipLowFloor",
           "value": 0.02,
           "unit": "normalized_luma",
-          "status": "SETTLED"
+          "status": "SETTLED",
+          "firesWhen": "above"
         },
         {
           "name": "clipLowMax",
@@ -1412,12 +1603,17 @@
           "unit": "fraction_of_pixels",
           "status": "CALIBRATION_REQUIRED",
           "source": "tooling convention, unverified",
-          "exitValue": 0.16
+          "exitValue": 0.16,
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.7,
       "suggestedActions": [
         "MOVE_TO_BETTER_LIGHT"
+      ],
+      "allowedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "TURN_ON_LIGHT"
       ],
       "conflictingRules": [],
       "failureCases": [
@@ -1455,12 +1651,17 @@
           "value": 0.25,
           "unit": "normalized_luma",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.3
+          "exitValue": 0.3,
+          "firesWhen": "below"
         }
       ],
       "confidenceCap": 0.6,
       "suggestedActions": [
         "MOVE_TO_BETTER_LIGHT"
+      ],
+      "allowedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "TURN_ON_LIGHT"
       ],
       "conflictingRules": [],
       "failureCases": [
@@ -1500,20 +1701,26 @@
           "value": 0.18,
           "unit": "normalized_luma",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.15
+          "exitValue": 0.15,
+          "firesWhen": "above"
         },
         {
           "name": "bgClipMin",
           "value": 0.01,
           "unit": "fraction_of_pixels",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.8,
       "suggestedActions": [
         "MOVE_OUT_OF_BACKLIGHT",
-        "CHANGE_CAMERA_POSITION",
         "TURN_SUBJECT_TOWARD_LIGHT"
+      ],
+      "allowedActions": [
+        "MOVE_OUT_OF_BACKLIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT",
+        "MOVE_TO_BETTER_LIGHT"
       ],
       "conflictingRules": [],
       "failureCases": [
@@ -1551,23 +1758,29 @@
           "value": 0.25,
           "unit": "torso_lengths_per_second",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.32
+          "exitValue": 0.19,
+          "firesWhen": "above"
         },
         {
           "name": "readyHoldMsMatched",
           "value": 400,
           "unit": "milliseconds",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         },
         {
           "name": "readyHoldMsClose",
           "value": 1200,
           "unit": "milliseconds",
-          "status": "CALIBRATION_REQUIRED"
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
         }
       ],
       "confidenceCap": 0.95,
       "suggestedActions": [
+        "HOLD_STILL"
+      ],
+      "allowedActions": [
         "HOLD_STILL"
       ],
       "conflictingRules": [],
@@ -1606,12 +1819,16 @@
           "value": 0.7,
           "unit": "score",
           "status": "CALIBRATION_REQUIRED",
-          "exitValue": 0.6
+          "exitValue": 0.75,
+          "firesWhen": "below"
         }
       ],
       "confidenceCap": 0.9,
       "suggestedActions": [
-        "HOLD_STILL"
+        "HOLD_CAMERA_STEADY"
+      ],
+      "allowedActions": [
+        "HOLD_CAMERA_STEADY"
       ],
       "conflictingRules": [],
       "failureCases": [

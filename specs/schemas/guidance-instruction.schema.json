@@ -2,50 +2,167 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/binhvugia1997-ui/app-ch-p-nh/specs/schemas/guidance-instruction.schema.json",
   "title": "GuidanceInstruction",
-  "description": "One instruction emitted by the guidance engine. Contains no user-visible text: the UI resolves messageId + params against the vi/en string resources.",
+  "description": "One instruction emitted by the guidance engine. Contains no user-visible text: the UI resolves messageId + params against the vi/en resources (specs/i18n/messages.json is the catalog; cross-file validation is in specs/validation/validate_specs.py). The id enum below is the complete set of semantic action ids: a rule may only suggest one of these ids (rule.allowedActions) and an instruction may only carry a message key registered for that id in the catalog.",
   "type": "object",
-  "required": ["id", "messageId", "actor", "priority", "severity", "confidence", "source", "ruleIds", "persistenceFrames", "firstSeenMs"],
+  "required": [
+    "id",
+    "messageId",
+    "actor",
+    "priority",
+    "severity",
+    "confidence",
+    "source",
+    "ruleIds",
+    "persistenceFrames",
+    "firstSeenMs"
+  ],
   "additionalProperties": false,
   "properties": {
     "id": {
       "type": "string",
       "enum": [
-        "MOVE_CAMERA_LEFT", "MOVE_CAMERA_RIGHT", "MOVE_CAMERA_UP", "MOVE_CAMERA_DOWN",
-        "MOVE_CLOSER", "MOVE_FARTHER", "ZOOM_IN", "ZOOM_OUT",
-        "ROTATE_CAMERA_CW", "ROTATE_CAMERA_CCW", "LEVEL_CAMERA", "REFRAME",
-        "INCREASE_HEADROOM", "DECREASE_HEADROOM", "ADJUST_EYE_LINE",
-        "SUBJECT_MOVE_LEFT", "SUBJECT_MOVE_RIGHT", "SUBJECT_MOVE_INWARD",
-        "SUBJECT_STEP_BACK", "SUBJECT_STEP_FORWARD", "SUBJECT_STAND_TALLER",
-        "SUBJECT_TURN_LEFT", "SUBJECT_TURN_RIGHT",
-        "SUBJECT_SHIFT_WEIGHT_LEFT", "SUBJECT_SHIFT_WEIGHT_RIGHT",
-        "SUBJECT_WIDEN_STANCE", "SUBJECT_NARROW_STANCE",
-        "RAISE_LEFT_ARM", "RAISE_RIGHT_ARM", "LOWER_LEFT_ARM", "LOWER_RIGHT_ARM",
-        "MOVE_ARM_AWAY_FROM_TORSO", "HAND_ON_HIP", "HAND_IN_POCKET", "HAND_AWAY_FROM_FACE",
-        "TURN_HEAD_LEFT", "TURN_HEAD_RIGHT", "TILT_HEAD_LEFT", "TILT_HEAD_RIGHT",
-        "CHIN_DOWN", "CHIN_UP", "LOOK_AT_CAMERA", "LOOK_AWAY",
-        "TURN_ON_LIGHT", "MOVE_TO_BETTER_LIGHT", "MOVE_OUT_OF_BACKLIGHT", "TURN_SUBJECT_TOWARD_LIGHT",
-        "HOLD_STILL", "WAIT", "COMPOSITE"
+        "MOVE_CAMERA_LEFT",
+        "MOVE_CAMERA_RIGHT",
+        "MOVE_CAMERA_UP",
+        "MOVE_CAMERA_DOWN",
+        "MOVE_CLOSER",
+        "MOVE_FARTHER",
+        "ZOOM_IN",
+        "ZOOM_OUT",
+        "ROTATE_CAMERA_CW",
+        "ROTATE_CAMERA_CCW",
+        "LEVEL_CAMERA",
+        "REFRAME",
+        "INCREASE_HEADROOM",
+        "DECREASE_HEADROOM",
+        "ADJUST_EYE_LINE",
+        "SUBJECT_MOVE_LEFT",
+        "SUBJECT_MOVE_RIGHT",
+        "SUBJECT_MOVE_INWARD",
+        "SUBJECT_STEP_BACK",
+        "SUBJECT_STEP_FORWARD",
+        "SUBJECT_STAND_TALLER",
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT",
+        "SUBJECT_SHIFT_WEIGHT_LEFT",
+        "SUBJECT_SHIFT_WEIGHT_RIGHT",
+        "SUBJECT_WIDEN_STANCE",
+        "SUBJECT_NARROW_STANCE",
+        "RAISE_LEFT_ARM",
+        "RAISE_RIGHT_ARM",
+        "LOWER_LEFT_ARM",
+        "LOWER_RIGHT_ARM",
+        "MOVE_ARM_AWAY_FROM_TORSO",
+        "HAND_ON_HIP",
+        "HAND_IN_POCKET",
+        "HAND_AWAY_FROM_FACE",
+        "TURN_HEAD_LEFT",
+        "TURN_HEAD_RIGHT",
+        "TILT_HEAD_LEFT",
+        "TILT_HEAD_RIGHT",
+        "CHIN_DOWN",
+        "CHIN_UP",
+        "LOOK_AT_CAMERA",
+        "LOOK_AWAY",
+        "TURN_ON_LIGHT",
+        "MOVE_TO_BETTER_LIGHT",
+        "MOVE_OUT_OF_BACKLIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT",
+        "HOLD_CAMERA_STEADY",
+        "HOLD_STILL",
+        "WAIT",
+        "COMPOSITE"
       ]
     },
-    "messageId": { "type": "string", "pattern": "^[a-z0-9_.]+$", "description": "Localization key present in values/strings.xml AND values-vi/strings.xml." },
+    "messageId": {
+      "type": "string",
+      "pattern": "^guidance\\.[a-z0-9_]+(\\.[a-z0-9_]+)*$",
+      "description": "Localization key. Must be one of the messageKeys registered for this instruction id in specs/i18n/messages.json, and must exist in values/strings.xml AND values-vi/strings.xml."
+    },
     "params": {
       "type": "object",
-      "additionalProperties": { "type": "number" },
+      "additionalProperties": {
+        "type": "number"
+      },
       "description": "Numeric parameters interpolated into the message (magnitude, side encoded as 1/0, etc.). No text."
     },
-    "actor": { "enum": ["PHOTOGRAPHER", "SUBJECT", "BOTH"] },
-    "direction": {
-      "type": ["string", "null"],
-      "enum": ["LEFT", "RIGHT", "UP", "DOWN", "CLOSER", "FARTHER", "CW", "CCW", "TOWARD_CAMERA", "AWAY_FROM_CAMERA", null]
+    "actor": {
+      "enum": [
+        "PHOTOGRAPHER",
+        "SUBJECT",
+        "BOTH"
+      ]
     },
-    "magnitude": { "type": "number", "minimum": 0, "maximum": 1, "description": "Normalized amount (never pixels)." },
-    "priority": { "type": "integer", "description": "Base priority by source: READINESS 100, SYSTEM 90, LIGHTING 80, framing COMPOSITION 70, POSE 60, advisory COMPOSITION 40." },
-    "severity": { "enum": ["INFO", "NUDGE", "IMPORTANT", "BLOCKING"] },
-    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-    "source": { "enum": ["COMPOSITION", "POSE", "LIGHTING", "READINESS", "SYSTEM"] },
-    "ruleIds": { "type": "array", "items": { "type": "string" } },
-    "compositeOf": { "type": "array", "items": { "type": "string" }, "description": "Instruction IDs merged by the resolution-compatibility table (docs/guidance-engine.md §5.4)." },
-    "persistenceFrames": { "type": "integer", "minimum": 0 },
-    "firstSeenMs": { "type": "integer" }
+    "direction": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "LEFT",
+        "RIGHT",
+        "UP",
+        "DOWN",
+        "CLOSER",
+        "FARTHER",
+        "CW",
+        "CCW",
+        "TOWARD_CAMERA",
+        "AWAY_FROM_CAMERA",
+        null
+      ]
+    },
+    "magnitude": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Normalized amount (never pixels)."
+    },
+    "priority": {
+      "type": "integer",
+      "description": "Base priority by source: READINESS 100, SYSTEM 90, LIGHTING 80, framing COMPOSITION 70, POSE 60, advisory COMPOSITION 40."
+    },
+    "severity": {
+      "enum": [
+        "INFO",
+        "NUDGE",
+        "IMPORTANT",
+        "BLOCKING"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "source": {
+      "enum": [
+        "COMPOSITION",
+        "POSE",
+        "LIGHTING",
+        "READINESS",
+        "SYSTEM"
+      ]
+    },
+    "ruleIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "compositeOf": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Instruction IDs merged by the resolution-compatibility table (docs/guidance-engine.md §5.4)."
+    },
+    "persistenceFrames": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "firstSeenMs": {
+      "type": "integer"
+    }
   }
 }

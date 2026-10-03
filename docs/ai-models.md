@@ -7,6 +7,11 @@ be verified are marked **`UNKNOWN`** — they are never invented.
 Licensing is summarised here for engineering decisions but the normative document is
 `model-licenses.md`.
 
+
+> **Tier policy (owner decision 2026-10-03):** MEDIUM is the primary MVP target; LOW must degrade
+> gracefully (`performance-strategy.md` §5) and HIGH may enable the additional analysis listed here
+> (scene tags, optional aesthetic model) — none of which is part of the MVP. LOW/HIGH numbers are
+> `NOT_MEASURED` until those device classes are actually available.
 ---
 
 ## 0. Selection criteria

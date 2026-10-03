@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-02** by **GitHub Agent**.
+Last updated: **2026-10-03** by **GitHub Agent** (owner review round 1 applied).
 
 ---
 
@@ -84,19 +84,31 @@ docs/research-sources.md             consolidated bibliography
 docs/glossary.md                     terminology (EN/VI)
 docs/tasks/phase-1-camerax-foundation.md   prepared task brief (DO NOT START)
 specs/README.md                      how to use the machine-readable specs
-specs/schemas/*.json                 6 JSON Schemas (rule set, rule, pose template, frame analysis,
-                                     rule result, guidance instruction)
+specs/schemas/*.json                 7 JSON Schemas (rule set, rule, pose template, frame analysis,
+                                     rule result, guidance instruction, message catalog)
+specs/i18n/messages.json             localization contract: instruction -> actor, allowed message keys,
+                                     vi/en text, one explanation per rule
+specs/validation/validate_specs.py   cross-file validator (run it before claiming a phase done)
 specs/rules/mvp-rules.json           30 rules specified to implementation depth (Phases 4-6), each with
                                      threshold status, exit values, priority and phase
-specs/poses/*.json                   4 seed pose templates (SEED_UNVALIDATED)
+specs/poses/*.json                   5 pose templates: 4 seeds + 1 explicit mirrored twin (SEED_UNVALIDATED)
 specs/fixtures/README.md             fixture format + the "no photographs of people" rule
 ```
 
-**Validation record (2026-10-02):** all 6 schemas are valid JSON Schema 2020-12; all 4 pose templates
-validate against `pose-template.schema.json`; all 30 entries of `rules/mvp-rules.json` validate against
-`rule.schema.json` (validate the `rules[]` elements — the file itself is a `rule-set.schema.json`
-document, not a single rule). The rule IDs in the file and the `docs/` tables are cross-checked; prose-only
-rules are listed as such in `photography-rules.md` §11 and are added to the file when their phase begins.
+**Validation record (2026-10-03):** `python3 specs/validation/validate_specs.py` → **0 errors**.
+It checks: JSON Schema 2020-12 validity and instance validity (7 schemas, 5 templates, 30 rules, message
+catalog); the whole guidance chain (rule → `suggestedActions` ⊆ `allowedActions` ⊆ instruction id enum →
+message key → vi/en text → one explanation per rule); rule hygiene (id prefixes vs categories, duplicate ids,
+phase ranges, severity vs `blockingAllowed`, the frozen blocking set, hysteresis direction on every
+threshold, conflict references and symmetry); pose-template contracts (BlazePose landmark ids, components,
+scale reference present, a `required` set, the mirror contract including an exact-x-mirror check between a
+handed template and its `_m1` twin); and documentation cross-references (every rule id mentioned in `docs/`
+must exist in the rule file or be listed as prose-only; every `guidance.*` key must exist in the catalog;
+every `specs/...` path mentioned must exist).
+
+Structural note: validate `rules[]` elements against `rule.schema.json`; the file itself is a
+`rule-set.schema.json` document. The count of `CALIBRATION_REQUIRED` thresholds is frozen in the validator
+(53 today) so that the number can only change deliberately.
 
 ---
 
@@ -137,7 +149,7 @@ MobileCLIP weights (terms unverified), moondream2 (licence unknown across versio
 
 ---
 
-## KNOWN RISKS (top 8)
+## KNOWN RISKS (top 9)
 
 1. **Pose quality collapses for a full-body subject at 3–4 m** (BlazePose model card lists > ~4 m as out of
    scope; the detector input is only 224×224). Mitigation: Phase 2 resolution experiment; clear UI state
@@ -151,24 +163,41 @@ MobileCLIP weights (terms unverified), moondream2 (licence unknown across versio
 6. **Licence contamination** (MobileCLIP/aesthetics/YOLO) if a future contributor ignores the gate.
 7. **Head-top estimation** (no skull landmark in BlazePose) makes headroom slightly approximate — must be
    calibrated and capped in confidence.
+8. **Scale reference for partial templates** — a headshot has no hips, so the matcher must fall back to
+   shoulder width (proportion-sensitive) or inter-ocular distance (noisy). The matcher reports which
+   reference it used (`pose-system.md` §4.3); the fallbacks are `CALIBRATION_REQUIRED` and must be measured
+   before headshot matching is called reliable.
 8. **Product ambiguity: who holds the phone** (photographer mode vs self/tripod mode) changes guidance
    semantics; needs a human decision before Phase 5.
 
 ---
 
-## OPEN QUESTIONS (need the human owner)
+## PRODUCT DECISIONS RECORDED BY THE OWNER (2026-10-03)
 
-1. **Who holds the phone?** `PHOTOGRAPHER_MODE` default, `SELF_MODE` (tripod) support in MVP, or both with
-   a first-launch question? (Affects guidance semantics; decision needed by Phase 5.)
-2. **Auto-capture**: default OFF (proposed) — acceptable? When it is enabled later, countdown + haptics OK?
-3. **Orientation**: portrait-locked for the MVP (proposed) or landscape supported from Phase 1?
-4. **Minimum device tier** to claim support for: `LOW` = 4 GB mid-range 2019+ with pose at 10–15 FPS?
-5. **Default pose library size** and which templates are acceptable as the first set.
-6. **Repository licence** for our own code (Apache-2.0 vs MIT vs proprietary) — the owner's call.
-7. **Language scope**: Vietnamese-only UI, or vi + en from the start (vi default, en fallback proposed)?
-8. **App package name / applicationId** and product display name for the manifest.
+These are settled. They are repeated in the documents that depend on them, and no agent may re-open them
+without a new explicit owner decision.
 
----
+| # | Decision | Consequences |
+| --- | --- | --- |
+| D1 | **Primary mode: another person (the photographer) holds the phone.** Tripod/self-shooting is a future secondary mode | `PHOTOGRAPHER_MODE` is the MVP default and the only mode needed for Phases 1–5. `SELF_MODE` stays specified (`guidance-engine.md` §2) but is not implemented in the MVP; the mode switch exists in `:feature:settings`. Automatic mode detection is optional; no first-launch question is required before Phase 5 |
+| D2 | **Auto-capture OFF by default** in the MVP | Readiness still computes; the shutter stays manual. Auto-capture remains implemented behind a setting (default OFF) and is verified in Phase 9 |
+| D3 | **Portrait-first MVP UX**, architecture stays landscape-capable | Portrait lock by default (flag-controlled); transforms, tests and the overlay must be correct in both orientations (`tasks/phase-1-camerax-foundation.md` §2.6a) |
+| D4 | **MEDIUM tier is the primary MVP target**; LOW must degrade gracefully; HIGH may enable additional analysis | Tier profiles stay as designed; LOW-tier *numbers* are `NOT_MEASURED` until a LOW device exists (`performance-strategy.md` §2, §9.1) |
+| D5 | **Initial pose library: 20 high-quality SOLO poses** — 8 standing full-body, 4 three-quarter, 4 half-body/portrait, 2 sitting, 2 walking/leaning | Target recorded in `pose-taxonomy.md` §6 with concrete family assignments; the 4 authored seeds count towards it; two-person templates move entirely to Phase 8 |
+| D6 | **The repository is PUBLIC and stays public**; no open-source licence is added automatically | Public visibility is **not** permission to reuse: no licence means "all rights reserved" by default. Third-party/model licence auditing continues as before (`model-licenses.md`), and the *absence* of a licence for our own code is now a recorded state rather than an open question |
+| D7 | **Vietnamese is the primary MVP language**; localization must support English later; **no Vietnamese strings in domain/analysis logic** | `specs/i18n/messages.json` holds vi + en for every message key (authored in parallel, not retrofitted); engines emit ids and keys only (ADR-009) |
+| D8 | **applicationId / package: `com.aiphotographer.app`** (proposed, adopted unless the owner says otherwise) | Codex Local must inspect any existing Android project before renaming anything; there is no Android project yet, so the first `settings.gradle.kts` uses this namespace |
+
+### Still open (owner input needed, none of it blocks Phase 1)
+
+1. **Which four seed poses should be promoted/keep first** when the 20-pose library is authored (currently
+   four are authored: weight-shift standing, relaxed A-pose, hands-in-pockets, three-quarter headshot).
+2. **Reference device**: record the model/Android version Codex Local will use, so every measurement row has
+   a named device.
+3. **LOW-tier support claim**: if no LOW device becomes available, do we ship with modelled-but-unmeasured
+   LOW behaviour, or do we raise the minimum supported tier (and say so on the store listing)?
+4. **Release scope**: closed testing / internal testing track and the Play data-safety declaration wording
+   ("camera processed on-device; nothing collected") — needs the owner's account, not the agent's.
 
 ## TASKS FOR CODEX LOCAL
 
@@ -177,8 +206,12 @@ MobileCLIP weights (terms unverified), moondream2 (licence unknown across versio
 
 When approved, the first work items are, in order:
 
-1. Create the Gradle project skeleton with the module graph (`architecture.md` §2), Java/Kotlin toolchain,
-   minSdk 24, Compose + CameraX dependencies pinned.
+0. Run `python3 specs/validation/validate_specs.py` (needs `pip install jsonschema`) and keep it green in CI;
+   add any new spec file to the validator when it is created.
+1. Create the Gradle project skeleton with **only the Phase 1 modules** (`architecture.md` §2.1: `:app`,
+   `:core:model`, `:core:geometry`, `:feature:camera`, `:perception:image`), Java/Kotlin toolchain,
+   minSdk 24, Compose + CameraX dependencies pinned, and the module-dependency test that keeps the graph
+   honest.
 2. Implement `:core:geometry` coordinate transforms **with unit tests first**.
 3. Implement CameraX preview + analysis + capture (3-use-case session) and the `FrameRouter`.
 4. Implement the luma-grid producer (`:perception:image`) and the dev/perf overlay.
@@ -203,12 +236,14 @@ When approved, the first work items are, in order:
 ## NEXT APPROVAL REQUIRED
 
 The human owner must review **Phase 0** and explicitly approve it before Phase 1 starts.
-Suggested review checklist:
+Suggested review checklist (round 1 corrections are already applied; see the review notes in this file):
 
-- [ ] Architecture and module boundaries (`docs/architecture.md`) are acceptable.
-- [ ] The MVP definition (Phases 1–5) matches the product intent.
-- [ ] Model choices and the licence gate (`docs/ai-models.md`, `docs/model-licenses.md`) are acceptable.
-- [ ] The non-rules (rule of thirds, aesthetic scoring, "ideal" camera angles) are acceptable —
-      i.e. the app will *not* nag about taste.
-- [ ] The open questions above are answered (at least #1, #2, #3, #7, #8).
-- [ ] Phase 1 is approved to start (Codex Local).
+- [x] Architecture and module boundaries (`docs/architecture.md`) — **reviewed in round 1**, module phasing
+      added (§2.1): Phase 1 creates five modules, not fifteen.
+- [x] MVP definition (Phases 1–5) matches the product intent; product decisions D1–D8 recorded above.
+- [x] Model choices and the licence gate (`docs/ai-models.md`, `docs/model-licenses.md`) are acceptable.
+- [x] Non-rules (rule of thirds, aesthetic scoring, "ideal" camera angles) — the app will not nag about taste.
+- [ ] **Round 2 review:** the mirror contract (`pose-system.md` §4.4), the usability/confidence mapping
+      (§4.1.1), the performance classes (`performance-strategy.md` §0) and the owner decisions (D1–D8).
+- [ ] **Phase 1 approval:** explicit "start Phase 1" from the owner. Until then Codex Local must not write
+      Android code.

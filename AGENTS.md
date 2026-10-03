@@ -65,6 +65,11 @@ written down in `docs/` (or raised as an issue) — not just implemented.
   photos or landmarks.
 * **Deterministic-first** — photography decisions come from measurable quantities, not vibes.
 * **No invented numbers** — every threshold is either traced to a source or tagged `CALIBRATION_REQUIRED`.
+* **No fake measurements** — an unmeasured performance number is a `[TGT]` hypothesis, never a claim; only
+  a recorded device measurement is a `[GATE]` (`performance-strategy.md` §0).
+* **Public ≠ open source** — the repository is public and has no open-source licence; that is a recorded
+  owner decision, not permission to reuse. Do not add a licence, do not treat the code as reusable, and
+  keep the third-party licence audit (`model-licenses.md`) up to date.
 
 ---
 
@@ -79,7 +84,7 @@ written down in `docs/` (or raised as an issue) — not just implemented.
 5. **Engine code is pure and testable.** Analysis engines (`core-photography`, `core-pose`,
    `core-guidance`) must not touch Android APIs, the camera, the UI, or strings.
 6. **No user-visible strings in analysis/engine code.** Emit message IDs + parameters
-   (e.g. `guidance.pose.arm_left_far_from_torso`), resolve them in the UI/resource layer.
+   (e.g. `guidance.pose.arm_far_from_torso.left`), resolve them in the UI/resource layer.
    Default locale is Vietnamese (`vi`), English (`en`) as fallback.
 7. **No secret knowledge in code comments.** Rationale goes in `docs/`.
 8. **Keep MVP and non-MVP separated.** Anything tagged `NEXT`, `LATER`, `EXPERIMENTAL` in
@@ -90,6 +95,16 @@ written down in `docs/` (or raised as an issue) — not just implemented.
     `CALIBRATION_REQUIRED` is a hypothesis until measured on a device.
 11. **Privacy gate:** a change that adds a network call, an SDK with a network component, or any
     identity/recognition feature must be explicitly approved by the human owner and documented.
+12. **Spec validation is part of the build.** Run `python3 specs/validation/validate_specs.py` after touching
+    anything under `specs/` or a rule/message reference in `docs/`. It checks the cross-file chains that JSON
+    Schema cannot (rule → action → message key → text, conflict references, template contracts, doc
+    references). Green is required before a phase is called done.
+13. **Single sources of truth.** Usability/confidence math lives in `pose-system.md` §4.1.1; instruction ids
+    in `specs/schemas/guidance-instruction.schema.json`; message keys and vi/en text in
+    `specs/i18n/messages.json`; rule ids, thresholds and priorities in `specs/rules/mvp-rules.json`.
+    Never re-derive a value in a second document — link to it.
+14. **Modules are created when needed.** A new Gradle module requires a stated boundary reason in the phase
+    brief (`architecture.md` §2.1); "we will need it later" is not a reason.
 
 ---
 

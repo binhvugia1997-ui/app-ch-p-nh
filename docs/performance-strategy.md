@@ -1,26 +1,51 @@
 # Performance Strategy — realistic mobile deployment
 
-Everything numeric in this document is a **hypothesis** until measured on a real device (Phase 10 and,
-for the pipeline itself, Phase 1–2). The document exists so that the architecture is built with a budget
-from day one, instead of discovering at the end that the app cannot run at 15 FPS on half the target market.
+## 0. Every number here has a class (read this before quoting one)
+
+Un-verified performance numbers are the easiest way to make a documented project lie. Each number in this
+document carries exactly one class, and the class decides who may use it and for what:
+
+| Class | Means | May be used as… | May fail a phase? |
+| --- | --- | --- | --- |
+| **[REQ] Product requirement** | A non-negotiable property of the product, independent of measurement (e.g. "the camera must not stutter because of AI") | A design constraint, a review criterion | Yes — this is what the phase is ultimately for |
+| **[TGT] Engineering target / hypothesis** | A number we *want* to hit, derived from reasoning or vendor data, **not yet measured by us** | A budget for design decisions; a prompt to measure | **No** — a missing target is data, not a failure (it triggers the degradation ladder or a scope decision) |
+| **[GATE] Measured acceptance threshold** | A number that has been measured on a real device by Codex Local and recorded in `docs/phase-status.md` with device, build type and method | An acceptance criterion | Yes — but only once it exists |
+| **[DEV] Device-tuned constant** | A number fitted per device tier by measurement (Phase 10) | Internal tuning | n/a |
+
+Rules:
+
+* **`[TGT]` never becomes a failure condition.** Until a number is `[GATE]`, the honest check is "was it
+  measured?", not "was it met?" — Phase 1 **cannot fail** because a target was not reached on the first
+  device; it fails only if the baseline was not measured and recorded.
+* A target becomes a gate in the phase where it is first measured, and only on the devices actually
+  measured (see §9.1 on device counts).
+* **Never claim measured performance until Codex Local records device evidence.** No document may say
+  "the app runs at N FPS" until `docs/phase-status.md` contains the device, the build type and the method.
+* Anything below this paragraph with a number and no measurement is `[TGT]` by default.
 
 ---
 
 ## 1. Targets
 
-| Metric | Target | Rationale |
-| --- | --- | --- |
-| Preview smoothness | ≥ 30 FPS preview, no dropped frames caused by analysis | the camera must never stutter because of AI |
-| Guidance update latency (frame → on-screen instruction) | ≤ 150 ms p50, ≤ 250 ms p95 | beyond ~250 ms the instruction feels disconnected from the subject's motion |
-| Pose update rate | 15 FPS target on MEDIUM, ≥ 10 FPS on LOW, 30 FPS on HIGH | "the skeleton follows me" |
-| Face update rate | 5–15 FPS adaptive (5 FPS is enough for head pose/headroom) | the face changes slowly |
-| Overlay animation | 60 FPS rendering even when perception is at 15 FPS (interpolation) | visual quality is decoupled from model cost |
-| Cold start to preview | ≤ 1.2 s on MEDIUM | a camera app must feel instant |
-| Cold start to first guidance | ≤ 2.5 s on MEDIUM | model init + first inference |
-| Steady-state memory | ≤ 250 MB RSS on LOW, ≤ 400 MB on MEDIUM | avoid low-memory kills on 4 GB devices |
-| APK size (MVP) | ≤ 40 MB total incl. models | affects install conversion and updates |
-| Battery | ≤ 12 % per 10 minutes of continuous guidance on MEDIUM | a photo session lasts minutes, not hours, but thermals follow battery drain |
-| Thermal | after 10 minutes continuous: no more than one degradation step; no "severe" thermal status | continuous vision on a phone always throttles eventually — the goal is graceful degradation |
+Class column: see §0. "MEDIUM" refers to the primary MVP tier (owner decision 2026-10-03).
+
+| Metric | Class | Target | Rationale |
+| --- | --- | --- | --- |
+| Preview smoothness | **[REQ]** / number **[TGT]** | ≥ 30 FPS preview, no dropped frames caused by analysis | the camera must never stutter because of AI |
+| Guidance update latency (frame → on-screen instruction) | **[TGT]** | ≤ 150 ms p50, ≤ 250 ms p95 | beyond ~250 ms the instruction feels disconnected from the subject's motion |
+| Pose update rate | **[TGT]** | 15 FPS on MEDIUM, ≥ 10 FPS on LOW, 30 FPS on HIGH | "the skeleton follows me" |
+| Face update rate | **[TGT]** | 5–15 FPS adaptive (5 FPS is enough for head pose/headroom) | the face changes slowly |
+| Overlay animation | **[REQ]** / number **[TGT]** | 60 FPS rendering even when perception is at 15 FPS (interpolation) | visual quality is decoupled from model cost |
+| Cold start to preview | **[TGT]** | ≤ 1.2 s on MEDIUM | a camera app must feel instant |
+| Cold start to first guidance | **[TGT]** | ≤ 2.5 s on MEDIUM | model init + first inference |
+| Steady-state memory | **[TGT]** | ≤ 250 MB RSS on LOW, ≤ 400 MB on MEDIUM | avoid low-memory kills on 4 GB devices |
+| APK size (MVP) | **[TGT]** | ≤ 40 MB total incl. models | affects install conversion and updates |
+| Battery | **[TGT]** | ≤ 12 % per 10 minutes of continuous guidance on MEDIUM | a photo session lasts minutes, not hours, but thermals follow battery drain |
+| Thermal | **[TGT]** | after 10 minutes continuous: no more than one degradation step; no "severe" thermal status | continuous vision on a phone always throttles eventually — the goal is graceful degradation |
+
+Precedence when the numbers disagree (e.g. 60 FPS overlay and 15 FPS pose cannot both be met on a weak
+device): **[REQ] beats [TGT]**. The overlay degrades in *detail*, the pipeline degrades in *cadence*
+(§5), and neither degrades the camera preview.
 
 ---
 
@@ -62,9 +87,15 @@ Rules:
 
 ---
 
-## 4. Where the time goes (budget model, MEDIUM tier)
+## 4. Where the time goes (budget model — **all [TGT] hypotheses**, MEDIUM tier)
 
-| Stage | Budget | Notes |
+These figures are order-of-magnitude placeholders chosen to make the architecture safe (async, schedulable,
+droppable). They are **not** measurements and no phase may cite them as evidence. The `~0.2 ms` for the luma
+grid in particular is a *design assumption about cheapness* (64×64 pixels at 2 Hz), used only to justify
+running lighting at all on LOW; Phase 1 must measure it as its own named stage and Phase 2 may revise it
+freely.
+
+| Stage | Budget [TGT] | Notes |
 | --- | --- | --- |
 | YUV → RGB + rotation (for MediaPipe) | 3–8 ms | the classic hidden cost; reuse buffers, rotate during conversion, avoid `YuvImage` → JPEG |
 | Pose inference (full, GPU) | 8–20 ms | model-card numbers are historical; measure |
@@ -162,11 +193,42 @@ Tools: Android Studio Profiler, Perfetto (`adb shell perfetto`), Macrobenchmark,
 
 ## 9. Acceptance gates
 
-| Gate | Where | Criterion |
-| --- | --- | --- |
-| G-P1 | Phase 1 | Preview ≥ 30 FPS with ImageAnalysis bound; cold start ≤ 1.2 s on MEDIUM |
-| G-P2 | Phase 2 | Pose ≥ 15 FPS on MEDIUM, ≥ 10 FPS on LOW; guidance latency p95 ≤ 250 ms |
-| G-P3 | Phase 3 | Overlay renders at 60 FPS with perception at 15 FPS; no visible jitter (human check) |
-| G-P4 | Phase 5 | Full pipeline (pose+face+lighting+engines) ≤ 35 ms per analysed frame on MEDIUM |
-| G-P5 | Phase 10 | 10-minute continuous session: memory stable, ≤ 1 degradation step, no ANR, battery within budget |
-| G-P6 | Phase 12 | APK ≤ 40 MB, cold start ≤ 1.2 s, all of the above re-verified on the release build |
+Two different things are checked at a phase boundary, and they must not be confused:
+
+* **Baseline gates [BASE]** — *did we measure it, honestly, on a real device, and write it down?* These can
+  fail a phase today.
+* **Target gates [GATE]** — *did the measured number meet the target?* These are only evaluated against
+  devices that were actually measured, and a miss produces a recorded decision (optimise, degrade, re-scope,
+  or accept with a note) rather than a blocked phase. A target on a device class nobody owns is simply
+  "not yet measured".
+
+### 9.1 Device policy (decided 2026-10-03)
+
+The owner has one physical device (MEDIUM class) available. Therefore:
+
+* **1 physical device is sufficient to complete a phase.** The developer's own device is the reference
+  device; every phase must record its model, Android version and build type.
+* Additional devices (LOW/HIGH classes, other Android versions) may be borrowed or bought later. Until
+  then, LOW/HIGH behaviour is *modelled and reasoned about*, never claimed: tier-specific numbers are
+  marked `NOT_MEASURED` in `phase-status.md`, and the app must still degrade gracefully by construction
+  (the ladder in §5 is designed, not yet verified).
+* Emulator numbers are invalid for anything except functional checks (§7).
+* "3 devices" style requirements elsewhere in the docs are **aspirational**; the mandatory minimum is the
+  reference device plus honest labelling of everything else.
+
+### 9.2 Gate table
+
+| Gate | Where | Class | Criterion |
+| --- | --- | --- | --- |
+| G-P1a | Phase 1 | **[BASE]** | Preview FPS, analysis FPS, per-stage latency (p50/p95), cold start, memory and thermal are measured on the reference device and recorded in `phase-status.md` with the method (Perfetto 60 s) |
+| G-P1b | Phase 1 | **[GATE]** | Measured preview ≥ 30 FPS with ImageAnalysis bound on the reference device; no preview stutter attributable to analysis |
+| G-P2a | Phase 2 | **[BASE]** | Pose/face FPS, end-to-end guidance latency and the 480p-vs-720p full-body experiment measured and recorded |
+| G-P2b | Phase 2 | **[GATE]** | Measured pose ≥ 15 FPS (MEDIUM) and guidance latency p95 ≤ 250 ms on the reference device |
+| G-P3 | Phase 3 | **[GATE]** | Overlay renders at 60 FPS with perception at 15 FPS; no visible jitter (human check) |
+| G-P4 | Phase 5 | **[GATE]** | Full pipeline ≤ 35 ms per analysed frame on the reference device |
+| G-P5 | Phase 10 | **[GATE]** | 10-minute continuous session: memory stable, ≤ 1 degradation step, no ANR, battery within budget |
+| G-P6 | Phase 12 | **[GATE]** | APK ≤ 40 MB, cold start ≤ 1.2 s, all of the above re-verified on the release build |
+| G-P7 | every phase | **[BASE]** | Any target that could not be measured on an available device is marked `NOT_MEASURED` with the reason (no device / emulator only / thermal) |
+
+**A phase that meets its [BASE] gates and misses a [GATE] is a phase with a recorded decision, not a
+failure — but a phase that skips its [BASE] gates is not done.**

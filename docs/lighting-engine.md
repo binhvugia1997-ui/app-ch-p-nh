@@ -81,13 +81,13 @@ Robustness rules:
 
 | Rule | Condition (proposal, all `CALIBRATION_REQUIRED`) | Severity | Action |
 | --- | --- | --- | --- |
-| `LIGHT_FACE_UNDEREXPOSED` | `medianLuma(F) < 0.22` **or** `faceBgDelta > 0.18` | IMPORTANT | `MOVE_OUT_OF_BACKLIGHT`, `MOVE_TO_BETTER_LIGHT`, `TURN_ON_LIGHT` |
-| `LIGHT_FACE_OVEREXPOSED` | `faceClipHigh > 0.02` | IMPORTANT | `TURN_AWAY_FROM_LIGHT`, `MOVE_TO_SHADE`, `MOVE_TO_BETTER_LIGHT` |
+| `LIGHT_FACE_UNDEREXPOSED` | `medianLuma(F) < 0.22` **or** `faceBgDelta > 0.18` | IMPORTANT | `MOVE_TO_BETTER_LIGHT`, `TURN_ON_LIGHT`, `MOVE_OUT_OF_BACKLIGHT`, `TURN_SUBJECT_TOWARD_LIGHT` |
+| `LIGHT_FACE_OVEREXPOSED` | `faceClipHigh > 0.02` | IMPORTANT | `MOVE_TO_BETTER_LIGHT`, `MOVE_OUT_OF_BACKLIGHT`, `TURN_SUBJECT_TOWARD_LIGHT` (registry: `specs/i18n/messages.json`) |
 | `LIGHT_HIGHLIGHT_CLIPPING` | `clipHigh > 0.05` (frame-wide) | IMPORTANT when `> 0.05`, NUDGE above `0.02` | `REFRAIN_FROM_BRIGHT_BACKGROUND` (framing hint) |
 | `LIGHT_SHADOW_CRUSHING` | `clipLow > 0.20` | NUDGE | informational wording; silhouettes are legitimate |
 | `LIGHT_LOW_CONTRAST` | `contrastSpread < 0.25` | NUDGE | `MOVE_TO_BETTER_LIGHT` (softly; flat light is often intentional and flattering) |
-| `LIGHT_BACKLIT_SUBJECT` | `faceBgDelta > 0.18` and `clipHigh > 0.01` in `B` | IMPORTANT | `MOVE_OUT_OF_BACKLIGHT` or `CHANGE_CAMERA_POSITION` |
-| `LIGHT_UNEVEN_FACE` | `faceUnevenness > 2.0` | INFO (dev) / NUDGE later | `TURN_SUBJECT_TOWARD_LIGHT` |
+| `LIGHT_BACKLIT_SUBJECT` | `faceBgDelta > 0.18` and `clipHigh > 0.01` in `B` | IMPORTANT | `MOVE_OUT_OF_BACKLIGHT` (rendered as "change your camera position" when the subject cannot move relative to the light), `TURN_SUBJECT_TOWARD_LIGHT`, `MOVE_TO_BETTER_LIGHT` |
+| `LIGHT_UNEVEN_FACE` | `faceUnevenness > 2.0` | INFO (dev) / NUDGE later | `TURN_SUBJECT_TOWARD_LIGHT` (prose-only rule, `photography-rules.md` §11) |
 | `LIGHT_HARD_LIGHT` | `shadowEdgeWidth` below a threshold on a detected cast shadow | NUDGE | `MOVE_TO_SHADE` |
 | `FRAME_BRIGHT_BLOB_BEHIND_HEAD` | blob area > `0.5 ×` head bbox area | NUDGE | `REFRAME` / `CHANGE_ANGLE` |
 

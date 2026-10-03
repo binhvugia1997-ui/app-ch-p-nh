@@ -30,7 +30,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["name", "value", "unit", "status"],
+        "required": ["name", "value", "unit", "status", "firesWhen"],
         "additionalProperties": false,
         "properties": {
           "name": { "type": "string" },
@@ -38,12 +38,28 @@
           "unit": { "type": "string" },
           "status": { "enum": ["SETTLED", "CALIBRATION_REQUIRED", "DEVICE_TUNED"] },
           "source": { "type": "string", "description": "Evidence class and reference, e.g. 'PRACTITIONER; research-sources.md §Headroom'." },
-          "exitValue": { "type": ["number", "null"], "description": "Hysteresis exit value (docs/guidance-engine.md §6.2)." }
+          "firesWhen": {
+            "enum": ["below", "above"],
+            "description": "Direction of the trigger: 'below' = the rule fires when the measurement is strictly less than `value`; 'above' = it fires when the measurement is strictly greater. Band rules (a comfortable range) are expressed as two thresholds, one per side."
+          },
+          "exitValue": {
+            "type": ["number", "null"],
+            "description": "Hysteresis exit value (docs/guidance-engine.md §6.2). MUST lie on the non-firing side of `value`: > value when firesWhen = below, < value when firesWhen = above. Enforced by specs/validation/validate_specs.py."
+          }
         }
       }
     },
     "confidenceCap": { "type": "number", "minimum": 0, "maximum": 1 },
-    "suggestedActions": { "type": "array", "items": { "type": "string" }, "description": "Semantic instruction IDs (docs/guidance-engine.md §1)." },
+    "suggestedActions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Candidate instruction ids this rule may propose, in stable order (the arbiter decides which one is shown). Every entry must be a valid GuidanceInstruction id AND be listed in this rule's allowedActions."
+    },
+    "allowedActions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "The subset of instruction ids this rule is allowed to emit, derived from docs/guidance-engine.md §5.4. Cross-checked against suggestedActions and the instruction id enum by specs/validation/validate_specs.py. Empty means the rule cannot drive guidance (it still produces a RuleResult)."
+    },
     "conflictingRules": { "type": "array", "items": { "type": "string" } },
     "failureCases": { "type": "array", "items": { "type": "string" } },
     "implementationPriority": { "enum": ["MVP", "NEXT", "LATER", "EXPERIMENTAL", "REJECT"] },

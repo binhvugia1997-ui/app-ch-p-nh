@@ -190,18 +190,23 @@ story/narrative strength, colour grading quality, "which of these two photos is 
 
 ## 6. Error → instruction mapping preview
 
-Errors are never displayed as diagnostics; they map to instructions (`guidance-engine.md`). Sample:
+Errors are never displayed as diagnostics: the primary banner shows an **action** and the "why?" sheet
+shows an **explanation**. Both are message keys from the catalog (`specs/i18n/messages.json`), which the
+spec validator checks against the rule database — an unregistered key fails validation.
 
-| Error | Primary instruction (message ID) |
-| --- | --- |
-| F2 | `guidance.frame.move_closer` |
-| F4 | `guidance.frame.reduce_headroom` |
-| F5 | `guidance.frame.increase_headroom` |
-| F7 | `guidance.frame.reframe_joint` |
-| F10 | `guidance.frame.level_camera` |
-| P1 | `guidance.pose.arm_far_from_torso.left` |
-| P5 | `guidance.pose.widen_stance` |
-| P10 | `guidance.pose.shift_weight.left` |
-| L1 | `guidance.light.face_too_dark` |
-| L5 | `guidance.light.move_out_of_backlight` |
-| T1 | `guidance.capture.hold_still` |
+| Error | Rule | Primary action(s) | Explanation key ("why?") |
+| --- | --- | --- | --- |
+| F2 | `FRAME_SUBJECT_TOO_SMALL` | `MOVE_CLOSER`, `ZOOM_IN` | `guidance.why.frame_subject_too_small` |
+| F4 | `FRAME_HEADROOM_EXCESSIVE` | `DECREASE_HEADROOM` | `guidance.why.frame_headroom_excessive` |
+| F5 | `FRAME_HEADROOM_INSUFFICIENT` | `INCREASE_HEADROOM` | `guidance.why.frame_headroom_insufficient` |
+| F7 | `FRAME_JOINT_CROP` | `REFRAME`, `SUBJECT_MOVE_INWARD`, `ZOOM_OUT` | `guidance.why.frame_joint_crop` |
+| F10 | `FRAME_CAMERA_TILT` | `LEVEL_CAMERA` | `guidance.why.frame_camera_tilt` |
+| P1 | `POSE_ARM_TORSO_GAP_TOO_SMALL` | `MOVE_ARM_AWAY_FROM_TORSO` (side param) | `guidance.why.pose_arm_torso_gap_too_small` |
+| P5 | `POSE_FEET_MERGING` | `SUBJECT_WIDEN_STANCE` | `guidance.why.pose_feet_merging` |
+| P10 | `POSE_WEIGHT_SHIFT_AMBIGUOUS` | `SUBJECT_SHIFT_WEIGHT_LEFT/RIGHT` | `guidance.why.pose_weight_shift_ambiguous` |
+| L1 | `LIGHT_FACE_UNDEREXPOSED` | `MOVE_TO_BETTER_LIGHT`, `TURN_ON_LIGHT`, `MOVE_OUT_OF_BACKLIGHT` | `guidance.why.light_face_underexposed` |
+| L5 | `LIGHT_BACKLIT_SUBJECT` | `MOVE_OUT_OF_BACKLIGHT` (message `guidance.light.change_camera_position`) | `guidance.why.light_backlit_subject` |
+| T1 | `READY_CAMERA_STABLE` | `HOLD_STILL` | `guidance.why.ready_camera_stable` |
+
+Every rule in `specs/rules/mvp-rules.json` has exactly one explanation key (the `explanations` map in the
+catalog), so the dev screen and the "why?" sheet can always answer the question with a registered key.

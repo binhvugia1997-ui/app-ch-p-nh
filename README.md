@@ -47,13 +47,37 @@ docs/                     Research, architecture and specifications (GitHub Agen
   glossary.md             Shared terminology (EN/VI where relevant)
   tasks/                  Prepared implementation task briefs (DO NOT START until approved)
 specs/                    Machine-readable specifications for the implementer
-  schemas/                JSON Schemas (rule set, rule, pose template, frame analysis, rule result, guidance)
+  schemas/                JSON Schemas (rule set, rule, pose template, frame analysis, rule result,
+                          guidance instruction, message catalog)
   rules/                  Rule database as data: 30 rules with threshold status, priority and phase
   poses/                  Seed pose templates as normalized landmark geometry (SEED_UNVALIDATED)
   fixtures/               Test fixture format + the "no photographs of people" rule
+  i18n/                   Localization contract: instruction -> action -> message key -> vi/en text
+  validation/             Cross-file validator (run it before claiming a phase done)
 ```
 
+## Validate the specs
+
+```bash
+pip install jsonschema        # only needed for the structural checks
+python3 specs/validation/validate_specs.py
+```
+
+It fails on any broken cross-file reference: a rule suggesting an instruction that does not exist, an
+instruction pointing at a message key with no text, a conflict pointing at an unknown rule, a template
+breaking the mirror contract, or a document mentioning a rule/key/path that is not in the specs.
+
+## Product decisions taken (2026-10-03)
+
+Photographer mode is the MVP default (tripod/self-shooting later); auto-capture is OFF by default;
+the UX is portrait-first while the architecture stays landscape-capable; MEDIUM is the primary target
+tier, LOW degrades gracefully, HIGH may enable extra analysis; the pose library target is 20 solo poses;
+Vietnamese is the primary language with English authored in parallel; the repository is public and has
+**no** open-source licence (public visibility is not permission to reuse).
+
 ---
+
+
 
 ## Who does what
 

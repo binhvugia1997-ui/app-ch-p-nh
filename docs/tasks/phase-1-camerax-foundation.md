@@ -23,13 +23,17 @@ debug HUD are in scope).
 ### 2.1 Project skeleton
 
 * Gradle (Kotlin DSL, version catalog), minSdk **24**, target/compile against the current stable SDK.
-* Modules exactly as `docs/architecture.md` §2 (empty modules with a `README`/package-info where not yet
-  implemented): `:app`, `:core:model`, `:core:geometry`, `:core:photography`, `:core:pose`,
-  `:core:guidance`, `:core:light`, `:perception:api`, `:perception:mediapipe`, `:perception:image`,
-  `:feature:camera`, `:feature:guide`, `:feature:poselib`, `:feature:settings`, `:benchmark`,
-  `:tools:pose-authoring`.
+* Modules: **only what Phase 1 needs** (`architecture.md` §2.1): `:app`, `:core:model`, `:core:geometry`,
+  `:feature:camera`, plus `:perception:image` for the Y-plane/luma producer (fold it into
+  `:feature:camera` if it does not need its own boundary yet — the module split exists so the image
+  statistics producer can be swapped, not to have a folder).
+  Do **not** create `:core:photography`, `:core:pose`, `:core:guidance`, `:core:light`,
+  `:perception:api`, `:perception:mediapipe`, `:feature:guide`, `:feature:poselib`, `:feature:settings`,
+  `:benchmark` or `:tools:pose-authoring` yet: they arrive in the phases listed in `architecture.md` §2.1.
+  Empty modules are build complexity with no test value.
 * Dependency-rule enforcement (`architecture.md` §2): `core:*` must not depend on Android SDK, `perception:*`
-  or `feature:*` (use a Gradle check or a Konsist-style test).
+  or `feature:*` — and it must be enforced by a **test** from Phase 1 onward (a JVM test that inspects the
+  Gradle module graph), so the small graph cannot quietly grow the wrong edges.
 * R8 enabled for release; debug-only dev screen.
 
 ### 2.2 Camera pipeline (`:feature:camera`)
@@ -72,6 +76,12 @@ debug HUD are in scope).
   emulator detection).
 * Camera capability report (supported resolutions, 3-use-case session support).
 
+### 2.6a UX orientation
+
+Portrait-first MVP UX (owner decision 2026-10-03): the app locks to portrait by default behind a flag, while
+the coordinate transforms and analysis must remain **landscape-correct and tested** in both orientations.
+The overlay uses the single tested `ANALYSIS → PREVIEW` transform; no orientation-specific geometry branches.
+
 ### 2.7 Dev screen
 
 * FPS (preview + analysis), per-stage latency, dropped frames, memory RSS, thermal status, delegate/GL
@@ -99,7 +109,7 @@ debug HUD are in scope).
 3. Front-camera mirroring: anatomical vs spatial side assertions (see `architecture.md` §5 rule 3).
 4. Degenerate inputs (zero-size view, zero-size frame) do not throw.
 
-**Instrumented:** the debug crosshair test from §2.4 on at least one device, both cameras.
+**Instrumented:** the debug crosshair test from §2.4 on the reference device, both cameras.
 
 **Device:** the acceptance gates below.
 
@@ -109,12 +119,15 @@ debug HUD are in scope).
 
 | Gate | Criterion | How measured |
 | --- | --- | --- |
-| Preview performance | ≥ 30 FPS preview with analysis bound, no preview stutter attributable to analysis | dev screen + Perfetto 60 s |
-| Cold start | ≤ 1.2 s from launch to first preview frame on MEDIUM | `adb shell am start -W` + timestamp log |
+| **Preview performance — baseline (mandatory)** | Preview FPS, analysis FPS, per-stage latency (p50/p95), dropped frames, memory RSS and thermal status are **measured and recorded** in `phase-status.md` with the device model, Android version, build type and method | dev screen + Perfetto 60 s |
+| Preview performance — target (not a failure condition) | ≥ 30 FPS preview with analysis bound, no preview stutter attributable to analysis | same measurement; a miss is recorded as a decision, not a blocked phase (`performance-strategy.md` §0, §9) |
+| **Cold start — baseline (mandatory)** | launch → first preview frame is measured and recorded | `adb shell am start -W` + timestamp log |
+| Cold start — target | ≤ 1.2 s on the reference device | same measurement |
+| Every unmeasured target | marked `NOT_MEASURED` with the reason (no device, emulator only, thermal) | `phase-status.md` |
 | Analysis cadence | analysis frames delivered at the configured rate, `droppedFrameRatio` reported honestly | dev screen |
 | Coordinate correctness | crosshair test passes on both cameras, both orientations | manual + screenshot |
 | Capture | a capture during analysis produces a correctly rotated, correctly exposed JPEG in the expected location | manual |
-| Capability report | reports tier, GL version, emulator flag, camera capability on 3 devices | dev screen screenshot |
+| Capability report | reports tier, GL version, emulator flag, camera capability **on the reference device** (more if available) | dev screen screenshot |
 | No crashes | 10-minute session, no crash/ANR | `adb logcat`, `dumpsys` |
 
 Record every measured number in `docs/phase-status.md` using the template in `AGENTS.md`, including device
@@ -124,7 +137,8 @@ model and Android version.
 
 ## 6. Deliverables to hand back to the GitHub Agent
 
-1. Updated `docs/phase-status.md` (status, devices, measured numbers, deviations, blockers, questions).
+1. Updated `docs/phase-status.md` (status, reference device, measured numbers, targets that could not be
+   measured marked `NOT_MEASURED`, deviations, blockers, questions).
 2. Any architecture deviation as a proposed ADR addition (do not silently deviate).
 3. The raw latency table (p50/p95 per stage) — it becomes the baseline for the Phase 2 budget.
 4. Answers to: was the 3-use-case session supported on every tested device? What fallback was needed?
@@ -141,3 +155,4 @@ model and Android version.
 | Coordinate transform "looks fine" on the developer's device only | unit tests + crosshair on both cameras/orientations, recorded as evidence |
 | Scope creep (someone adds a model "to test") | this brief; dev-screen only, no ML in Phase 1 |
 | Emulator used for performance numbers | ADR: L5 measurements are device-only; emulator numbers are marked invalid |
+| A target treated as a gate before it is measured | `performance-strategy.md` §0 classes: only measured numbers may fail a phase; `G-P1a` (baseline) is the mandatory gate |

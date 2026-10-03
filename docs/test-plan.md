@@ -93,6 +93,25 @@ hand — and it is also how reviewers can inspect a guidance decision that a tes
 
 ### 3.3 `:core:pose`
 
+**Usability mapping (`pose-system.md` §4.1.1) is a unit-test surface of its own** — the boundary behaviour,
+not just the middle:
+
+| Inputs (`visibility`, `presence`) | Expected `g` | Expected `U` | Expected band |
+| --- | --- | --- | --- |
+| `1.00`, `1.00` | 1.00 | 1.00 | USABLE |
+| `0.90`, `0.90` | 0.90 | 0.80 | USABLE |
+| `0.80`, `0.70` | 0.70 | 0.40 | MARGINAL |
+| `0.50`, `0.50` | 0.50 | 0.00 | UNUSABLE (exactly at the floor) |
+| `0.20`, `1.00` | 0.20 | 0.00 | UNUSABLE (occluded beats in-frame) |
+| `0.90`, `null` | 0.90 | 0.80 | USABLE, `singleChannel = true` |
+| `null`, `null` | — | 0.50 | MARGINAL, `unknown = true` |
+| `0.00`, `0.00` | 0.00 | 0.00 | UNUSABLE |
+| `-0.1`, `1.2` (out of range) | clamped | clamped | no exception thrown |
+
+Plus: a landmark with `U = 0` contributes to **no** term (assert the term scores are identical whether the
+landmark is absent or unusable), and a subject whose lower body is unusable keeps its upper-body score with
+the leg components reported `notEvaluated`.
+
 | Test | Criterion |
 | --- | --- |
 | exact template match | score ≥ 0.99 and band `MATCHED` |
@@ -100,10 +119,11 @@ hand — and it is also how reviewers can inspect a guidance decision that a tes
 | scaled subject (1.4× taller) | score unchanged within 0.02 (torso-normalization invariance) |
 | **body proportion change** (arms 30 % longer, legs 20 % shorter) | score drops < 0.05 (this is the key robustness test) |
 | mirrored pose, `mirrorAllowed: true` | score ≥ 0.95 with the mirrored handedness chosen |
-| mirrored pose, `mirrorAllowed: false` | score penalized as specified, handedness not flipped |
+| mirrored pose, `mirrorAllowed: false` | mirrored template is **not** evaluated: the subject in the mirrored pose scores as a different pose (no penalty factor, no partial credit) and no correction may silently swap sides |
+| mirrored twin pair (`_m1`) | the twin scores ≥ 0.95 for the mirrored subject while the base template scores it as different; the file pair validates (exact x-mirror, back-reference) |
 | global rotation +20°/+40° | 20° tolerated (score drop < 0.1); 40° penalized (clamp works, score < 0.6) |
 | invisible limb | component excluded, `notEvaluated` reported, other components unaffected, coverage reported in the result |
-| 60 % of the body invisible | hard gate → `POSE_UNVERIFIABLE`, no score |
+| 60 % of the body invisible | hard gate → `PoseStatus.UNVERIFIABLE`, no score |
 | noise ±2° on all joints | score drop < 0.05 |
 | noise ±10° on all joints | score drop documented (calibration target) |
 | degenerate template (collinear landmarks) | template validator rejects it at load time |
@@ -155,7 +175,7 @@ locally captured set). The outcome decides the default resolution per tier.
 
 ## 6. L6 human evaluation (the one that matters most)
 
-Run with 3–5 people on 2–3 real devices, scripted scenarios:
+Run with as many people as are available (≥ 3 preferred, minimum 1 with the limitation recorded), on at least the reference device. Scripted scenarios:
 
 | Scenario | What we observe | Failure signal |
 | --- | --- | --- |
@@ -172,6 +192,9 @@ false-positive count (app complained about a photo a photographer called good), 
 ---
 
 ## 7. Device matrix
+
+The reference device is the developer's own MEDIUM-class phone (`performance-strategy.md` §9.1). Rows
+below that are impossible to cover today are marked `NOT_MEASURED`, not silently skipped.
 
 | Class | Examples (or equivalent available locally) | Purpose |
 | --- | --- | --- |
@@ -191,9 +214,9 @@ Devices used must be recorded with exact model + Android build in each phase rep
 A phase is accepted only if:
 
 1. All L1/L2 tests for its modules pass, with the new fixtures committed.
-2. The instrumented tests it touches pass on at least one LOW/MEDIUM/HIGH device.
-3. Its acceptance gates (`performance-strategy.md` §9 and the phase section of `roadmap.md`) are measured
-   and recorded with device details.
+2. The instrumented tests it touches pass on the reference device (more devices when available).
+3. Its **[BASE]** gates are measured and recorded with device details, and every **[GATE]** target
+   that could not be measured is marked `NOT_MEASURED` with a reason (`performance-strategy.md` §9).
 4. No new false positive was introduced in the L6 scenarios for the features it added (or the false
    positive is documented as a known limitation and threshold-tagged `CALIBRATION_REQUIRED`).
 
@@ -213,7 +236,7 @@ A phase is accepted only if:
 ## 10. What must never be claimed without evidence
 
 * "Works on all Android phones" — we claim a tested device list and a tier policy.
-* "Real-time" — we claim measured FPS per tier.
+* "Real-time" — we claim measured FPS, on the devices actually measured, with the method; on other tiers we write `NOT_MEASURED`.
 * "Accurate pose detection" — we claim a measured match-score agreement with human judgement on our fixture
   set, plus the model card's published accuracy for the model itself.
 * "Detects posing mistakes" — we claim specific, enumerated, calibrated rules with known false-positive
