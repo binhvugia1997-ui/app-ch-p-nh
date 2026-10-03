@@ -1,0 +1,294 @@
+{
+  "id": "solo_weight_shift_standing_v1",
+  "name": {
+    "vi": "Đứng chuyển trọng tâm (đường cong S)",
+    "en": "Weight-shift standing (S-curve)"
+  },
+  "peopleCount": 1,
+  "shotTypes": [
+    "FULL_BODY",
+    "THREE_QUARTER"
+  ],
+  "contextTags": [
+    "outdoor",
+    "urban_street",
+    "park_greenery",
+    "wall_close"
+  ],
+  "difficulty": "EASY",
+  "mirrorAllowed": false,
+  "maxAsymmetry": 0.28,
+  "normalizationReference": {
+    "preferred": "TORSO_LENGTH",
+    "spanInTorsoUnits": 1.0
+  },
+  "orientationExpectation": {
+    "torsoYawDeg": 30,
+    "toleranceDeg": 20
+  },
+  "frame": {
+    "cameraHeight": "WAIST",
+    "cameraDistanceHint": "3-4 m for full body",
+    "headroomBand": [
+      0.05,
+      0.18
+    ],
+    "subjectHeightFraction": [
+      0.72,
+      0.95
+    ]
+  },
+  "landmarks": [
+    {
+      "id": "nose",
+      "x": 0.02,
+      "y": -1.44,
+      "weight": 1.0,
+      "required": true,
+      "component": "HEAD"
+    },
+    {
+      "id": "left_eye",
+      "x": 0.11,
+      "y": -1.42,
+      "weight": 0.6,
+      "component": "HEAD"
+    },
+    {
+      "id": "right_eye",
+      "x": -0.09,
+      "y": -1.44,
+      "weight": 0.6,
+      "component": "HEAD"
+    },
+    {
+      "id": "left_ear",
+      "x": 0.21,
+      "y": -1.44,
+      "weight": 0.5,
+      "component": "HEAD"
+    },
+    {
+      "id": "right_ear",
+      "x": -0.2,
+      "y": -1.47,
+      "weight": 0.5,
+      "component": "HEAD"
+    },
+    {
+      "id": "left_shoulder",
+      "x": 0.3,
+      "y": -1.02,
+      "weight": 1.0,
+      "required": true,
+      "component": "TORSO"
+    },
+    {
+      "id": "right_shoulder",
+      "x": -0.38,
+      "y": -0.96,
+      "weight": 1.0,
+      "required": true,
+      "component": "TORSO"
+    },
+    {
+      "id": "left_elbow",
+      "x": 0.42,
+      "y": -0.42,
+      "weight": 0.9,
+      "component": "LEFT_ARM"
+    },
+    {
+      "id": "left_wrist",
+      "x": 0.4,
+      "y": 0.1,
+      "weight": 0.8,
+      "component": "LEFT_ARM"
+    },
+    {
+      "id": "right_elbow",
+      "x": -0.46,
+      "y": -0.44,
+      "weight": 0.9,
+      "component": "RIGHT_ARM"
+    },
+    {
+      "id": "right_wrist",
+      "x": -0.36,
+      "y": -0.06,
+      "weight": 0.8,
+      "component": "RIGHT_ARM"
+    },
+    {
+      "id": "left_hip",
+      "x": 0.26,
+      "y": 0.04,
+      "weight": 1.0,
+      "required": true,
+      "component": "TORSO"
+    },
+    {
+      "id": "right_hip",
+      "x": -0.3,
+      "y": -0.04,
+      "weight": 1.0,
+      "required": true,
+      "component": "TORSO"
+    },
+    {
+      "id": "left_knee",
+      "x": 0.34,
+      "y": 0.86,
+      "weight": 0.9,
+      "component": "LEFT_LEG"
+    },
+    {
+      "id": "right_knee",
+      "x": -0.28,
+      "y": 0.9,
+      "weight": 0.9,
+      "component": "RIGHT_LEG"
+    },
+    {
+      "id": "left_ankle",
+      "x": 0.44,
+      "y": 1.68,
+      "weight": 0.8,
+      "component": "LEFT_LEG"
+    },
+    {
+      "id": "right_ankle",
+      "x": -0.26,
+      "y": 1.76,
+      "weight": 0.8,
+      "component": "RIGHT_LEG"
+    },
+    {
+      "id": "left_heel",
+      "x": 0.42,
+      "y": 1.76,
+      "weight": 0.4,
+      "component": "LEFT_LEG"
+    },
+    {
+      "id": "right_heel",
+      "x": -0.26,
+      "y": 1.83,
+      "weight": 0.4,
+      "component": "RIGHT_LEG"
+    },
+    {
+      "id": "left_foot_index",
+      "x": 0.5,
+      "y": 1.78,
+      "weight": 0.5,
+      "component": "LEFT_LEG"
+    },
+    {
+      "id": "right_foot_index",
+      "x": -0.22,
+      "y": 1.9,
+      "weight": 0.5,
+      "component": "RIGHT_LEG"
+    }
+  ],
+  "jointAngles": [
+    {
+      "joint": "left_elbow",
+      "value": 150,
+      "tolerance": 25,
+      "weight": 0.8
+    },
+    {
+      "joint": "right_elbow",
+      "value": 130,
+      "tolerance": 30,
+      "weight": 0.6
+    },
+    {
+      "joint": "left_knee",
+      "value": 165,
+      "tolerance": 20,
+      "weight": 0.6
+    },
+    {
+      "joint": "right_knee",
+      "value": 175,
+      "tolerance": 15,
+      "weight": 0.5
+    }
+  ],
+  "relativeVectors": [
+    {
+      "from": "left_shoulder",
+      "to": "left_elbow",
+      "dir": [
+        0.29,
+        0.96
+      ],
+      "weight": 0.8
+    },
+    {
+      "from": "right_shoulder",
+      "to": "right_elbow",
+      "dir": [
+        -0.2,
+        0.98
+      ],
+      "weight": 0.8
+    },
+    {
+      "from": "left_hip",
+      "to": "left_knee",
+      "dir": [
+        0.11,
+        0.99
+      ],
+      "weight": 0.7
+    },
+    {
+      "from": "right_hip",
+      "to": "right_knee",
+      "dir": [
+        0.02,
+        1.0
+      ],
+      "weight": 0.7
+    }
+  ],
+  "componentWeights": {
+    "HEAD": 0.12,
+    "TORSO": 0.28,
+    "LEFT_ARM": 0.2,
+    "RIGHT_ARM": 0.18,
+    "LEFT_LEG": 0.11,
+    "RIGHT_LEG": 0.11
+  },
+  "bodyOrientation": {
+    "shoulderAngleDeg": -5,
+    "hipAngleDeg": 8,
+    "facingDeg": 30
+  },
+  "cameraRecommendations": [
+    "WAIST_HEIGHT",
+    "SLIGHTLY_ABOVE_WAIST",
+    "PARALLEL_TO_SUBJECT_FACING"
+  ],
+  "compositionRecommendations": [
+    "FULL_BODY_GROUND_LINE",
+    "EYES_UPPER_THIRD",
+    "LEAD_ROOM"
+  ],
+  "intentFlags": {
+    "suppressSymmetryWarning": true,
+    "suppressLockedJointWarning": true
+  },
+  "provenance": {
+    "source": "craft consensus: weight shift + S-curve (docs/pose-taxonomy.md 2.1); research-sources.md §Posing",
+    "status": "SEED_UNVALIDATED",
+    "calibration": "Handed pose: weight is on the subject's left leg. The mirrored twin solo_weight_shift_standing_v1_m1 puts it on the right leg; the guide and the corrections must therefore never silently swap sides. coordinates are engineering seeds; verify against real captures in Phase 6 and adjust tolerances from matcher results",
+    "author": "GitHub Agent",
+    "date": "2026-10-02"
+  },
+  "mirroredVariantId": "solo_weight_shift_standing_v1_m1"
+}

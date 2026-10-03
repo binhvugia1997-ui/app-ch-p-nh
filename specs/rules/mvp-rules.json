@@ -1,0 +1,1843 @@
+{
+  "$schema": "../schemas/rule-set.schema.json",
+  "version": "0.1.0",
+  "status": "PHASE_0_DRAFT",
+  "notes": [
+    "Normative for rule IDs, classes, severities, implementation phases and threshold status. Prose meaning lives in docs/photography-rules.md.",
+    "Scope: the rules specified to implementation depth (Phases 4-6). Rules described only in prose in docs/photography-rules.md are added here when their phase begins.",
+    "Every threshold with status CALIBRATION_REQUIRED must not drive a user-visible hard error until calibrated on local captures (enforced by a unit test).",
+    "Threshold values here are proposals. They are not evidence."
+  ],
+  "rules": [
+    {
+      "ruleId": "FRAME_SUBJECT_PRESENT",
+      "name": "Subject present and usable",
+      "category": "FRAMING",
+      "purpose": "Gate for every other framing/pose rule; drives the no-subject UI state.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "BLOCKING",
+      "blockingAllowed": true,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "subjects[].visibleFraction",
+        "subjects[].bbox"
+      ],
+      "detectionMethod": [
+        "Pick the most prominent subject: prominence = visibleFraction * sqrt(bboxArea).",
+        "If visibleFraction < V_min, report SUBJECT_PARTIAL.",
+        "If no subject for N_absent consecutive frames, report NO_SUBJECT."
+      ],
+      "math": "prominence = visibleFraction * sqrt(bboxArea)",
+      "thresholds": [
+        {
+          "name": "V_min",
+          "value": 0.55,
+          "unit": "ratio",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.6,
+          "firesWhen": "below"
+        },
+        {
+          "name": "N_absent",
+          "value": 15,
+          "unit": "frames@30fps",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.95,
+      "suggestedActions": [
+        "WAIT"
+      ],
+      "allowedActions": [
+        "WAIT"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "partially occluded subject",
+        "subject beyond ~4 m (model-card limit)",
+        "severe motion blur"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "FRAME_SUBJECT_TOO_SMALL",
+      "name": "Subject too small for the intended shot type",
+      "category": "FRAMING",
+      "purpose": "A small subject cannot be judged and the pose is unreadable.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "IMPORTANT",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "FULL_BODY",
+        "THREE_QUARTER",
+        "HALF_BODY",
+        "CLOSE_PORTRAIT",
+        "HEADSHOT"
+      ],
+      "requiredInputs": [
+        "subjects[].bbox",
+        "subjects[].face.bbox",
+        "intendedShotType"
+      ],
+      "detectionMethod": [
+        "Compute h_body = bbox.height and h_face = faceBBox.height in normalized frame units.",
+        "Compare with the band for the intended shot type.",
+        "Enter when below the band minimum; exit 10% inside the band."
+      ],
+      "math": "bands (proposal, CALIBRATION_REQUIRED): FULL_BODY 0.75-0.98; THREE_QUARTER 0.55-0.85; HALF_BODY 0.35-0.60; CLOSE_PORTRAIT face 0.18-0.35; HEADSHOT face 0.28-0.45",
+      "thresholds": [
+        {
+          "name": "fullBodyMin",
+          "value": 0.75,
+          "unit": "ratio_of_frame_height",
+          "status": "CALIBRATION_REQUIRED",
+          "source": "PRACTITIONER/CALIBRATION",
+          "exitValue": 0.79,
+          "firesWhen": "below"
+        },
+        {
+          "name": "extremeWarnOnly",
+          "value": 0.25,
+          "unit": "ratio_of_frame_height",
+          "status": "CALIBRATION_REQUIRED",
+          "source": "used when no shot type is selected",
+          "firesWhen": "below"
+        }
+      ],
+      "confidenceCap": 0.95,
+      "suggestedActions": [
+        "MOVE_CLOSER",
+        "ZOOM_IN"
+      ],
+      "allowedActions": [
+        "MOVE_CLOSER",
+        "ZOOM_IN"
+      ],
+      "conflictingRules": [
+        "FRAME_EDGE_MARGIN",
+        "FRAME_HEADROOM_EXCESSIVE",
+        "FRAME_HEADROOM_INSUFFICIENT",
+        "FRAME_JOINT_CROP",
+        "FRAME_SUBJECT_TOO_LARGE"
+      ],
+      "failureCases": [
+        "bbox clipped by the frame edge",
+        "loose clothing",
+        "overlapping people"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "FRAME_SUBJECT_TOO_LARGE",
+      "name": "Subject too large / cropped by the frame",
+      "category": "FRAMING",
+      "purpose": "A subject that overflows the frame reads as an accident unless deliberately tight.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "IMPORTANT",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "FULL_BODY",
+        "THREE_QUARTER",
+        "HALF_BODY"
+      ],
+      "requiredInputs": [
+        "subjects[].bbox",
+        "intendedShotType"
+      ],
+      "detectionMethod": [
+        "h_body compared against the band maximum.",
+        "Enter above the band maximum; exit 10% inside."
+      ],
+      "math": "see FRAME_SUBJECT_TOO_SMALL bands",
+      "thresholds": [
+        {
+          "name": "fullBodyMax",
+          "value": 0.98,
+          "unit": "ratio_of_frame_height",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.94,
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.95,
+      "suggestedActions": [
+        "MOVE_FARTHER",
+        "ZOOM_OUT"
+      ],
+      "allowedActions": [
+        "MOVE_FARTHER",
+        "ZOOM_OUT"
+      ],
+      "conflictingRules": [
+        "FRAME_EDGE_MARGIN",
+        "FRAME_JOINT_CROP",
+        "FRAME_SUBJECT_TOO_SMALL"
+      ],
+      "failureCases": [
+        "deliberate tight crop",
+        "subject walking toward the camera"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "FRAME_HEADROOM_EXCESSIVE",
+      "name": "Excessive headroom",
+      "category": "FRAMING",
+      "purpose": "Most consistently cited portrait framing error; trivially measurable.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "HYBRID",
+      "actor": "PHOTOGRAPHER",
+      "severity": "IMPORTANT",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "HEADSHOT",
+        "CLOSE_PORTRAIT",
+        "HALF_BODY",
+        "THREE_QUARTER",
+        "FULL_BODY"
+      ],
+      "requiredInputs": [
+        "subjects[].landmarks(eyes,ears,nose)",
+        "frame.height",
+        "intendedShotType"
+      ],
+      "detectionMethod": [
+        "Estimate headTopY: fit a circle through both eyes and both ears; headTopY = centreY - k * radius.",
+        "headroomRatio = headTopY (normalized distance from the frame top).",
+        "Compare with the band for the intended shot type; require eyes/ears visibility >= 0.5."
+      ],
+      "math": "headTopY = circleCentreY - k * circleRadius, k ~ 1.45 (CALIBRATION_REQUIRED); headroomRatio = headTopY / frameHeight",
+      "thresholds": [
+        {
+          "name": "headshotMax",
+          "value": 0.14,
+          "unit": "ratio_of_frame_height",
+          "status": "CALIBRATION_REQUIRED",
+          "source": "PRACTITIONER; crafting convention 1/8-1/4 for head-and-shoulders",
+          "exitValue": 0.11,
+          "firesWhen": "above"
+        },
+        {
+          "name": "fullBodyMax",
+          "value": 0.2,
+          "unit": "ratio_of_frame_height",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.16,
+          "firesWhen": "above"
+        },
+        {
+          "name": "headTopK",
+          "value": 1.45,
+          "unit": "dimensionless",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.85,
+      "suggestedActions": [
+        "DECREASE_HEADROOM"
+      ],
+      "allowedActions": [
+        "DECREASE_HEADROOM"
+      ],
+      "conflictingRules": [
+        "COMP_EYE_LINE_PLACEMENT",
+        "FRAME_SUBJECT_TOO_SMALL"
+      ],
+      "failureCases": [
+        "head partially out of frame (abstain)",
+        "hats/hair volume",
+        "camera roll > 10 deg",
+        "head not upright"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "FRAME_HEADROOM_INSUFFICIENT",
+      "name": "Insufficient headroom / head near the top edge",
+      "category": "FRAMING",
+      "purpose": "A head jammed against (or cut by) the top edge looks cramped.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "HYBRID",
+      "actor": "PHOTOGRAPHER",
+      "severity": "IMPORTANT",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "HEADSHOT",
+        "CLOSE_PORTRAIT",
+        "HALF_BODY",
+        "THREE_QUARTER",
+        "FULL_BODY"
+      ],
+      "requiredInputs": [
+        "subjects[].landmarks",
+        "frame.height"
+      ],
+      "detectionMethod": [
+        "Same headTopY estimate as FRAME_HEADROOM_EXCESSIVE.",
+        "Enter below the band minimum; exit 10% inside."
+      ],
+      "math": "headroomRatio < bandMin",
+      "thresholds": [
+        {
+          "name": "headshotMin",
+          "value": 0.04,
+          "unit": "ratio_of_frame_height",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.055,
+          "firesWhen": "below"
+        },
+        {
+          "name": "fullBodyMin",
+          "value": 0.03,
+          "unit": "ratio_of_frame_height",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.045,
+          "firesWhen": "below"
+        }
+      ],
+      "confidenceCap": 0.85,
+      "suggestedActions": [
+        "INCREASE_HEADROOM"
+      ],
+      "allowedActions": [
+        "INCREASE_HEADROOM"
+      ],
+      "conflictingRules": [
+        "COMP_EYE_LINE_PLACEMENT",
+        "FRAME_SUBJECT_TOO_SMALL"
+      ],
+      "failureCases": [
+        "head outside the frame (abstain, do not report)",
+        "severe roll"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "FRAME_EDGE_MARGIN",
+      "name": "Subject touching or crossing the frame edge",
+      "category": "FRAMING",
+      "purpose": "Subjects pinned to the edge read as accidental.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "FULL_BODY",
+        "THREE_QUARTER",
+        "HALF_BODY"
+      ],
+      "requiredInputs": [
+        "subjects[].bbox",
+        "frame"
+      ],
+      "detectionMethod": [
+        "Compute the four margins from the bbox to the frame edges.",
+        "Flag when min(margin) < m_min, suppressing tight-crop shot types."
+      ],
+      "math": "m_left = bbox.left, etc.; flag if min(margins) < m_min",
+      "thresholds": [
+        {
+          "name": "m_min",
+          "value": 0.02,
+          "unit": "ratio_of_frame",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.03,
+          "firesWhen": "below"
+        }
+      ],
+      "confidenceCap": 0.9,
+      "suggestedActions": [
+        "REFRAME",
+        "SUBJECT_MOVE_INWARD",
+        "ZOOM_OUT"
+      ],
+      "allowedActions": [
+        "REFRAME",
+        "SUBJECT_MOVE_INWARD",
+        "ZOOM_OUT"
+      ],
+      "conflictingRules": [
+        "FRAME_SUBJECT_TOO_LARGE",
+        "FRAME_SUBJECT_TOO_SMALL"
+      ],
+      "failureCases": [
+        "deliberate tight crops",
+        "subject entering/leaving the frame while walking"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "FRAME_JOINT_CROP",
+      "name": "Crop cutting through a joint",
+      "category": "FRAMING",
+      "purpose": "Cropping at a joint reads as unintentional; a mid-limb crop reads as a choice.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "FULL_BODY",
+        "THREE_QUARTER",
+        "HALF_BODY"
+      ],
+      "requiredInputs": [
+        "subjects[].landmarks + visibility",
+        "frame"
+      ],
+      "detectionMethod": [
+        "For each skeleton segment intersecting a frame edge, compute the intersection parameter t along the segment.",
+        "Flag when t < t_joint or t > 1 - t_joint AND the nearest joint is closer to the edge than d_joint."
+      ],
+      "math": "t_joint = 0.15; d_joint = 0.03 * frameHeight",
+      "thresholds": [
+        {
+          "name": "t_joint",
+          "value": 0.15,
+          "unit": "ratio_along_segment",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
+        },
+        {
+          "name": "d_joint",
+          "value": 0.03,
+          "unit": "ratio_of_frame_height",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
+        }
+      ],
+      "confidenceCap": 0.9,
+      "suggestedActions": [
+        "REFRAME",
+        "SUBJECT_MOVE_INWARD",
+        "ZOOM_OUT"
+      ],
+      "allowedActions": [
+        "REFRAME",
+        "SUBJECT_MOVE_INWARD",
+        "ZOOM_OUT"
+      ],
+      "conflictingRules": [
+        "FRAME_SUBJECT_TOO_LARGE",
+        "FRAME_SUBJECT_TOO_SMALL"
+      ],
+      "failureCases": [
+        "occluded landmarks distorting the segment",
+        "sitting/crouching poses where legs are legitimately cropped"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "FRAME_SUBJECT_OFF_CENTER_EXTREME",
+      "name": "Subject squeezed into a corner / extreme imbalance",
+      "category": "FRAMING",
+      "purpose": "Detect only extreme imbalance; centering itself is not an error.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "subjects[].bbox",
+        "subjects[].face.headPose.yawDegrees"
+      ],
+      "detectionMethod": [
+        "offset = |bboxCentre - frameCentre| normalized by half the frame.",
+        "Flag only if offset > threshold and the subject is not deliberately looking into negative space."
+      ],
+      "math": "offset = 2 * |bboxCentre - frameCentre| / frameSize",
+      "thresholds": [
+        {
+          "name": "extremeOffset",
+          "value": 0.55,
+          "unit": "ratio_of_half_frame",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.45,
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.9,
+      "suggestedActions": [
+        "REFRAME",
+        "SUBJECT_MOVE_INWARD"
+      ],
+      "allowedActions": [
+        "REFRAME",
+        "SUBJECT_MOVE_INWARD"
+      ],
+      "conflictingRules": [
+        "COMP_LEAD_ROOM"
+      ],
+      "failureCases": [
+        "intentional negative space",
+        "subject moving through the frame"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "FRAME_CAMERA_TILT",
+      "name": "Unintended camera roll",
+      "category": "FRAMING",
+      "purpose": "Horizon tilt is objectively measurable from the IMU and is a common 'looks wrong' cause.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "device.rollDegrees"
+      ],
+      "detectionMethod": [
+        "Compute roll from the gravity vector, compensate for display rotation.",
+        "EMA-smooth; enter above threshold, exit below a smaller one."
+      ],
+      "math": "rollDeg = atan2(gx, gy) adjusted for display rotation",
+      "thresholds": [
+        {
+          "name": "enter",
+          "value": 1.5,
+          "unit": "degrees",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 1.0,
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.95,
+      "suggestedActions": [
+        "LEVEL_CAMERA"
+      ],
+      "allowedActions": [
+        "LEVEL_CAMERA"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "intentional Dutch tilt",
+        "IMU unavailable (abstain)"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "FRAME_BRIGHT_BLOB_BEHIND_HEAD",
+      "name": "Bright region behind the head",
+      "category": "FRAMING",
+      "purpose": "Cheap, deterministic proxy for a distracting bright background.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "HEADSHOT",
+        "CLOSE_PORTRAIT",
+        "HALF_BODY",
+        "THREE_QUARTER"
+      ],
+      "requiredInputs": [
+        "luma grid",
+        "subjects[].face.bbox"
+      ],
+      "detectionMethod": [
+        "Find connected components of luma >= 0.85 on the 64x64 grid.",
+        "Flag when a component overlaps the head bbox perimeter with area > 0.5 * head bbox area."
+      ],
+      "math": "blobArea / headArea > 0.5",
+      "thresholds": [
+        {
+          "name": "blobLuma",
+          "value": 0.85,
+          "unit": "normalized_luma",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        },
+        {
+          "name": "blobAreaRatio",
+          "value": 0.5,
+          "unit": "ratio",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.6,
+      "suggestedActions": [
+        "REFRAME"
+      ],
+      "allowedActions": [
+        "REFRAME"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "intentional rim light",
+        "bright sky as background"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "POSE_MATCH_SCORE",
+      "name": "Pose match score against the active template",
+      "category": "POSE",
+      "purpose": "Primary pose quality signal; drives the dashed guide and readiness.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "SUBJECT",
+      "severity": "INFO",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "subjects[].landmarks + worldLandmarks",
+        "activeTemplate"
+      ],
+      "detectionMethod": [
+        "See docs/pose-system.md §4: usability mask, SUBJECT normalization, Kabsch alignment with a ±25 deg clamp, component scoring with coverage gating, weighted aggregation."
+      ],
+      "math": "score = sum_c W(c)*coverage(c)^alpha*componentScore(c) / sum_c W(c)*coverage(c)^alpha",
+      "thresholds": [
+        {
+          "name": "bandMatched",
+          "value": 0.85,
+          "unit": "score",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
+        },
+        {
+          "name": "bandClose",
+          "value": 0.7,
+          "unit": "score",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
+        },
+        {
+          "name": "bandDifferent",
+          "value": 0.45,
+          "unit": "score",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
+        },
+        {
+          "name": "minCoveragePerComponent",
+          "value": 0.35,
+          "unit": "ratio",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
+        },
+        {
+          "name": "visibleFractionGate",
+          "value": 0.5,
+          "unit": "ratio",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "below"
+        },
+        {
+          "name": "rotationClamp",
+          "value": 25,
+          "unit": "degrees",
+          "status": "SETTLED",
+          "source": "design decision, docs/pose-system.md §4.3",
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.95,
+      "suggestedActions": [],
+      "allowedActions": [
+        "SUBJECT_MOVE_LEFT",
+        "SUBJECT_MOVE_RIGHT",
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT",
+        "SUBJECT_SHIFT_WEIGHT_LEFT",
+        "SUBJECT_SHIFT_WEIGHT_RIGHT",
+        "SUBJECT_WIDEN_STANCE",
+        "SUBJECT_NARROW_STANCE",
+        "SUBJECT_STEP_BACK",
+        "SUBJECT_STEP_FORWARD",
+        "SUBJECT_STAND_TALLER",
+        "RAISE_LEFT_ARM",
+        "RAISE_RIGHT_ARM",
+        "LOWER_LEFT_ARM",
+        "LOWER_RIGHT_ARM",
+        "MOVE_ARM_AWAY_FROM_TORSO",
+        "HAND_ON_HIP",
+        "HAND_IN_POCKET",
+        "HAND_AWAY_FROM_FACE",
+        "TURN_HEAD_LEFT",
+        "TURN_HEAD_RIGHT",
+        "TILT_HEAD_LEFT",
+        "TILT_HEAD_RIGHT",
+        "CHIN_DOWN",
+        "CHIN_UP",
+        "LOOK_AT_CAMERA",
+        "LOOK_AWAY"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "more than 60% of the body invisible (report PoseStatus.UNVERIFIABLE, not a low score)",
+        "template degeneracy"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 4,
+      "complexity": "L",
+      "notes": "Not a fixed action: guidance for this rule is generated from the top-k PoseCorrections (docs/pose-system.md §5), whose codes map onto the actions listed in allowedActions. The empty suggestedActions is therefore intentional."
+    },
+    {
+      "ruleId": "POSE_ARM_TORSO_GAP_TOO_SMALL",
+      "name": "Arm pressed against the torso",
+      "category": "POSE",
+      "purpose": "The most commonly cited posing issue in credible sources: pressed arms flatten and widen the arm silhouette and read as tense.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "DETERMINISTIC",
+      "actor": "SUBJECT",
+      "severity": "IMPORTANT",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "HALF_BODY",
+        "THREE_QUARTER",
+        "FULL_BODY",
+        "CLOSE_PORTRAIT"
+      ],
+      "requiredInputs": [
+        "shoulder/elbow/wrist/hip landmarks + visibility",
+        "torso length"
+      ],
+      "detectionMethod": [
+        "Build the torso axis from mid-shoulder to mid-hip.",
+        "For each side, take the minimum distance from the upper-arm and forearm segments to the torso axis.",
+        "Compute the arm-torso angle (upper arm vs torso axis).",
+        "Flag when gapRatio < threshold OR armTorsoAngle < threshold; require visibility >= 0.5 for that side."
+      ],
+      "math": "gapRatio = minDistance / torsoLength; armTorsoAngle = angle(shoulder->elbow, hip->shoulder)",
+      "thresholds": [
+        {
+          "name": "gapRatioMin",
+          "value": 0.1,
+          "unit": "ratio_of_torso_length",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.125,
+          "firesWhen": "below"
+        },
+        {
+          "name": "armTorsoAngleMin",
+          "value": 12,
+          "unit": "degrees",
+          "status": "CALIBRATION_REQUIRED",
+          "source": "floored by pose angle noise (~8-11 deg RMSE)",
+          "exitValue": 15,
+          "firesWhen": "below"
+        }
+      ],
+      "confidenceCap": 0.8,
+      "suggestedActions": [
+        "MOVE_ARM_AWAY_FROM_TORSO",
+        "RAISE_LEFT_ARM",
+        "RAISE_RIGHT_ARM",
+        "HAND_ON_HIP"
+      ],
+      "allowedActions": [
+        "MOVE_ARM_AWAY_FROM_TORSO",
+        "RAISE_LEFT_ARM",
+        "RAISE_RIGHT_ARM",
+        "HAND_ON_HIP"
+      ],
+      "conflictingRules": [
+        "templates that intend arms close to the body (formal A-pose)"
+      ],
+      "failureCases": [
+        "camera along the body axis (foreshortening hides a real gap)",
+        "loose sleeves",
+        "arms behind the back"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 4,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "POSE_ELBOW_LOCKED",
+      "name": "Fully straight (locked) elbow or knee",
+      "category": "POSE",
+      "purpose": "Locked joints look stiff: 'if it bends, bend it'. Same measurement and same fix for elbows and knees, so it is one rule.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "SUBJECT",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "HALF_BODY",
+        "THREE_QUARTER",
+        "FULL_BODY"
+      ],
+      "requiredInputs": [
+        "shoulder/elbow/wrist landmarks",
+        "hip/knee/ankle landmarks"
+      ],
+      "detectionMethod": [
+        "Interior joint angle, computed per joint (both elbows, both knees).",
+        "Compare against the active template's expected angle when a template is active; otherwise use the absolute threshold."
+      ],
+      "math": "theta = angle(proximal->joint, joint->distal); locked when theta > 170 deg (elbow: shoulder-elbow-wrist; knee: hip-knee-ankle)",
+      "thresholds": [
+        {
+          "name": "lockedAngle",
+          "value": 170,
+          "unit": "degrees",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 165,
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.8,
+      "suggestedActions": [
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "allowedActions": [
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "conflictingRules": [
+        "elongation-style templates"
+      ],
+      "failureCases": [
+        "intentionally extended limbs",
+        "walking mid-stride",
+        "knee hidden by clothing"
+      ],
+      "implementationPriority": "NEXT",
+      "phase": 6,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "POSE_WRIST_ANGLE_EXTREME",
+      "name": "Broken or limp wrist",
+      "category": "POSE",
+      "purpose": "An extreme wrist angle reads as an accident.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "HYBRID",
+      "actor": "SUBJECT",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "HALF_BODY",
+        "CLOSE_PORTRAIT",
+        "HEADSHOT"
+      ],
+      "requiredInputs": [
+        "elbow/wrist/index/pinky landmarks"
+      ],
+      "detectionMethod": [
+        "Hand direction proxy = wrist -> midpoint(index, pinky).",
+        "Interior angle at the wrist between the forearm and the hand proxy."
+      ],
+      "math": "theta = angle(elbow->wrist, wrist->handMid); comfortable 150-200 deg",
+      "thresholds": [
+        {
+          "name": "wristMin",
+          "value": 150,
+          "unit": "degrees",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 155,
+          "firesWhen": "below"
+        },
+        {
+          "name": "wristMax",
+          "value": 200,
+          "unit": "degrees",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 195,
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.7,
+      "suggestedActions": [
+        "HAND_AWAY_FROM_FACE",
+        "MOVE_ARM_AWAY_FROM_TORSO",
+        "HAND_ON_HIP"
+      ],
+      "allowedActions": [
+        "HAND_AWAY_FROM_FACE",
+        "MOVE_ARM_AWAY_FROM_TORSO",
+        "HAND_ON_HIP"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "hand out of frame",
+        "hand landmarks occluded by the body"
+      ],
+      "implementationPriority": "NEXT",
+      "phase": 6,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "POSE_LIMB_FORESHORTENED",
+      "name": "Limb pointed at the camera",
+      "category": "POSE",
+      "purpose": "A limb aimed at the lens collapses into a stump and flattens the pose.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "HYBRID",
+      "actor": "SUBJECT",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "FULL_BODY",
+        "THREE_QUARTER",
+        "HALF_BODY"
+      ],
+      "requiredInputs": [
+        "2D landmarks",
+        "world landmarks"
+      ],
+      "detectionMethod": [
+        "r_seg = 2D segment length / (3D segment length * projectionScale).",
+        "projectionScale is estimated from reference segments (shoulder width / torso height).",
+        "Flag when r < threshold; suppress for templates with intent flag set."
+      ],
+      "math": "r_seg = len2D(a,b) / (len3D(A,B) * s); flag r_arm < 0.45, r_foot < 0.35",
+      "thresholds": [
+        {
+          "name": "rArm",
+          "value": 0.45,
+          "unit": "ratio",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.5,
+          "firesWhen": "below"
+        },
+        {
+          "name": "rFoot",
+          "value": 0.35,
+          "unit": "ratio",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.4,
+          "firesWhen": "below"
+        }
+      ],
+      "confidenceCap": 0.7,
+      "suggestedActions": [
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "allowedActions": [
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "conflictingRules": [
+        "templates that intentionally point a hand at the lens"
+      ],
+      "failureCases": [
+        "world-landmark noise (z is synthetic, not metric)",
+        "foreshortened reference segments",
+        "close crops"
+      ],
+      "implementationPriority": "NEXT",
+      "phase": 6,
+      "complexity": "L"
+    },
+    {
+      "ruleId": "POSE_FEET_MERGING",
+      "name": "Feet visually merging / stance too narrow",
+      "category": "POSE",
+      "purpose": "Merged feet read as a mistake in wide shots.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "SUBJECT",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "FULL_BODY"
+      ],
+      "requiredInputs": [
+        "left/right foot landmarks"
+      ],
+      "detectionMethod": [
+        "footSeparation = distance(foot_index_L, foot_index_R) / torsoLength.",
+        "Compare against shoulder width."
+      ],
+      "math": "footSeparation < 0.25 * shoulderWidth",
+      "thresholds": [
+        {
+          "name": "separationMin",
+          "value": 0.25,
+          "unit": "ratio_of_shoulder_width",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.3,
+          "firesWhen": "below"
+        }
+      ],
+      "confidenceCap": 0.8,
+      "suggestedActions": [
+        "SUBJECT_WIDEN_STANCE"
+      ],
+      "allowedActions": [
+        "SUBJECT_WIDEN_STANCE",
+        "SUBJECT_STEP_BACK"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "deliberate narrow stance",
+        "one foot out of frame"
+      ],
+      "implementationPriority": "NEXT",
+      "phase": 6,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "POSE_SHOULDERS_SQUARE",
+      "name": "Shoulders unnaturally square to the camera",
+      "category": "POSE",
+      "purpose": "Perfectly square shoulders read as an ID photo.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "SUBJECT",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "HALF_BODY",
+        "THREE_QUARTER",
+        "FULL_BODY",
+        "CLOSE_PORTRAIT"
+      ],
+      "requiredInputs": [
+        "shoulder landmarks",
+        "world landmarks"
+      ],
+      "detectionMethod": [
+        "shoulderLineAngle = atan2(dy, dx) over the shoulder segment.",
+        "facingDeg estimated from the 2D/3D shoulder width ratio.",
+        "Flag when |shoulderLineAngle| < a AND facingDeg < f."
+      ],
+      "math": "flag when |shoulderAngle| < 3 deg and facingDeg < 10 deg",
+      "thresholds": [
+        {
+          "name": "shoulderAngleMax",
+          "value": 3,
+          "unit": "degrees",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 2.0,
+          "firesWhen": "above"
+        },
+        {
+          "name": "facingMax",
+          "value": 10,
+          "unit": "degrees",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 7.5,
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.8,
+      "suggestedActions": [
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "allowedActions": [
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "conflictingRules": [
+        "corporate headshot templates that intend square shoulders"
+      ],
+      "failureCases": [
+        "frontal poses that are intentional",
+        "top-down camera angles"
+      ],
+      "implementationPriority": "NEXT",
+      "phase": 6,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "POSE_EXCESSIVE_SYMMETRY",
+      "name": "Excessive unintended left-right symmetry",
+      "category": "POSE",
+      "purpose": "Perfect symmetry reads as static; detect only when the template is asymmetric.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "SUBJECT",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "FULL_BODY",
+        "THREE_QUARTER",
+        "HALF_BODY"
+      ],
+      "requiredInputs": [
+        "normalized landmarks"
+      ],
+      "detectionMethod": [
+        "Mirror-difference metric: mean distance between landmark pairs and their mirrored counterparts, normalized by torso length.",
+        "Suppressed by the template intent flag."
+      ],
+      "math": "symmetry = 1 - mean(|p(l) - mirror(p(r))|) / torsoLength",
+      "thresholds": [
+        {
+          "name": "symmetryMax",
+          "value": 0.94,
+          "unit": "score",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.92,
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.7,
+      "suggestedActions": [
+        "SUBJECT_SHIFT_WEIGHT_LEFT",
+        "SUBJECT_SHIFT_WEIGHT_RIGHT"
+      ],
+      "allowedActions": [
+        "SUBJECT_SHIFT_WEIGHT_LEFT",
+        "SUBJECT_SHIFT_WEIGHT_RIGHT",
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "conflictingRules": [
+        "templates that intend symmetry (formal portraits)"
+      ],
+      "failureCases": [
+        "intentional symmetric poses"
+      ],
+      "implementationPriority": "NEXT",
+      "phase": 6,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "POSE_HANDS_HIDDEN_UNINTENTIONALLY",
+      "name": "Hands hidden unintentionally",
+      "category": "POSE",
+      "purpose": "Vanishing hands look like a mistake unless the pose intends it (pockets, behind the back).",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "SUBJECT",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "HALF_BODY",
+        "THREE_QUARTER",
+        "FULL_BODY"
+      ],
+      "requiredInputs": [
+        "wrist landmarks + visibility",
+        "torso polygon"
+      ],
+      "detectionMethod": [
+        "Wrist visibility < 0.35 for N consecutive frames.",
+        "Distinguish out-of-frame (presence low) from occluded (presence high, visibility low)."
+      ],
+      "math": "visibility(wrist) < 0.35 for >= 3 frames",
+      "thresholds": [
+        {
+          "name": "wristVisibilityMin",
+          "value": 0.35,
+          "unit": "probability",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.45,
+          "firesWhen": "below"
+        },
+        {
+          "name": "frames",
+          "value": 3,
+          "unit": "frames",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.75,
+      "suggestedActions": [
+        "HAND_ON_HIP",
+        "MOVE_ARM_AWAY_FROM_TORSO"
+      ],
+      "allowedActions": [
+        "HAND_ON_HIP",
+        "MOVE_ARM_AWAY_FROM_TORSO",
+        "HAND_IN_POCKET"
+      ],
+      "conflictingRules": [
+        "hands-in-pockets templates"
+      ],
+      "failureCases": [
+        "hands behind the back by design",
+        "hands outside the frame in a tight crop"
+      ],
+      "implementationPriority": "NEXT",
+      "phase": 6,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "POSE_WEIGHT_SHIFT_AMBIGUOUS",
+      "name": "Weight distribution feature (not an error)",
+      "category": "POSE",
+      "purpose": "Measure whether a requested weight shift has been achieved; used by the matcher and the guide.",
+      "class": "NOT_AN_ERROR",
+      "detectability": "DETERMINISTIC",
+      "actor": "SUBJECT",
+      "severity": "INFO",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "FULL_BODY",
+        "THREE_QUARTER"
+      ],
+      "requiredInputs": [
+        "hips",
+        "ankles/foot landmarks"
+      ],
+      "detectionMethod": [
+        "weightX = hipMidX - supportMidX, normalized by stance width.",
+        "contrapposto = |shoulderLineAngle - hipLineAngle|."
+      ],
+      "math": "weightX = (hipMid.x - supportMid.x) / stanceWidth; contrapposto = |shoulderAngle - hipAngle|",
+      "thresholds": [
+        {
+          "name": "weightAmbiguous",
+          "value": 0.1,
+          "unit": "ratio_of_stance_width",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        },
+        {
+          "name": "contrappostoMin",
+          "value": 5,
+          "unit": "degrees",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.9,
+      "suggestedActions": [
+        "SUBJECT_SHIFT_WEIGHT_LEFT",
+        "SUBJECT_SHIFT_WEIGHT_RIGHT"
+      ],
+      "allowedActions": [
+        "SUBJECT_SHIFT_WEIGHT_LEFT",
+        "SUBJECT_SHIFT_WEIGHT_RIGHT"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "both feet out of frame",
+        "sitting poses"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 4,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "COMP_EYE_LINE_PLACEMENT",
+      "name": "Eye line relative to the upper third",
+      "category": "COMPOSITION",
+      "purpose": "Deliver the 'eyes near the upper third' convention as an option, never as a law.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "HEADSHOT",
+        "CLOSE_PORTRAIT",
+        "HALF_BODY",
+        "THREE_QUARTER"
+      ],
+      "requiredInputs": [
+        "eye landmarks",
+        "frame.height"
+      ],
+      "detectionMethod": [
+        "eyeLine = mean(y(left_eye), y(right_eye)).",
+        "Compare with the upper-third line y = 0.333; also compare against the current headroom band."
+      ],
+      "math": "|eyeLine - 0.333| > 0.08",
+      "thresholds": [
+        {
+          "name": "thirdLine",
+          "value": 0.333,
+          "unit": "ratio_of_frame_height",
+          "status": "SETTLED",
+          "source": "PRACTITIONER convention; advisory only",
+          "firesWhen": "above"
+        },
+        {
+          "name": "tolerance",
+          "value": 0.08,
+          "unit": "ratio_of_frame_height",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.75,
+      "suggestedActions": [
+        "ADJUST_EYE_LINE",
+        "INCREASE_HEADROOM",
+        "DECREASE_HEADROOM"
+      ],
+      "allowedActions": [
+        "ADJUST_EYE_LINE",
+        "INCREASE_HEADROOM",
+        "DECREASE_HEADROOM"
+      ],
+      "conflictingRules": [
+        "FRAME_HEADROOM_EXCESSIVE",
+        "FRAME_HEADROOM_INSUFFICIENT"
+      ],
+      "failureCases": [
+        "head partially out of frame",
+        "dramatic intentional framing"
+      ],
+      "implementationPriority": "NEXT",
+      "phase": 6,
+      "complexity": "S",
+      "notes": "Deliberately advisory: research shows no correlation between rule-of-thirds compliance and aesthetic ratings."
+    },
+    {
+      "ruleId": "COMP_LEAD_ROOM",
+      "name": "Lead room in the gaze direction",
+      "category": "COMPOSITION",
+      "purpose": "A subject looking toward the frame edge without space feels cramped.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "HYBRID",
+      "actor": "PHOTOGRAPHER",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "HEADSHOT",
+        "CLOSE_PORTRAIT",
+        "HALF_BODY",
+        "THREE_QUARTER"
+      ],
+      "requiredInputs": [
+        "face head pose (yaw)",
+        "subjects[].bbox",
+        "frame"
+      ],
+      "detectionMethod": [
+        "Determine the gaze direction sign from head yaw (or iris offset when available).",
+        "Compare space in the gaze direction with space behind.",
+        "Exempt direct-to-camera gaze (|yaw| < 10 deg)."
+      ],
+      "math": "leadSpace < 0.5 * trailingSpace while |yaw| > 15 deg",
+      "thresholds": [
+        {
+          "name": "yawGate",
+          "value": 15,
+          "unit": "degrees",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        },
+        {
+          "name": "leadRatio",
+          "value": 0.5,
+          "unit": "ratio",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.6,
+          "firesWhen": "below"
+        }
+      ],
+      "confidenceCap": 0.75,
+      "suggestedActions": [
+        "REFRAME",
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "allowedActions": [
+        "REFRAME",
+        "MOVE_CAMERA_LEFT",
+        "MOVE_CAMERA_RIGHT",
+        "SUBJECT_TURN_LEFT",
+        "SUBJECT_TURN_RIGHT"
+      ],
+      "conflictingRules": [
+        "FRAME_SUBJECT_OFF_CENTER_EXTREME"
+      ],
+      "failureCases": [
+        "unreliable head yaw",
+        "subject looking away deliberately at the edge of the frame"
+      ],
+      "implementationPriority": "NEXT",
+      "phase": 6,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "LIGHT_FACE_UNDEREXPOSED",
+      "name": "Face underexposed / in shadow",
+      "category": "LIGHTING",
+      "purpose": "An underexposed face is the most common lighting failure in backlit scenes.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "IMPORTANT",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "luma grid",
+        "face region",
+        "subject mask",
+        "background ring"
+      ],
+      "detectionMethod": [
+        "medianLuma over the face region.",
+        "faceBgDelta = median(background) - median(face).",
+        "Abstain when the face region is too small or AE is unstable."
+      ],
+      "math": "medianLuma(F) < 0.22 OR faceBgDelta > 0.18",
+      "thresholds": [
+        {
+          "name": "faceMedianMin",
+          "value": 0.22,
+          "unit": "normalized_luma",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.26,
+          "firesWhen": "below"
+        },
+        {
+          "name": "faceBgDeltaMax",
+          "value": 0.18,
+          "unit": "normalized_luma",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.15,
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.8,
+      "suggestedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "TURN_ON_LIGHT",
+        "MOVE_OUT_OF_BACKLIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT"
+      ],
+      "allowedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "TURN_ON_LIGHT",
+        "MOVE_OUT_OF_BACKLIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "night mode",
+        "AE ramping",
+        "face partially occluded",
+        "very dark clothing"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "LIGHT_FACE_OVEREXPOSED",
+      "name": "Blown highlights on the face",
+      "category": "LIGHTING",
+      "purpose": "Clipped skin tone is unrecoverable.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "IMPORTANT",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "luma grid",
+        "face region"
+      ],
+      "detectionMethod": [
+        "faceClipHigh = share of face-region cells with luma >= 0.98.",
+        "Require a minimum face-region size."
+      ],
+      "math": "faceClipHigh > 0.02",
+      "thresholds": [
+        {
+          "name": "clipHighFloor",
+          "value": 0.98,
+          "unit": "normalized_luma",
+          "status": "SETTLED",
+          "source": "coding convention (~250/255)",
+          "firesWhen": "above"
+        },
+        {
+          "name": "faceClipMax",
+          "value": 0.02,
+          "unit": "fraction_of_pixels",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.01,
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.85,
+      "suggestedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "MOVE_OUT_OF_BACKLIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT"
+      ],
+      "allowedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "MOVE_OUT_OF_BACKLIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "specular highlights on skin (sweat/sunscreen)",
+        "HDR processing",
+        "strong coloured light"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "LIGHT_HIGHLIGHT_CLIPPING",
+      "name": "Large highlight clipping anywhere in the frame",
+      "category": "LIGHTING",
+      "purpose": "Blown highlights lose detail and pull attention.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "IMPORTANT",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "luma grid"
+      ],
+      "detectionMethod": [
+        "clipHigh = share of grid cells with luma >= 0.98."
+      ],
+      "math": "clipHigh > 0.05 => IMPORTANT; > 0.02 => NUDGE",
+      "thresholds": [
+        {
+          "name": "clipImportant",
+          "value": 0.05,
+          "unit": "fraction_of_pixels",
+          "status": "CALIBRATION_REQUIRED",
+          "source": "convention reported by tooling documentation, unverified",
+          "exitValue": 0.04,
+          "firesWhen": "above"
+        },
+        {
+          "name": "clipNudge",
+          "value": 0.02,
+          "unit": "fraction_of_pixels",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.015,
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.85,
+      "suggestedActions": [
+        "MOVE_TO_BETTER_LIGHT"
+      ],
+      "allowedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "a bright window intentionally included",
+        "backlit rim light"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "LIGHT_SHADOW_CRUSHING",
+      "name": "Crushed shadows",
+      "category": "LIGHTING",
+      "purpose": "Detail loss in the shadows; often intentional (silhouette).",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "luma grid"
+      ],
+      "detectionMethod": [
+        "clipLow = share of grid cells with luma <= 0.02."
+      ],
+      "math": "clipLow > 0.20",
+      "thresholds": [
+        {
+          "name": "clipLowFloor",
+          "value": 0.02,
+          "unit": "normalized_luma",
+          "status": "SETTLED",
+          "firesWhen": "above"
+        },
+        {
+          "name": "clipLowMax",
+          "value": 0.2,
+          "unit": "fraction_of_pixels",
+          "status": "CALIBRATION_REQUIRED",
+          "source": "tooling convention, unverified",
+          "exitValue": 0.16,
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.7,
+      "suggestedActions": [
+        "MOVE_TO_BETTER_LIGHT"
+      ],
+      "allowedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "TURN_ON_LIGHT"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "silhouette by intent",
+        "night scene"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "LIGHT_LOW_CONTRAST",
+      "name": "Flat, low-contrast light",
+      "category": "LIGHTING",
+      "purpose": "Very flat light can look dull, but is often flattering.",
+      "class": "CONTEXT_DEPENDENT_ISSUE",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "NUDGE",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "luma grid",
+        "subject mask"
+      ],
+      "detectionMethod": [
+        "contrastSpread = p95(luma) - p05(luma) over the subject region."
+      ],
+      "math": "contrastSpread < 0.25",
+      "thresholds": [
+        {
+          "name": "spreadMin",
+          "value": 0.25,
+          "unit": "normalized_luma",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.3,
+          "firesWhen": "below"
+        }
+      ],
+      "confidenceCap": 0.6,
+      "suggestedActions": [
+        "MOVE_TO_BETTER_LIGHT"
+      ],
+      "allowedActions": [
+        "MOVE_TO_BETTER_LIGHT",
+        "TURN_ON_LIGHT"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "intentional soft light",
+        "overcast conditions"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "S"
+    },
+    {
+      "ruleId": "LIGHT_BACKLIT_SUBJECT",
+      "name": "Backlit subject",
+      "category": "LIGHTING",
+      "purpose": "Detect the classic backlight situation and offer the correct fix.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "HYBRID",
+      "actor": "PHOTOGRAPHER",
+      "severity": "IMPORTANT",
+      "blockingAllowed": false,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "luma grid",
+        "subject mask",
+        "background ring"
+      ],
+      "detectionMethod": [
+        "faceBgDelta (or subjectBgDelta) above threshold.",
+        "Confirm with a high-luma background region."
+      ],
+      "math": "faceBgDelta > 0.18 AND clipHigh(background) > 0.01",
+      "thresholds": [
+        {
+          "name": "deltaMax",
+          "value": 0.18,
+          "unit": "normalized_luma",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.15,
+          "firesWhen": "above"
+        },
+        {
+          "name": "bgClipMin",
+          "value": 0.01,
+          "unit": "fraction_of_pixels",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.8,
+      "suggestedActions": [
+        "MOVE_OUT_OF_BACKLIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT"
+      ],
+      "allowedActions": [
+        "MOVE_OUT_OF_BACKLIGHT",
+        "TURN_SUBJECT_TOWARD_LIGHT",
+        "MOVE_TO_BETTER_LIGHT"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "sunset rim light by intent",
+        "a bright window used as a backdrop"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "READY_SUBJECT_STABLE",
+      "name": "Subject is stable",
+      "category": "READINESS",
+      "purpose": "Do not capture while the subject is in transit between poses.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "DETERMINISTIC",
+      "actor": "SUBJECT",
+      "severity": "BLOCKING",
+      "blockingAllowed": true,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "subjects[].stability.motionEnergy"
+      ],
+      "detectionMethod": [
+        "EMA of mean landmark velocity normalized by torso length.",
+        "Stable when motionEnergy is below the threshold for readyHoldMs."
+      ],
+      "math": "motionEnergy < e_max continuously for readyHoldMs",
+      "thresholds": [
+        {
+          "name": "motionEnergyMax",
+          "value": 0.25,
+          "unit": "torso_lengths_per_second",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.19,
+          "firesWhen": "above"
+        },
+        {
+          "name": "readyHoldMsMatched",
+          "value": 400,
+          "unit": "milliseconds",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        },
+        {
+          "name": "readyHoldMsClose",
+          "value": 1200,
+          "unit": "milliseconds",
+          "status": "CALIBRATION_REQUIRED",
+          "firesWhen": "above"
+        }
+      ],
+      "confidenceCap": 0.95,
+      "suggestedActions": [
+        "HOLD_STILL"
+      ],
+      "allowedActions": [
+        "HOLD_STILL"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "intentional motion blur (creative)",
+        "walking poses: the subject is never 'stable' — the shot type must exempt them"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "M"
+    },
+    {
+      "ruleId": "READY_CAMERA_STABLE",
+      "name": "Camera is stable",
+      "category": "READINESS",
+      "purpose": "Avoid blur from camera shake at capture time.",
+      "class": "HIGH_CONFIDENCE_ERROR",
+      "detectability": "DETERMINISTIC",
+      "actor": "PHOTOGRAPHER",
+      "severity": "BLOCKING",
+      "blockingAllowed": true,
+      "applicableShotTypes": [
+        "ANY"
+      ],
+      "requiredInputs": [
+        "device.imuStability",
+        "landmark motion of static background proxies"
+      ],
+      "detectionMethod": [
+        "IMU variance over a short window combined with global landmark/translation motion."
+      ],
+      "math": "cameraStable = imuStability > s_min for readyHoldMs",
+      "thresholds": [
+        {
+          "name": "imuStabilityMin",
+          "value": 0.7,
+          "unit": "score",
+          "status": "CALIBRATION_REQUIRED",
+          "exitValue": 0.75,
+          "firesWhen": "below"
+        }
+      ],
+      "confidenceCap": 0.9,
+      "suggestedActions": [
+        "HOLD_CAMERA_STEADY"
+      ],
+      "allowedActions": [
+        "HOLD_CAMERA_STEADY"
+      ],
+      "conflictingRules": [],
+      "failureCases": [
+        "optical image stabilisation masking shake",
+        "deliberate camera movement (panning)"
+      ],
+      "implementationPriority": "MVP",
+      "phase": 5,
+      "complexity": "M"
+    }
+  ]
+}

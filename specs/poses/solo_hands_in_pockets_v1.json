@@ -1,0 +1,307 @@
+{
+  "id": "solo_hands_in_pockets_v1",
+  "name": {
+    "vi": "Đứng hai tay trong túi quần",
+    "en": "Hands-in-pockets standing"
+  },
+  "peopleCount": 1,
+  "shotTypes": [
+    "THREE_QUARTER",
+    "FULL_BODY",
+    "HALF_BODY"
+  ],
+  "contextTags": [
+    "outdoor",
+    "urban_street",
+    "wall_close",
+    "cafe_restaurant"
+  ],
+  "difficulty": "EASY",
+  "mirrorAllowed": true,
+  "maxAsymmetry": 0.16,
+  "normalizationReference": {
+    "preferred": "TORSO_LENGTH",
+    "spanInTorsoUnits": 1.0
+  },
+  "orientationExpectation": {
+    "torsoYawDeg": 35,
+    "toleranceDeg": 18
+  },
+  "frame": {
+    "cameraHeight": "WAIST",
+    "cameraDistanceHint": "3-4.5 m for full body",
+    "headroomBand": [
+      0.05,
+      0.18
+    ],
+    "subjectHeightFraction": [
+      0.72,
+      0.95
+    ]
+  },
+  "landmarks": [
+    {
+      "id": "nose",
+      "x": 0.02,
+      "y": -1.45,
+      "weight": 1.0,
+      "required": true,
+      "component": "HEAD"
+    },
+    {
+      "id": "left_eye",
+      "x": 0.11,
+      "y": -1.43,
+      "weight": 0.6,
+      "component": "HEAD"
+    },
+    {
+      "id": "right_eye",
+      "x": -0.09,
+      "y": -1.45,
+      "weight": 0.6,
+      "component": "HEAD"
+    },
+    {
+      "id": "left_ear",
+      "x": 0.21,
+      "y": -1.45,
+      "weight": 0.5,
+      "component": "HEAD"
+    },
+    {
+      "id": "right_ear",
+      "x": -0.2,
+      "y": -1.48,
+      "weight": 0.5,
+      "component": "HEAD"
+    },
+    {
+      "id": "left_shoulder",
+      "x": 0.28,
+      "y": -0.98,
+      "weight": 1.0,
+      "required": true,
+      "component": "TORSO"
+    },
+    {
+      "id": "right_shoulder",
+      "x": -0.36,
+      "y": -1.04,
+      "weight": 1.0,
+      "required": true,
+      "component": "TORSO"
+    },
+    {
+      "id": "left_elbow",
+      "x": 0.34,
+      "y": -0.44,
+      "weight": 0.9,
+      "component": "LEFT_ARM"
+    },
+    {
+      "id": "right_elbow",
+      "x": -0.42,
+      "y": -0.48,
+      "weight": 0.9,
+      "component": "RIGHT_ARM"
+    },
+    {
+      "id": "left_wrist",
+      "x": 0.31,
+      "y": 0.02,
+      "weight": 0.7,
+      "component": "LEFT_ARM"
+    },
+    {
+      "id": "right_wrist",
+      "x": -0.34,
+      "y": 0.0,
+      "weight": 0.7,
+      "component": "RIGHT_ARM"
+    },
+    {
+      "id": "left_index",
+      "x": 0.29,
+      "y": 0.16,
+      "weight": 0.3,
+      "component": "LEFT_ARM"
+    },
+    {
+      "id": "right_index",
+      "x": -0.32,
+      "y": 0.14,
+      "weight": 0.3,
+      "component": "RIGHT_ARM"
+    },
+    {
+      "id": "left_hip",
+      "x": 0.28,
+      "y": 0.03,
+      "weight": 1.0,
+      "required": true,
+      "component": "TORSO"
+    },
+    {
+      "id": "right_hip",
+      "x": -0.26,
+      "y": -0.03,
+      "weight": 1.0,
+      "required": true,
+      "component": "TORSO"
+    },
+    {
+      "id": "left_knee",
+      "x": 0.32,
+      "y": 0.88,
+      "weight": 0.9,
+      "component": "LEFT_LEG"
+    },
+    {
+      "id": "right_knee",
+      "x": -0.3,
+      "y": 0.88,
+      "weight": 0.9,
+      "component": "RIGHT_LEG"
+    },
+    {
+      "id": "left_ankle",
+      "x": 0.38,
+      "y": 1.7,
+      "weight": 0.8,
+      "component": "LEFT_LEG"
+    },
+    {
+      "id": "right_ankle",
+      "x": -0.32,
+      "y": 1.74,
+      "weight": 0.8,
+      "component": "RIGHT_LEG"
+    },
+    {
+      "id": "left_heel",
+      "x": 0.36,
+      "y": 1.77,
+      "weight": 0.4,
+      "component": "LEFT_LEG"
+    },
+    {
+      "id": "right_heel",
+      "x": -0.32,
+      "y": 1.81,
+      "weight": 0.4,
+      "component": "RIGHT_LEG"
+    },
+    {
+      "id": "left_foot_index",
+      "x": 0.44,
+      "y": 1.8,
+      "weight": 0.5,
+      "component": "LEFT_LEG"
+    },
+    {
+      "id": "right_foot_index",
+      "x": -0.28,
+      "y": 1.88,
+      "weight": 0.5,
+      "component": "RIGHT_LEG"
+    }
+  ],
+  "jointAngles": [
+    {
+      "joint": "left_elbow",
+      "value": 120,
+      "tolerance": 30,
+      "weight": 0.6
+    },
+    {
+      "joint": "right_elbow",
+      "value": 125,
+      "tolerance": 30,
+      "weight": 0.6
+    },
+    {
+      "joint": "left_knee",
+      "value": 170,
+      "tolerance": 15,
+      "weight": 0.5
+    },
+    {
+      "joint": "right_knee",
+      "value": 172,
+      "tolerance": 15,
+      "weight": 0.5
+    }
+  ],
+  "relativeVectors": [
+    {
+      "from": "left_shoulder",
+      "to": "left_elbow",
+      "dir": [
+        0.14,
+        0.99
+      ],
+      "weight": 0.7
+    },
+    {
+      "from": "right_shoulder",
+      "to": "right_elbow",
+      "dir": [
+        -0.12,
+        0.99
+      ],
+      "weight": 0.7
+    },
+    {
+      "from": "left_hip",
+      "to": "left_knee",
+      "dir": [
+        0.05,
+        1.0
+      ],
+      "weight": 0.6
+    },
+    {
+      "from": "right_hip",
+      "to": "right_knee",
+      "dir": [
+        -0.02,
+        1.0
+      ],
+      "weight": 0.6
+    }
+  ],
+  "componentWeights": {
+    "HEAD": 0.14,
+    "TORSO": 0.26,
+    "LEFT_ARM": 0.2,
+    "RIGHT_ARM": 0.2,
+    "LEFT_LEG": 0.1,
+    "RIGHT_LEG": 0.1
+  },
+  "bodyOrientation": {
+    "shoulderAngleDeg": 5,
+    "hipAngleDeg": -6,
+    "facingDeg": 35
+  },
+  "cameraRecommendations": [
+    "WAIST_HEIGHT",
+    "PARALLEL_TO_SUBJECT_FACING"
+  ],
+  "compositionRecommendations": [
+    "FULL_BODY_GROUND_LINE",
+    "EYES_UPPER_THIRD"
+  ],
+  "intentFlags": {
+    "suppressArmTorsoTightWarning": true,
+    "suppressLockedJointWarning": true,
+    "suppressSymmetryWarning": true
+  },
+  "provenance": {
+    "source": "craft consensus: hands in pockets with visible wrists, torso turn (docs/pose-taxonomy.md 2.3)",
+    "status": "SEED_UNVALIDATED",
+    "calibration": "the hand landmarks are inside the pocket: verify that POSE_HANDS_HIDDEN_UNINTENTIONALLY is suppressed by intentFlags and that the matcher tolerates wrist occlusion",
+    "author": "GitHub Agent",
+    "date": "2026-10-02"
+  }
+}

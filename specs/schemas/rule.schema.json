@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/binhvugia1997-ui/app-ch-p-nh/specs/schemas/rule.schema.json",
+  "title": "PhotographyRule",
+  "description": "One entry of the rule database (docs/photography-rules.md §1). Markdown is normative for meaning; this JSON is normative for IDs, classes and threshold status.",
+  "type": "object",
+  "required": ["ruleId", "name", "category", "class", "detectability", "actor", "severity", "implementationPriority", "complexity"],
+  "additionalProperties": false,
+  "properties": {
+    "ruleId": {
+      "type": "string",
+      "pattern": "^(FRAME|COMP|POSE|LIGHT|READY|INFO)_[A-Z0-9_]+$"
+    },
+    "name": { "type": "string" },
+    "category": { "enum": ["FRAMING", "COMPOSITION", "POSE", "LIGHTING", "READINESS", "INFORMATION"] },
+    "purpose": { "type": "string" },
+    "class": { "enum": ["HIGH_CONFIDENCE_ERROR", "CONTEXT_DEPENDENT_ISSUE", "SUBJECTIVE_PREFERENCE", "NOT_AN_ERROR"] },
+    "detectability": { "enum": ["DETERMINISTIC", "ML_ASSISTED", "HYBRID", "DIFFICULT", "SUBJECTIVE"] },
+    "actor": { "enum": ["PHOTOGRAPHER", "SUBJECT", "BOTH", "NONE"] },
+    "severity": { "enum": ["INFO", "NUDGE", "IMPORTANT", "BLOCKING"] },
+    "blockingAllowed": { "type": "boolean", "description": "Whether this rule may ever block readiness. Only FRAME_, measurable LIGHT_ and READY_ rules may." },
+    "applicableShotTypes": {
+      "type": "array",
+      "items": { "enum": ["HEADSHOT", "CLOSE_PORTRAIT", "HALF_BODY", "THREE_QUARTER", "FULL_BODY", "GROUP", "ANY"] }
+    },
+    "requiredInputs": { "type": "array", "items": { "type": "string" } },
+    "detectionMethod": { "type": "array", "description": "Ordered algorithmic steps.", "items": { "type": "string" } },
+    "math": { "type": "string", "description": "Formula(e) with symbols defined." },
+    "thresholds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "value", "unit", "status", "firesWhen"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "value": { "type": ["number", "boolean", "string"] },
+          "unit": { "type": "string" },
+          "status": { "enum": ["SETTLED", "CALIBRATION_REQUIRED", "DEVICE_TUNED"] },
+          "source": { "type": "string", "description": "Evidence class and reference, e.g. 'PRACTITIONER; research-sources.md §Headroom'." },
+          "firesWhen": {
+            "enum": ["below", "above"],
+            "description": "Direction of the trigger: 'below' = the rule fires when the measurement is strictly less than `value`; 'above' = it fires when the measurement is strictly greater. Band rules (a comfortable range) are expressed as two thresholds, one per side."
+          },
+          "exitValue": {
+            "type": ["number", "null"],
+            "description": "Hysteresis exit value (docs/guidance-engine.md §6.2). MUST lie on the non-firing side of `value`: > value when firesWhen = below, < value when firesWhen = above. Enforced by specs/validation/validate_specs.py."
+          }
+        }
+      }
+    },
+    "confidenceCap": { "type": "number", "minimum": 0, "maximum": 1 },
+    "suggestedActions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Candidate instruction ids this rule may propose, in stable order (the arbiter decides which one is shown). Every entry must be a valid GuidanceInstruction id AND be listed in this rule's allowedActions."
+    },
+    "allowedActions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "The subset of instruction ids this rule is allowed to emit, derived from docs/guidance-engine.md §5.4. Cross-checked against suggestedActions and the instruction id enum by specs/validation/validate_specs.py. Empty means the rule cannot drive guidance (it still produces a RuleResult)."
+    },
+    "conflictingRules": { "type": "array", "items": { "type": "string" } },
+    "failureCases": { "type": "array", "items": { "type": "string" } },
+    "implementationPriority": { "enum": ["MVP", "NEXT", "LATER", "EXPERIMENTAL", "REJECT"] },
+    "phase": { "type": "integer", "minimum": 0, "maximum": 12 },
+    "complexity": { "enum": ["S", "M", "L", "XL"] },
+    "notes": { "type": "string" }
+  }
+}

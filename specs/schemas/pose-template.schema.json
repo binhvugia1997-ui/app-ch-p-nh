@@ -1,0 +1,404 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/binhvugia1997-ui/app-ch-p-nh/specs/schemas/pose-template.schema.json",
+  "title": "PoseTemplate",
+  "description": "A pose defined as normalized landmark geometry in SUBJECT space: origin at the hip midpoint, y down, unit = torso length (mid-shoulder to mid-hip = 1.0). Templates are never raster images.",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "peopleCount",
+    "shotTypes",
+    "landmarks",
+    "mirrorAllowed",
+    "provenance"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+_v[0-9]+(_m[0-9]+)?$"
+    },
+    "name": {
+      "type": "object",
+      "description": "Localized display names; at least vi and en.",
+      "required": [
+        "vi",
+        "en"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "peopleCount": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 8
+    },
+    "shotTypes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": [
+          "HEADSHOT",
+          "CLOSE_PORTRAIT",
+          "HALF_BODY",
+          "THREE_QUARTER",
+          "FULL_BODY",
+          "ENVIRONMENTAL",
+          "CANDID",
+          "EDITORIAL",
+          "SEATED_PORTRAIT"
+        ]
+      }
+    },
+    "contextTags": {
+      "type": "array",
+      "description": "Scene tags this pose suits (see docs/scene-understanding.md §3). Empty until Phase 7.",
+      "items": {
+        "enum": [
+          "indoor",
+          "outdoor",
+          "urban_street",
+          "architecture",
+          "park_greenery",
+          "nature_open",
+          "water",
+          "home_interior",
+          "cafe_restaurant",
+          "studio_plain",
+          "wall_close",
+          "tight_space",
+          "open_space"
+        ]
+      }
+    },
+    "difficulty": {
+      "enum": [
+        "TRIVIAL",
+        "EASY",
+        "MEDIUM",
+        "HARD"
+      ]
+    },
+    "mirrorAllowed": {
+      "type": "boolean",
+      "description": "TRUE (symmetric pose): the matcher evaluates the subject against the template as written and against the mirrored template, and keeps the better score; the guide may be drawn mirrored. FALSE (handed pose): the mirrored pose is NOT evaluated at all and the guide is never drawn mirrored — a subject in the mirrored pose scores as a different pose. This is the whole contract; there is no mirror penalty and no tolerance for handed templates. If both handed versions should be accepted, either set this to true (only valid for templates whose geometry is near-symmetric) or author an explicit mirrored template whose id ends in `_m1` (see docs/pose-system.md §4.4)."
+    },
+    "mirroredVariantId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z0-9_]+_v[0-9]+(_m[0-9]+)?$",
+      "default": null,
+      "description": "Id of the explicit mirrored twin of this template. Two shapes are valid: a handed template (mirrorAllowed=false) points at its `_m1` twin, and the twin points back at the base template. The validator checks that both files exist and that every landmark x is the exact negation of its counterpart (docs/pose-system.md §4.4)."
+    },
+    "maxAsymmetry": {
+      "type": "number",
+      "minimum": 0,
+      "description": "How handed the authored geometry is: the largest |x_left + x_right| over anatomical left/right landmark pairs (and |2x| for unpaired landmarks such as nose), in torso units. 0 = perfectly symmetric. Authored by the authoring tool; Phase 0 seeds carry measured values. The validator rejects mirrorAllowed=true when this exceeds 0.30."
+    },
+    "orientationExpectation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "torsoYawDeg": {
+          "type": "number",
+          "description": "Torso yaw: 0 = facing the camera, 90 = full profile."
+        },
+        "toleranceDeg": {
+          "type": "number",
+          "default": 20
+        }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "description": "Guidance for the photographer (never used for matching).",
+      "additionalProperties": false,
+      "properties": {
+        "cameraHeight": {
+          "enum": [
+            "GROUND",
+            "KNEE",
+            "WAIST",
+            "CHEST",
+            "EYE",
+            "ABOVE_EYE"
+          ]
+        },
+        "cameraDistanceHint": {
+          "type": "string"
+        },
+        "headroomBand": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "subjectHeightFraction": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "normalizationReference": {
+      "type": "object",
+      "description": "Which body span the template's torso-unit scale is anchored to, and how the matcher must recover scale from a live subject (docs/pose-system.md §4.3). The matcher may only use a reference whose landmarks are usable in the current frame; it falls back down the order TORSO_LENGTH > SHOULDER_WIDTH > INTEROCULAR and reports which one it used, because the fallbacks are progressively more sensitive to body proportions and pose.",
+      "additionalProperties": false,
+      "properties": {
+        "preferred": {
+          "enum": [
+            "TORSO_LENGTH",
+            "SHOULDER_WIDTH",
+            "INTEROCULAR"
+          ]
+        },
+        "spanInTorsoUnits": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "The authored length of that span in torso units (e.g. SHOULDER_WIDTH 0.64), used to convert the live measurement back to torso scale."
+        }
+      },
+      "required": [
+        "preferred"
+      ]
+    },
+    "landmarks": {
+      "type": "array",
+      "description": "Template landmarks in SUBJECT space. Every entry must use an anatomical BlazePose id.",
+      "minItems": 6,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "x",
+          "y"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "z": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 1.0,
+            "description": "Matching weight for this landmark."
+          },
+          "required": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, the pose cannot be verified without it (pose-system.md §4.5)."
+          },
+          "component": {
+            "enum": [
+              "HEAD",
+              "TORSO",
+              "LEFT_ARM",
+              "RIGHT_ARM",
+              "LEFT_LEG",
+              "RIGHT_LEG"
+            ]
+          }
+        }
+      }
+    },
+    "jointAngles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "joint",
+          "value"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "joint": {
+            "type": "string",
+            "description": "e.g. left_elbow, right_knee, torso_lean, shoulder_line"
+          },
+          "value": {
+            "type": "number",
+            "description": "Expected interior angle in degrees."
+          },
+          "tolerance": {
+            "type": "number",
+            "minimum": 10,
+            "default": 25,
+            "description": "Degrees; must not be below the measurement-noise floor (docs/photography-rules.md §3)."
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.8
+          }
+        }
+      }
+    },
+    "relativeVectors": {
+      "type": "array",
+      "description": "Unit-vector expectations between landmarks (direction matters, length does not).",
+      "items": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "dir"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "dir": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Approximate unit vector in SUBJECT space."
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.8
+          }
+        }
+      }
+    },
+    "componentWeights": {
+      "type": "object",
+      "description": "Per-component matching weights; defaults applied when absent.",
+      "additionalProperties": false,
+      "properties": {
+        "HEAD": {
+          "type": "number"
+        },
+        "TORSO": {
+          "type": "number"
+        },
+        "LEFT_ARM": {
+          "type": "number"
+        },
+        "RIGHT_ARM": {
+          "type": "number"
+        },
+        "LEFT_LEG": {
+          "type": "number"
+        },
+        "RIGHT_LEG": {
+          "type": "number"
+        }
+      }
+    },
+    "bodyOrientation": {
+      "type": "object",
+      "description": "Orientation expectations for the matcher and the guide.",
+      "additionalProperties": false,
+      "properties": {
+        "shoulderAngleDeg": {
+          "type": "number",
+          "description": "Signed tilt of the shoulder line, degrees, normalized to (-90, 90]. Computed as the angle of the left_shoulder -> right_shoulder vector; POSITIVE means the line descends toward image +x (for a subject facing the camera: the subject's anatomical left shoulder is lower in the frame)."
+        },
+        "hipAngleDeg": {
+          "type": "number",
+          "description": "Same convention as shoulderAngleDeg, using left_hip -> right_hip."
+        },
+        "facingDeg": {
+          "type": "number",
+          "description": "Torso yaw: 0 = facing the camera, 90 = full profile."
+        }
+      }
+    },
+    "cameraRecommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "compositionRecommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "intentFlags": {
+      "type": "object",
+      "description": "Switches that suppress normally-generated corrections when the pose intends them.",
+      "additionalProperties": false,
+      "properties": {
+        "suppressForeshorteningWarning": {
+          "type": "boolean",
+          "default": false
+        },
+        "suppressSymmetryWarning": {
+          "type": "boolean",
+          "default": false
+        },
+        "suppressLockedJointWarning": {
+          "type": "boolean",
+          "default": false
+        },
+        "suppressArmTorsoTightWarning": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "SEED_UNVALIDATED",
+            "VALIDATED",
+            "DEPRECATED"
+          ]
+        },
+        "calibration": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

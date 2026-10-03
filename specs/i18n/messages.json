@@ -1,0 +1,709 @@
+{
+  "$schema": "../schemas/message-catalog.schema.json",
+  "version": "0.1.0",
+  "status": "PHASE_0_DRAFT",
+  "notes": [
+    "Normative for: instruction id -> actor, instruction id -> allowed message keys, and the message text itself.",
+    "Vietnamese is the primary MVP language; English is authored in parallel so the layer is localizable. Neither string may be embedded in analysis/domain code (AGENTS.md).",
+    "A rule may only suggest actions listed here for it; specs/validation/validate_specs.py enforces the whole chain rule -> action -> message key -> text.",
+    "Wording policy: describe the physical fix, never judge the person; no 'error', 'wrong', 'bad'. Lighting wording must stay relative (lighting-engine.md).",
+    "Key convention: `guidance.<domain>.<action>[.<variant>]` — the variant (side, direction) is the final segment, never a suffix on the action name.",
+    "`explanations` maps every rule id to the message key shown in the 'why?' sheet; it is not an instruction and never appears in the primary banner (guidance-engine.md §1)."
+  ],
+  "actions": {
+    "MOVE_CAMERA_LEFT": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.move_camera_left"
+      ]
+    },
+    "MOVE_CAMERA_RIGHT": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.move_camera_right"
+      ]
+    },
+    "MOVE_CAMERA_UP": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.move_camera_up"
+      ]
+    },
+    "MOVE_CAMERA_DOWN": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.move_camera_down"
+      ]
+    },
+    "MOVE_CLOSER": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.move_closer"
+      ]
+    },
+    "MOVE_FARTHER": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.move_farther"
+      ]
+    },
+    "ZOOM_IN": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.zoom_in"
+      ]
+    },
+    "ZOOM_OUT": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.zoom_out"
+      ]
+    },
+    "ROTATE_CAMERA_CW": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.rotate_camera_cw"
+      ]
+    },
+    "ROTATE_CAMERA_CCW": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.rotate_camera_ccw"
+      ]
+    },
+    "LEVEL_CAMERA": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.level_camera"
+      ]
+    },
+    "REFRAME": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.reframe",
+        "guidance.frame.reframe_joint",
+        "guidance.frame.bright_background"
+      ]
+    },
+    "INCREASE_HEADROOM": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.increase_headroom"
+      ]
+    },
+    "DECREASE_HEADROOM": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.reduce_headroom"
+      ]
+    },
+    "ADJUST_EYE_LINE": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.adjust_eye_line"
+      ]
+    },
+    "SUBJECT_MOVE_LEFT": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.step.left"
+      ]
+    },
+    "SUBJECT_MOVE_RIGHT": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.step.right"
+      ]
+    },
+    "SUBJECT_MOVE_INWARD": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.step_inward"
+      ]
+    },
+    "SUBJECT_STEP_BACK": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.step_back"
+      ]
+    },
+    "SUBJECT_STEP_FORWARD": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.step_forward"
+      ]
+    },
+    "SUBJECT_STAND_TALLER": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.stand_taller"
+      ]
+    },
+    "SUBJECT_TURN_LEFT": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.turn_body.left"
+      ]
+    },
+    "SUBJECT_TURN_RIGHT": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.turn_body.right"
+      ]
+    },
+    "SUBJECT_SHIFT_WEIGHT_LEFT": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.shift_weight.left"
+      ]
+    },
+    "SUBJECT_SHIFT_WEIGHT_RIGHT": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.shift_weight.right"
+      ]
+    },
+    "SUBJECT_WIDEN_STANCE": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.widen_stance"
+      ]
+    },
+    "SUBJECT_NARROW_STANCE": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.narrow_stance"
+      ]
+    },
+    "RAISE_LEFT_ARM": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.raise_arm.left"
+      ]
+    },
+    "RAISE_RIGHT_ARM": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.raise_arm.right"
+      ]
+    },
+    "LOWER_LEFT_ARM": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.lower_arm.left"
+      ]
+    },
+    "LOWER_RIGHT_ARM": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.lower_arm.right"
+      ]
+    },
+    "MOVE_ARM_AWAY_FROM_TORSO": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.arm_far_from_torso.left",
+        "guidance.pose.arm_far_from_torso.right"
+      ]
+    },
+    "HAND_ON_HIP": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.hand_on_hip.left",
+        "guidance.pose.hand_on_hip.right"
+      ]
+    },
+    "HAND_IN_POCKET": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.hand_in_pocket.left",
+        "guidance.pose.hand_in_pocket.right"
+      ]
+    },
+    "HAND_AWAY_FROM_FACE": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.hand_away_from_face"
+      ]
+    },
+    "TURN_HEAD_LEFT": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.turn_head.left"
+      ]
+    },
+    "TURN_HEAD_RIGHT": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.turn_head.right"
+      ]
+    },
+    "TILT_HEAD_LEFT": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.tilt_head.left"
+      ]
+    },
+    "TILT_HEAD_RIGHT": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.tilt_head.right"
+      ]
+    },
+    "CHIN_DOWN": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.chin_down"
+      ]
+    },
+    "CHIN_UP": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.chin_up"
+      ]
+    },
+    "LOOK_AT_CAMERA": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.look_at_camera"
+      ]
+    },
+    "LOOK_AWAY": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.pose.look_away"
+      ]
+    },
+    "TURN_ON_LIGHT": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.light.turn_on_light"
+      ]
+    },
+    "MOVE_TO_BETTER_LIGHT": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.light.move_to_better_light"
+      ]
+    },
+    "MOVE_OUT_OF_BACKLIGHT": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.light.move_out_of_backlight",
+        "guidance.light.change_camera_position"
+      ]
+    },
+    "TURN_SUBJECT_TOWARD_LIGHT": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.light.turn_subject_to_light"
+      ]
+    },
+    "HOLD_CAMERA_STEADY": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.capture.hold_camera_steady"
+      ]
+    },
+    "HOLD_STILL": {
+      "actor": "SUBJECT",
+      "messageKeys": [
+        "guidance.capture.hold_still"
+      ]
+    },
+    "WAIT": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.wait_for_subject"
+      ]
+    },
+    "COMPOSITE": {
+      "actor": "PHOTOGRAPHER",
+      "messageKeys": [
+        "guidance.frame.move_closer_lower_camera"
+      ]
+    }
+  },
+  "messages": {
+    "guidance.frame.move_camera_left": {
+      "vi": "Dịch máy ảnh sang trái",
+      "en": "Move the camera to the left"
+    },
+    "guidance.frame.move_camera_right": {
+      "vi": "Dịch máy ảnh sang phải",
+      "en": "Move the camera to the right"
+    },
+    "guidance.frame.move_camera_up": {
+      "vi": "Nâng máy ảnh lên cao hơn",
+      "en": "Raise the camera a little"
+    },
+    "guidance.frame.move_camera_down": {
+      "vi": "Hạ máy ảnh xuống thấp hơn",
+      "en": "Lower the camera a little"
+    },
+    "guidance.frame.move_closer": {
+      "vi": "Tiến lại gần hơn một chút",
+      "en": "Step closer"
+    },
+    "guidance.frame.move_farther": {
+      "vi": "Lùi ra xa hơn một chút",
+      "en": "Step back"
+    },
+    "guidance.frame.zoom_in": {
+      "vi": "Phóng to thêm một chút",
+      "en": "Zoom in a little"
+    },
+    "guidance.frame.zoom_out": {
+      "vi": "Thu nhỏ lại một chút",
+      "en": "Zoom out a little"
+    },
+    "guidance.frame.rotate_camera_cw": {
+      "vi": "Nghiêng máy ảnh theo chiều kim đồng hồ",
+      "en": "Turn the camera clockwise"
+    },
+    "guidance.frame.rotate_camera_ccw": {
+      "vi": "Nghiêng máy ảnh ngược chiều kim đồng hồ",
+      "en": "Turn the camera anticlockwise"
+    },
+    "guidance.frame.level_camera": {
+      "vi": "Giữ máy ảnh thẳng",
+      "en": "Level the camera"
+    },
+    "guidance.frame.reframe": {
+      "vi": "Canh lại bố cục",
+      "en": "Reframe the shot"
+    },
+    "guidance.frame.reframe_joint": {
+      "vi": "Đừng cắt ngay khớp: cổ tay, đầu gối, cổ chân",
+      "en": "Avoid cropping at a joint: wrist, knee, ankle"
+    },
+    "guidance.frame.bright_background": {
+      "vi": "Đổi góc để bớt vùng sáng sau đầu",
+      "en": "Change the angle to clear the bright area behind the head"
+    },
+    "guidance.frame.increase_headroom": {
+      "vi": "Để thêm khoảng trống phía trên đầu",
+      "en": "Leave more space above the head"
+    },
+    "guidance.frame.reduce_headroom": {
+      "vi": "Bớt khoảng trống phía trên đầu",
+      "en": "Tighten the space above the head"
+    },
+    "guidance.frame.adjust_eye_line": {
+      "vi": "Đưa mắt lên khoảng một phần ba trên của khung",
+      "en": "Place the eyes near the upper third line"
+    },
+    "guidance.frame.wait_for_subject": {
+      "vi": "Chờ người vào khung",
+      "en": "Wait for the subject to enter the frame"
+    },
+    "guidance.frame.move_closer_lower_camera": {
+      "vi": "Tiến lại gần và hạ máy ảnh xuống",
+      "en": "Come closer and lower the camera"
+    },
+    "guidance.pose.step.left": {
+      "vi": "Bước sang trái một chút",
+      "en": "Step slightly to the left"
+    },
+    "guidance.pose.step.right": {
+      "vi": "Bước sang phải một chút",
+      "en": "Step slightly to the right"
+    },
+    "guidance.pose.step_inward": {
+      "vi": "Bước vào giữa khung",
+      "en": "Step toward the middle of the frame"
+    },
+    "guidance.pose.step_back": {
+      "vi": "Bước ra sau một bước",
+      "en": "Take a step back"
+    },
+    "guidance.pose.step_forward": {
+      "vi": "Bước tới trước một bước",
+      "en": "Take a step forward"
+    },
+    "guidance.pose.stand_taller": {
+      "vi": "Đứng thẳng người lên",
+      "en": "Stand a little taller"
+    },
+    "guidance.pose.turn_body.left": {
+      "vi": "Xoay người sang trái",
+      "en": "Turn your body to the left"
+    },
+    "guidance.pose.turn_body.right": {
+      "vi": "Xoay người sang phải",
+      "en": "Turn your body to the right"
+    },
+    "guidance.pose.shift_weight.left": {
+      "vi": "Dồn trọng tâm sang chân trái",
+      "en": "Shift your weight onto the left leg"
+    },
+    "guidance.pose.shift_weight.right": {
+      "vi": "Dồn trọng tâm sang chân phải",
+      "en": "Shift your weight onto the right leg"
+    },
+    "guidance.pose.widen_stance": {
+      "vi": "Đứng rộng chân hơn một chút",
+      "en": "Widen your stance slightly"
+    },
+    "guidance.pose.narrow_stance": {
+      "vi": "Thu hẹp khoảng cách hai chân",
+      "en": "Bring your feet a little closer"
+    },
+    "guidance.pose.raise_arm.left": {
+      "vi": "Nâng cánh tay trái lên",
+      "en": "Raise your left arm"
+    },
+    "guidance.pose.raise_arm.right": {
+      "vi": "Nâng cánh tay phải lên",
+      "en": "Raise your right arm"
+    },
+    "guidance.pose.lower_arm.left": {
+      "vi": "Hạ cánh tay trái xuống",
+      "en": "Lower your left arm"
+    },
+    "guidance.pose.lower_arm.right": {
+      "vi": "Hạ cánh tay phải xuống",
+      "en": "Lower your right arm"
+    },
+    "guidance.pose.arm_far_from_torso.left": {
+      "vi": "Mở cánh tay trái ra khỏi người",
+      "en": "Move your left arm away from your body"
+    },
+    "guidance.pose.arm_far_from_torso.right": {
+      "vi": "Mở cánh tay phải ra khỏi người",
+      "en": "Move your right arm away from your body"
+    },
+    "guidance.pose.hand_on_hip.left": {
+      "vi": "Đặt tay trái lên hông",
+      "en": "Put your left hand on your hip"
+    },
+    "guidance.pose.hand_on_hip.right": {
+      "vi": "Đặt tay phải lên hông",
+      "en": "Put your right hand on your hip"
+    },
+    "guidance.pose.hand_in_pocket.left": {
+      "vi": "Đút tay trái vào túi",
+      "en": "Put your left hand in your pocket"
+    },
+    "guidance.pose.hand_in_pocket.right": {
+      "vi": "Đút tay phải vào túi",
+      "en": "Put your right hand in your pocket"
+    },
+    "guidance.pose.hand_away_from_face": {
+      "vi": "Đưa tay ra khỏi khuôn mặt",
+      "en": "Move your hand away from your face"
+    },
+    "guidance.pose.turn_head.left": {
+      "vi": "Quay đầu sang trái",
+      "en": "Turn your head to the left"
+    },
+    "guidance.pose.turn_head.right": {
+      "vi": "Quay đầu sang phải",
+      "en": "Turn your head to the right"
+    },
+    "guidance.pose.tilt_head.left": {
+      "vi": "Nghiêng đầu sang trái",
+      "en": "Tilt your head to the left"
+    },
+    "guidance.pose.tilt_head.right": {
+      "vi": "Nghiêng đầu sang phải",
+      "en": "Tilt your head to the right"
+    },
+    "guidance.pose.chin_down": {
+      "vi": "Hạ cằm xuống một chút",
+      "en": "Lower your chin slightly"
+    },
+    "guidance.pose.chin_up": {
+      "vi": "Nâng cằm lên một chút",
+      "en": "Lift your chin slightly"
+    },
+    "guidance.pose.look_at_camera": {
+      "vi": "Nhìn vào ống kính",
+      "en": "Look toward the camera"
+    },
+    "guidance.pose.look_away": {
+      "vi": "Nhìn ra xa ống kính",
+      "en": "Look away from the camera"
+    },
+    "guidance.light.turn_on_light": {
+      "vi": "Bật thêm đèn",
+      "en": "Turn on another light"
+    },
+    "guidance.light.move_to_better_light": {
+      "vi": "Di chuyển tới chỗ sáng đều hơn",
+      "en": "Move to more even light"
+    },
+    "guidance.light.move_out_of_backlight": {
+      "vi": "Tránh ngược sáng",
+      "en": "Move out of the backlight"
+    },
+    "guidance.light.change_camera_position": {
+      "vi": "Đổi vị trí đứng của máy ảnh",
+      "en": "Change where the camera is standing"
+    },
+    "guidance.light.turn_subject_to_light": {
+      "vi": "Xoay người về phía nguồn sáng",
+      "en": "Turn toward the light"
+    },
+    "guidance.capture.hold_still": {
+      "vi": "Giữ nguyên tư thế",
+      "en": "Hold still"
+    },
+    "guidance.why.frame_subject_present": {
+      "vi": "Chưa thấy người trong khung",
+      "en": "No subject in the frame yet"
+    },
+    "guidance.why.frame_subject_too_small": {
+      "vi": "Người ở quá xa nên tư thế khó đọc",
+      "en": "The subject is too far away for the pose to read"
+    },
+    "guidance.why.frame_subject_too_large": {
+      "vi": "Người bị khung cắt mất",
+      "en": "The subject is cropped by the frame"
+    },
+    "guidance.why.frame_headroom_excessive": {
+      "vi": "Khoảng trống phía trên đầu hơi nhiều",
+      "en": "There is a lot of empty space above the head"
+    },
+    "guidance.why.frame_headroom_insufficient": {
+      "vi": "Đầu quá sát mép trên khung",
+      "en": "The head is too close to the top edge"
+    },
+    "guidance.why.frame_edge_margin": {
+      "vi": "Người chạm vào mép khung",
+      "en": "The subject touches the frame edge"
+    },
+    "guidance.why.frame_joint_crop": {
+      "vi": "Khung cắt đúng vào một khớp",
+      "en": "The frame cuts through a joint"
+    },
+    "guidance.why.frame_subject_off_center_extreme": {
+      "vi": "Người bị đẩy lệch hẳn sang một bên",
+      "en": "The subject sits far off to one side"
+    },
+    "guidance.why.frame_camera_tilt": {
+      "vi": "Máy ảnh đang bị nghiêng",
+      "en": "The camera is tilted"
+    },
+    "guidance.why.frame_bright_blob_behind_head": {
+      "vi": "Có vùng sáng mạnh ngay sau đầu",
+      "en": "A bright area sits right behind the head"
+    },
+    "guidance.why.pose_match_score": {
+      "vi": "Tư thế chưa khớp với mẫu đang chọn",
+      "en": "The pose does not match the chosen template yet"
+    },
+    "guidance.why.pose_arm_torso_gap_too_small": {
+      "vi": "Cánh tay đang áp sát thân người",
+      "en": "An arm is pressed against the body"
+    },
+    "guidance.why.pose_elbow_locked": {
+      "vi": "Khớp tay hoặc chân đang duỗi thẳng hoàn toàn",
+      "en": "An elbow or knee is fully straight"
+    },
+    "guidance.why.pose_wrist_angle_extreme": {
+      "vi": "Cổ tay đang gập ở góc gượng",
+      "en": "The wrist is bent at an awkward angle"
+    },
+    "guidance.why.pose_limb_foreshortened": {
+      "vi": "Một chi đang chĩa thẳng vào ống kính",
+      "en": "A limb points straight at the lens"
+    },
+    "guidance.why.pose_feet_merging": {
+      "vi": "Hai bàn chân chồng lên nhau",
+      "en": "The feet overlap into one shape"
+    },
+    "guidance.why.pose_shoulders_square": {
+      "vi": "Vai đang vuông góc với máy ảnh",
+      "en": "The shoulders are square to the camera"
+    },
+    "guidance.why.pose_excessive_symmetry": {
+      "vi": "Tư thế đang quá cân xứng",
+      "en": "The pose is very symmetrical"
+    },
+    "guidance.why.pose_hands_hidden_unintentionally": {
+      "vi": "Bàn tay bị che hoặc ra ngoài khung",
+      "en": "A hand is hidden or out of frame"
+    },
+    "guidance.why.pose_weight_shift_ambiguous": {
+      "vi": "Chưa rõ trọng tâm dồn vào chân nào",
+      "en": "It is not clear which leg carries the weight"
+    },
+    "guidance.why.comp_eye_line_placement": {
+      "vi": "Mắt không nằm gần đường một phần ba trên",
+      "en": "The eyes are not near the upper third line"
+    },
+    "guidance.why.comp_lead_room": {
+      "vi": "Thiếu khoảng trống phía trước hướng nhìn",
+      "en": "Little space in the direction the subject looks"
+    },
+    "guidance.why.light_face_underexposed": {
+      "vi": "Khuôn mặt tối hơn nền rõ rệt",
+      "en": "The face is clearly darker than the background"
+    },
+    "guidance.why.light_face_overexposed": {
+      "vi": "Vùng sáng trên mặt bị mất chi tiết",
+      "en": "Bright areas on the face have lost detail"
+    },
+    "guidance.why.light_highlight_clipping": {
+      "vi": "Nhiều vùng ảnh bị cháy sáng",
+      "en": "A large area is blown out"
+    },
+    "guidance.why.light_shadow_crushing": {
+      "vi": "Vùng tối bị mất chi tiết",
+      "en": "Shadow areas have lost detail"
+    },
+    "guidance.why.light_low_contrast": {
+      "vi": "Ánh sáng phẳng, độ tương phản thấp",
+      "en": "The light is flat and low contrast"
+    },
+    "guidance.why.light_backlit_subject": {
+      "vi": "Nền sáng hơn chủ thể rất nhiều",
+      "en": "The background is much brighter than the subject"
+    },
+    "guidance.why.ready_subject_stable": {
+      "vi": "Chủ thể vẫn đang chuyển động",
+      "en": "The subject is still moving"
+    },
+    "guidance.why.ready_camera_stable": {
+      "vi": "Máy ảnh đang rung",
+      "en": "The camera is shaking"
+    },
+    "guidance.capture.hold_camera_steady": {
+      "vi": "Giữ máy ảnh thật chắc",
+      "en": "Hold the camera steady"
+    }
+  },
+  "explanations": {
+    "FRAME_SUBJECT_PRESENT": "guidance.why.frame_subject_present",
+    "FRAME_SUBJECT_TOO_SMALL": "guidance.why.frame_subject_too_small",
+    "FRAME_SUBJECT_TOO_LARGE": "guidance.why.frame_subject_too_large",
+    "FRAME_HEADROOM_EXCESSIVE": "guidance.why.frame_headroom_excessive",
+    "FRAME_HEADROOM_INSUFFICIENT": "guidance.why.frame_headroom_insufficient",
+    "FRAME_EDGE_MARGIN": "guidance.why.frame_edge_margin",
+    "FRAME_JOINT_CROP": "guidance.why.frame_joint_crop",
+    "FRAME_SUBJECT_OFF_CENTER_EXTREME": "guidance.why.frame_subject_off_center_extreme",
+    "FRAME_CAMERA_TILT": "guidance.why.frame_camera_tilt",
+    "FRAME_BRIGHT_BLOB_BEHIND_HEAD": "guidance.why.frame_bright_blob_behind_head",
+    "POSE_MATCH_SCORE": "guidance.why.pose_match_score",
+    "POSE_ARM_TORSO_GAP_TOO_SMALL": "guidance.why.pose_arm_torso_gap_too_small",
+    "POSE_ELBOW_LOCKED": "guidance.why.pose_elbow_locked",
+    "POSE_WRIST_ANGLE_EXTREME": "guidance.why.pose_wrist_angle_extreme",
+    "POSE_LIMB_FORESHORTENED": "guidance.why.pose_limb_foreshortened",
+    "POSE_FEET_MERGING": "guidance.why.pose_feet_merging",
+    "POSE_SHOULDERS_SQUARE": "guidance.why.pose_shoulders_square",
+    "POSE_EXCESSIVE_SYMMETRY": "guidance.why.pose_excessive_symmetry",
+    "POSE_HANDS_HIDDEN_UNINTENTIONALLY": "guidance.why.pose_hands_hidden_unintentionally",
+    "POSE_WEIGHT_SHIFT_AMBIGUOUS": "guidance.why.pose_weight_shift_ambiguous",
+    "COMP_EYE_LINE_PLACEMENT": "guidance.why.comp_eye_line_placement",
+    "COMP_LEAD_ROOM": "guidance.why.comp_lead_room",
+    "LIGHT_FACE_UNDEREXPOSED": "guidance.why.light_face_underexposed",
+    "LIGHT_FACE_OVEREXPOSED": "guidance.why.light_face_overexposed",
+    "LIGHT_HIGHLIGHT_CLIPPING": "guidance.why.light_highlight_clipping",
+    "LIGHT_SHADOW_CRUSHING": "guidance.why.light_shadow_crushing",
+    "LIGHT_LOW_CONTRAST": "guidance.why.light_low_contrast",
+    "LIGHT_BACKLIT_SUBJECT": "guidance.why.light_backlit_subject",
+    "READY_SUBJECT_STABLE": "guidance.why.ready_subject_stable",
+    "READY_CAMERA_STABLE": "guidance.why.ready_camera_stable"
+  }
+}

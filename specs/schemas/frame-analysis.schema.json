@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/binhvugia1997-ui/app-ch-p-nh/specs/schemas/frame-analysis.schema.json",
+  "title": "FrameAnalysis",
+  "description": "Immutable per-frame snapshot handed to every analysis engine. All image coordinates are normalized 0..1, y down, in ANALYSIS space (upright, unmirrored). Engines may depend on nothing outside this structure.",
+  "type": "object",
+  "required": ["timestampMs", "frame", "device", "subjects", "quality"],
+  "additionalProperties": false,
+  "properties": {
+    "timestampMs": {
+      "type": "integer",
+      "description": "Monotonic frame timestamp in milliseconds. The ONLY time source available to rules (no clock reads inside engines)."
+    },
+    "frame": {
+      "type": "object",
+      "required": ["width", "height", "rotationDegrees", "isMirrored", "primaryCameraFacing", "analysisResolution"],
+      "additionalProperties": false,
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "rotationDegrees": { "enum": [0, 90, 180, 270], "description": "Rotation applied to the sensor buffer to obtain ANALYSIS space." },
+        "isMirrored": { "type": "boolean", "description": "Sensor-level mirroring (front camera). ANALYSIS space is unmirrored; this flag only informs PREVIEW mapping and guidance direction semantics." },
+        "primaryCameraFacing": { "enum": ["FRONT", "BACK"] },
+        "analysisResolution": { "enum": ["R480P", "R720P", "R1080P"] },
+        "aspectRatio": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "device": {
+      "type": "object",
+      "required": ["tier", "rollDegrees", "imuStability"],
+      "additionalProperties": false,
+      "properties": {
+        "tier": { "enum": ["LOW", "MEDIUM", "HIGH"] },
+        "rollDegrees": { "type": ["number", "null"], "description": "Camera roll from the IMU, degrees, null when unavailable. Positive = clockwise in the device frame." },
+        "imuStability": { "type": ["number", "null"], "minimum": 0, "description": "0..1, 1 = perfectly still; variance-based over a short window." },
+        "thermalStatus": { "enum": ["NONE", "LIGHT", "MODERATE", "SEVERE", "CRITICAL", "EMERGENCY", "SHUTDOWN", "UNKNOWN"] },
+        "exposureValue": { "type": ["number", "null"], "description": "Camera-reported EV/AE hint if available; used to freeze/invalidate lighting statistics during AE transitions." }
+      }
+    },
+    "subjects": {
+      "type": "array",
+      "description": "Ordered by prominence (visibleFraction * bbox area), most prominent first. MVP produces at most one.",
+      "items": { "$ref": "#/$defs/subject" }
+    },
+    "light": { "type": ["object", "null"], "description": "LightReport; null when not computed this cycle.", "additionalProperties": true },
+    "scene": { "type": ["object", "null"], "description": "SceneReport (Phase 7+); always null in the MVP.", "additionalProperties": true },
+    "quality": { "$ref": "#/$defs/quality" }
+  },
+  "$defs": {
+    "landmark": {
+      "type": "object",
+      "required": ["id", "x", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Anatomical landmark id, never spatial. BlazePose ids are used verbatim: nose, left_eye_inner, left_eye, left_eye_outer, right_eye_inner, right_eye, right_eye_outer, left_ear, right_ear, mouth_left, mouth_right, left_shoulder, right_shoulder, left_elbow, right_elbow, left_wrist, right_wrist, left_pinky, right_pinky, left_index, right_index, left_thumb, right_thumb, left_hip, right_hip, left_knee, right_knee, left_ankle, right_ankle, left_heel, right_heel, left_foot_index, right_foot_index"
+        },
+        "x": { "type": "number", "description": "Normalized 0..1 in ANALYSIS space (may be outside [0,1] when the joint is out of frame but inferred)." },
+        "y": { "type": "number" },
+        "z": { "type": ["number", "null"], "description": "Relative depth in the same scale as x/y (BlazePose z is NOT metric)." },
+        "visibility": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "presence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "smoothed": { "type": "boolean", "description": "true when a temporal filter has been applied to this landmark." }
+      }
+    },
+    "bbox": {
+      "type": "object",
+      "required": ["left", "top", "right", "bottom"],
+      "additionalProperties": false,
+      "properties": {
+        "left": { "type": "number" },
+        "top": { "type": "number" },
+        "right": { "type": "number" },
+        "bottom": { "type": "number" }
+      }
+    },
+    "face": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "landmarks": { "type": "array", "items": { "$ref": "#/$defs/landmark" }, "description": "478 Face Landmarker points (id = index-based key such as face_0)." },
+        "bbox": { "$ref": "#/$defs/bbox" },
+        "headPose": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "yawDegrees": { "type": "number" },
+            "pitchDegrees": { "type": "number" },
+            "rollDegrees": { "type": "number" }
+          },
+          "description": "From the facial transformation matrix; null fields when unavailable."
+        },
+        "blinkScore": { "type": ["number", "null"], "description": "0..1, advisory only (blendshapes may be disabled in MVP)." }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "required": ["trackId", "landmarks", "bbox", "visibleFraction", "shotType"],
+      "additionalProperties": false,
+      "properties": {
+        "trackId": { "type": "integer", "description": "Stable within a session; changes on identity re-association. NEVER derived from face identity." },
+        "landmarks": { "type": "array", "items": { "$ref": "#/$defs/landmark" } },
+        "worldLandmarks": { "type": ["array", "null"], "items": { "$ref": "#/$defs/landmark" }, "description": "Hip-origin world coordinates (metres-ish, z not metric)." },
+        "face": { "anyOf": [{ "$ref": "#/$defs/face" }, { "type": "null" }] },
+        "bbox": { "$ref": "#/$defs/bbox" },
+        "visibleFraction": { "type": "number", "minimum": 0, "maximum": 1 },
+        "shotType": { "enum": ["HEADSHOT", "CLOSE_PORTRAIT", "HALF_BODY", "THREE_QUARTER", "FULL_BODY", "UNKNOWN"] },
+        "shotTypeConfidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "stability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "motionEnergy": { "type": "number", "minimum": 0, "description": "EMA of mean landmark velocity, normalized by torso length per second." },
+            "stableForMs": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "required": ["sources"],
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "type": "object",
+          "description": "Per-source freshness/latency metadata so engines can refuse stale data.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["ageMs"],
+            "additionalProperties": false,
+            "properties": {
+              "ageMs": { "type": "integer" },
+              "latencyMsP50": { "type": ["number", "null"] },
+              "stale": { "type": "boolean" }
+            }
+          }
+        },
+        "droppedFrameRatio": { "type": "number", "minimum": 0, "maximum": 1 },
+        "degradationLevel": { "type": "integer", "minimum": 0, "maximum": 8, "description": "Current step of the degradation ladder (performance-strategy.md §5)." }
+      }
+    }
+  }
+}
