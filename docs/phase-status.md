@@ -95,7 +95,8 @@ specs/poses/*.json                   5 pose templates: 4 seeds + 1 explicit mirr
 specs/fixtures/README.md             fixture format + the "no photographs of people" rule
 ```
 
-**Validation record (2026-10-03):** `python3 specs/validation/validate_specs.py` → **0 errors**.
+**Validation record (2026-10-03, branch `arena/01a0fd5d-app-ch-p-nh`, commit `250b629`):**
+`python3 specs/validation/validate_specs.py` → **0 errors, 0 warnings**.
 It checks: JSON Schema 2020-12 validity and instance validity (7 schemas, 5 templates, 30 rules, message
 catalog); the whole guidance chain (rule → `suggestedActions` ⊆ `allowedActions` ⊆ instruction id enum →
 message key → vi/en text → one explanation per rule); rule hygiene (id prefixes vs categories, duplicate ids,
