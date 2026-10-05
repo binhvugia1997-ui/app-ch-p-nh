@@ -1,10 +1,8 @@
 package com.aiphotographer.app
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Bundle
@@ -20,9 +18,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -40,17 +41,18 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
     private val launchNs = SystemClock.elapsedRealtimeNanos()
     override fun attachBaseContext(newBase: Context) {
-        val config = Configuration(newBase.resources.configuration)
+        val config = Configuration()
         config.setLocale(Locale.forLanguageTag("vi"))
         super.attachBaseContext(newBase.createConfigurationContext(config))
     }
-    @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (BuildConfig.PORTRAIT_FIRST && !(BuildConfig.DEBUG && intent.getBooleanExtra("allowLandscape", false))) {
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        }
         setContent { MaterialTheme { CameraApp(launchNs, intent.getBooleanExtra("benchmarkRgb", false), intent.getBooleanExtra("analysis720p", false)) } }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
     }
 }
 
@@ -83,17 +85,20 @@ class MainActivity : ComponentActivity() {
         }
         return
     }
-    var facing by remember { mutableStateOf(CameraFacing.BACK) }
-    var resolution by remember { mutableStateOf(if (analysis720p) AnalysisResolution.R720P else AnalysisResolution.R480P) }
-    var aspect by remember { mutableFloatStateOf(3f / 4f) }
+    val configuration = LocalConfiguration.current
+    val landscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    var facing by rememberSaveable { mutableStateOf(CameraFacing.BACK) }
+    var resolution by rememberSaveable { mutableStateOf(if (analysis720p) AnalysisResolution.R720P else AnalysisResolution.R480P) }
+    var aspect by rememberSaveable { mutableFloatStateOf(3f / 4f) }
     var generation by remember { mutableIntStateOf(0) }
-    var rgbBenchmark by remember { mutableStateOf(benchmarkRgbAtLaunch) }
+    var rgbBenchmark by rememberSaveable { mutableStateOf(benchmarkRgbAtLaunch) }
     var session by remember { mutableStateOf<CameraSession?>(null) }
     Column(Modifier.fillMaxSize().safeDrawingPadding()) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-          val previewWidth = minOf(maxWidth, maxHeight * aspect)
-          Box(Modifier.size(previewWidth, previewWidth / aspect).align(Alignment.Center)) {
-            key(facing, resolution, aspect, generation, rgbBenchmark) {
+          val viewAspect = if (landscape) 1f / aspect else aspect
+          val previewWidth = minOf(maxWidth, maxHeight * viewAspect)
+          Box(Modifier.size(previewWidth, previewWidth / viewAspect).align(Alignment.Center).clipToBounds()) {
+            key(facing, resolution, aspect, landscape, generation, rgbBenchmark) {
                 val preview = remember { PreviewView(context).apply {
                     implementationMode = PreviewView.ImplementationMode.COMPATIBLE
                     scaleType = PreviewView.ScaleType.FILL_CENTER

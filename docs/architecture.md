@@ -484,6 +484,18 @@ captures is excluded by platform-specific rules.
 
 ---
 
+**ADR-015 — System-controlled orientation in Phase 1 (owner clarification 2026-10-05).**
+
+Portrait-first is a design preference, not a runtime orientation restriction. Every build leaves
+activity orientation unspecified and uses normal Android recreation; no configChanges opt-out,
+verification intent override or orientation preference is used. Compose observes LocalConfiguration,
+retains camera/aspect/resolution controls with rememberSaveable and fits a 4:3 or 16:9 viewport in
+the actual orientation. Camera objects are recreated after layout with the current display rotation;
+the previous lifecycle-bound session is disposed. The locale override changes language only rather
+than freezing a copied orientation/size configuration. This follows Android's
+[configuration handling guidance](https://developer.android.com/guide/topics/resources/runtime-changes).
+No core coordinate transform or module boundary changes. Physical rotation must be owner-verified.
+
 ## 14. Open architectural questions (for the human owner / later phases)
 
 1. **Who holds the phone?** Two product modes exist and they need different guidance:
@@ -493,6 +505,7 @@ captures is excluded by platform-specific rules.
 2. **Auto-capture default.** Proposed: off in MVP, opt-in with a visible countdown.
 3. **Bundled pose library size in MVP.** Proposed: 6–10 seed templates for Phase 3–6, curated later.
 4. **Orientation policy.** Portrait-only MVP lock, or landscape supported from Phase 1?
-   Proposed: portrait-locked first, landscape handled by the coordinate contract anyway.
+   Resolved by owner on 2026-10-05: portrait-first design preference only; no orientation lock.
+   System Auto rotate controls all builds. See ADR-015.
 5. **Minimum supported device tier** (API level is 24, but which SoC classes are "supported" vs
    "best effort"?). Proposed: `LOW` tier = 4 GB RAM, mid-range 2019+ SoC, pose at 10–15 FPS, lite model.

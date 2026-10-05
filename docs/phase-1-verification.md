@@ -1,8 +1,8 @@
 # Phase 1 local build and physical-device verification
 
 Phase 1 is authorized; acceptance requires the owner and physical-device evidence. Phase 2 is not started.
-No physical phone was connected during the implementation session. Emulator checks are recorded in
-`phase-status.md`. The physical-device commands below remain pending; they are not a claim of phone success.
+No physical phone was connected during the implementation session. Physical verification subsequently
+started on SM-S918B; completed checks, measured windows and pending steps are recorded in `phase-status.md`.
 
 ## Toolchain and local validation
 
@@ -17,8 +17,8 @@ See [AGP compatibility](https://developer.android.com/build/releases/agp-9-4-0-r
 
 The root lint configuration excludes only version-update advisories (`AndroidGradlePluginVersion`,
 `GradleDependency`, `NewerVersionAvailable`). Versions are deliberately pinned to the verified toolchain;
-Kotlin/Compose compiler must stay aligned with AGP. Other lint warnings are errors. The portrait-lock
-suppression is limited to the owner-required flag in MainActivity. API 29 profiling and API 31 backup
+Kotlin/Compose compiler must stay aligned with AGP. Other lint warnings are errors. No portrait-lock
+suppression or orientation flag remains. API 29 profiling and API 31 backup
 attributes are annotated with their platform levels; older Android ignores them. Language bundle splitting
 is disabled so Vietnamese resources remain available offline. English fallback resources are included.
 Large-screen Android can override orientation requests; the camera/geometry remains landscape-capable.
@@ -71,13 +71,16 @@ camera's physical crop/mirror matches its advertised metadata; that is the manua
 2. On back and front cameras, confirm preview + analysis + manual JPEG capture. Record the capability
    query result, actual bind outcome and fallback attempts from `Phase1Capability` logs/HUD.
    A reduced-resolution full session still records the original query result and the successful attempt.
-3. Enable landscape for this debug run:
+3. Enable system Auto rotate and rotate normally in any build. No app orientation flag is required.
+   The obsolete `allowLandscape` extra/preference is ignored. Start normally:
 
    ```powershell
    & $adbPath shell am force-stop com.aiphotographer.app
-   & $adbPath shell am start -n com.aiphotographer.app/.MainActivity --ez allowLandscape true
+   & $adbPath shell am start -n com.aiphotographer.app/.MainActivity
    ```
 
+   All variants follow system orientation. Default camera controls are designed for portrait first;
+   landscape uses the real Android configuration and a landscape-shaped viewport.
    Rotate the phone normally. Use the 4:3 / 16:9 debug button. For each camera × orientation × aspect,
    put a non-person target at upright unmirrored ANALYSIS coordinate (0.25, 0.5); the cyan marker must
    align with it. On front preview it is at mirrored spatial x. Save screenshots locally, not photographs
@@ -115,6 +118,15 @@ New-Item -ItemType Directory -Force device-evidence | Out-Null
 & $adbPath shell dumpsys thermalservice > device-evidence/480p-thermal.txt
 ```
 
+On the tested Samsung API 36 build, Perfetto could not read `/data/local/tmp/phase1-perfetto.pbtxt`.
+Use `/data/misc/perfetto-configs/phase1-perfetto.pbtxt` for push/config instead. The 64 MiB ring buffer
+overwrote part of the 720p window; an ignored local evidence config with `size_kb: 262144` retained
+the full window. Check trace bounds and `traced_buf_chunks_overwritten` before accepting a 60 s result.
+Keep the phone unlocked and ensure any third-party lock-screen activity is disabled for the controlled
+run; SM-S918B traces showed a Hanzii lock-screen activity interrupting the 480p recording. Record initial
+thermal status before starting; the first session was already thermally constrained, so a cooled repeat
+is required to establish controlled conditions. Do not change unrelated settings automatically.
+
 Repeat with `--ez analysis720p true --ez benchmarkRgb true`, a fresh force-stop/start and a distinct
 720p trace/log name. Record the *actual* buffer and crop dimensions; requested resolution is a preference,
 not a guaranteed hardware configuration. A crop may differ from the nominal 480p/720p buffer.
@@ -138,6 +150,14 @@ UNKNOWN because KEEP_ONLY_LATEST does not expose its discarded frame count. A 2 
 and the first actual displayed preview frame in the trace for the brief's cold-start baseline. Permission
 dialog time and camera-switch time are not cold start. RSS is `/proc/self/status` VmRSS in debug; get
 process RSS/high-water mark from Perfetto/process stats and dumpsys for optimized profiling. PSS is not RSS.
+
+For SM-S918B cold traces, the first camera-buffer presentation was identified locally: find the first
+RenderThread `acquireBuffer` child named `SurfaceTexture-*`, follow parents to `DrawFrames <token>`,
+join that surface frame token to the app's actual FrameTimeline frame, and subtract the
+`launching: com.aiphotographer.app` start from presentation `ts+dur`. The app has one preview TextureView;
+exclude splash layers and dropped frames. Record the matched token and timestamps so this can be audited.
+The measured results and local `cold.sql` evidence path are in `phase-status.md`.
+
 Thermal is unavailable before API 29; report UNKNOWN rather than NONE. Record battery and thermal progression
 across the 10-minute session. GL eligibility is not a runtime delegate probe; no model exists to benchmark.
 

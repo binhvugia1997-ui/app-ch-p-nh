@@ -78,8 +78,9 @@ debug HUD are in scope).
 
 ### 2.6a UX orientation
 
-Portrait-first MVP UX (owner decision 2026-10-03): the app locks to portrait by default behind a flag, while
-the coordinate transforms and analysis must remain **landscape-correct and tested** in both orientations.
+Portrait-first MVP UX (owner clarification 2026-10-05): portrait is the initial design preference, not an
+orientation lock. System Auto rotate controls orientation in every build. No debug flag is required.
+The coordinate transforms and analysis must remain **landscape-correct and tested** in both orientations.
 The overlay uses the single tested `ANALYSIS → PREVIEW` transform; no orientation-specific geometry branches.
 
 ### 2.7 Dev screen
