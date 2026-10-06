@@ -5,6 +5,17 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ImagePlanesTest {
+    @Test fun invalidCropStrideBufferAndRotationFailBeforeOutputMutation() {
+        val plane = Plane(ByteBuffer.wrap(byteArrayOf(16,16,16,16)),2,1)
+        assertThrows(IllegalArgumentException::class.java) { Crop(-1,0,2,2) }
+        assertThrows(IllegalArgumentException::class.java) { Crop(0,0,0,2) }
+        assertThrows(IllegalArgumentException::class.java) { Plane(plane.buffer,0,1) }
+        assertThrows(IllegalArgumentException::class.java) { ImagePlanes.luma(plane,Crop(0,0,2,2),45,2) }
+        assertThrows(IllegalArgumentException::class.java) { ImagePlanes.luma(plane,Crop(0,0,2,2),0,0) }
+        val output = IntArray(4) { 77 }
+        assertThrows(IllegalArgumentException::class.java) { ImagePlanes.rgb(plane,plane,plane,Crop(2,0,2,2),0,output) }
+        assertArrayEquals(IntArray(4) { 77 },output)
+    }
     @Test fun lumaHonorsBufferPositionPaddingPixelStrideAndRotation() {
         val buffer = ByteBuffer.wrap(byteArrayOf(99, 10, 0, 20, 0, 0, 0, 30, 0, 40, 0, 0, 0))
         buffer.position(1)

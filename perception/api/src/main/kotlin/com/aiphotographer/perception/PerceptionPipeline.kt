@@ -9,6 +9,7 @@ enum class DelegateKind { CPU, GPU, UNKNOWN }
 data class SourceDiagnostic(val status: SourceStatus = SourceStatus.INITIALIZING, val configuredDelegate: DelegateKind = DelegateKind.UNKNOWN,
     val model: String = "", val errorCode: String? = null)
 data class PerceptionMetrics(
+    val sessionId: Long = 0,
     val offered: Long = 0, val accepted: Long = 0, val busySkipped: Long = 0, val cadenceSkipped: Long = 0,
     val poseCompleted: Long = 0, val poseDetected: Long = 0, val faceCompleted: Long = 0, val faceDetected: Long = 0,
     val errors: Long = 0, val elapsedSeconds: Double = 0.0, val latencies: Map<String, LatencySummary> = emptyMap(),

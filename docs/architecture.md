@@ -500,6 +500,20 @@ require renewed graph/manifest, bytecode and runtime verification. Evidence and 
 `docs/phase-2-sdk-audit.md`. Native notices/source availability are packaged. Emulator and final
 shrunk-runtime checks are reported in the session handoff. No physical-device or owner-acceptance claim.
 
+**ADR-018 — Phase 2 automated robustness review (2026-10-07).**
+
+Keep the same modules, single-person Tasks architecture and official telemetry-free Core. Validate
+SDK landmark counts and callback timestamps before mapping, coalesce lifecycle requests, and reject
+out-of-order/expired results before publication. A task error marks diagnostics unavailable and clears
+affected results; bounded worker-owned recovery retries at most three times per active lifecycle
+epoch (1/2/4-second engineering delays, CALIBRATION_REQUIRED), falling back to CPU after a GPU runtime
+failure. Preview/capture remain independent. Input storage remains owned until completion or native
+closure; cancellation after submission cannot release it early. Percentile sorting/logging runs at
+most once per second rather than every result; counters and immutable result publication continue.
+These are implementation safeguards, not new product behavior or measured device thresholds.
+Automated fault injection belongs to adapter tests; no human tracking or physical acceptance follows
+from synthetic tests. Physical tests remain PENDING_PHYSICAL_VERIFICATION.
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |

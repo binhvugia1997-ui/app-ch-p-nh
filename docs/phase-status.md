@@ -1429,3 +1429,16 @@ KNOWN LIMITATIONS remain unchanged: numerical reprojection accuracy remains unme
 unsupported-device fallback remains hardware-unverified; results from Samsung SM-S918B must not
 be generalized to other devices. Human full-body/face physical verification is the remaining
 dependency, now explicitly planned for a solo tester. Resume only when the owner is available.
+
+
+### Phase 2 autonomous non-physical review ? 2026-10-07 (in progress)
+
+Owner authorized all useful non-physical work while unavailable. Manual gates remain
+PENDING_PHYSICAL_VERIFICATION; the earlier pause is superseded only for automated engineering work.
+ADR-018 documents bounded initialization/runtime recovery, lifecycle coalescing, timestamp validation
+and stale publication prevention without replacing the architecture or SDK privacy solution.
+The current review fixes compile: debug/release/profile builds and strict app/adapter/camera lint PASS;
+29 JVM tests, 7 adapter emulator regressions and 5 debug app emulator tests PASS. Final privacy/profile
+reruns and handoff are in progress. Emulator API 37 evidence is not Samsung performance or human tracking.
+The consolidated solo plan is [phase-2-physical-verification.md](phase-2-physical-verification.md).
+No owner acceptance, Premium UI or Phase 3 implementation. Historical physical numbers remain unchanged.

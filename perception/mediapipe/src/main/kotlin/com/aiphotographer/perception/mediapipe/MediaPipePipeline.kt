@@ -7,7 +7,6 @@ import android.os.Build
 import android.util.Log
 import com.aiphotographer.model.*
 import com.aiphotographer.perception.*
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.ScheduledFuture
@@ -20,7 +19,13 @@ object MediaPipePipelineFactory {
     fun create(context: Context, capability: CapabilityReport): PerceptionPipeline = MediaPipePipeline(context.applicationContext, capability)
 }
 
-private class MediaPipePipeline(private val context: Context, private val capability: CapabilityReport) : PerceptionPipeline {
+internal class MediaPipePipeline(
+    context: Context, private val capability: CapabilityReport,
+    private val makePose: (DelegateKind, String) -> OwnedPoseSource = { delegate, model -> MediaPipePoseSource(context, delegate, model) },
+    private val makeFace: (DelegateKind) -> OwnedFaceSource = { delegate -> MediaPipeFaceSource(context, delegate) },
+    private val retryDelay: (Long) -> Long = { it },
+) : PerceptionPipeline {
+    private companion object { val sessions = java.util.concurrent.atomic.AtomicLong() }
     private val worker = java.util.concurrent.ScheduledThreadPoolExecutor(1) { Thread(it, "Phase2Perception") }
         .apply { removeOnCancelPolicy = true }
     private val dispatcher = worker.asCoroutineDispatcher()
@@ -29,194 +34,273 @@ private class MediaPipePipeline(private val context: Context, private val capabi
     private val gate = BatchGate()
     private val closed = AtomicBoolean(false)
     private val active = AtomicBoolean(true)
+    private val lifecycleQueued = AtomicBoolean(false)
     private val mutableState = MutableStateFlow(PerceptionState())
     override val state = mutableState.asStateFlow()
-    private var pose: MediaPipePoseSource? = null
-    private var face: MediaPipeFaceSource? = null
+    private var pose: OwnedPoseSource? = null
+    private var face: OwnedFaceSource? = null
     private val assembler = SubjectAssembler()
+    private val recovery = RecoveryBudget()
+    private var retry: ScheduledFuture<*>? = null
+    private var cpuOnly = false
     private var lastFace: FaceFrameResult? = null
     private var pixels = IntArray(0)
     private data class Batch(val frame: RgbFrame, val token: Long, val epoch: Long, val startNs: Long,
-        var outstanding: Int = 0, var poseResult: PoseFrameResult? = null, var failed: Boolean = false,
+        val submitted: AtomicBoolean = AtomicBoolean(false), var outstanding: Int = 0,
+        var poseResult: PoseFrameResult? = null, var failed: Boolean = false,
+        var poseTrace: Boolean = false, var faceTrace: Boolean = false,
         var watchdog: ScheduledFuture<*>? = null)
     @Volatile private var batch: Batch? = null
     private var lastPoseMs = -1L
     private var lastFaceMs = -1L
     private var lastTimestampMs = -1L
     private var startedNs = 0L
+    private var summariesNs = 0L
     private var scheduleOffered = 0L
     private var scheduleBusy = 0L
     private var scheduleWindowMs = -1L
     private var recentBusyRatio = 0.0
     private var metrics = PerceptionMetrics()
     private val windows = mapOf("pose" to LatencyWindow(), "face" to LatencyWindow(), "batch" to LatencyWindow())
+    private var summaries = emptyMap<String, LatencySummary>()
     private val schedule = PerceptionSchedule(capability.tier)
     private var geometry: FrameGeometry? = null
     private val level get() = schedule.level
-    private fun beginTrace(name: String, token: Long) { if (Build.VERSION.SDK_INT >= 29) Trace.beginAsyncSection(name, token.toInt()) }
-    private fun endTrace(name: String, token: Long) { if (Build.VERSION.SDK_INT >= 29) Trace.endAsyncSection(name, token.toInt()) }
+    private fun trace(current: Batch, source: String, begin: Boolean) {
+        if (Build.VERSION.SDK_INT < 29) return
+        if (begin) {
+            if (source == "pose") current.poseTrace = true else current.faceTrace = true
+            Trace.beginAsyncSection("phase2_$source", current.token.toInt())
+        } else if (if (source == "pose") current.poseTrace else current.faceTrace) {
+            Trace.endAsyncSection("phase2_$source", current.token.toInt())
+            if (source == "pose") current.poseTrace = false else current.faceTrace = false
+        }
+    }
     init {
         scope.launch { for (completion in completions) completion() }
-        worker.execute { if (gate.epoch() == 0L) initialize() }
+        requestLifecycleRefresh()
     }
-    private fun initialize() {
-        if (closed.get() || !active.get()) return
+    private fun eligible(epoch: Long) = !closed.get() && active.get() && gate.epoch() == epoch
+    private fun initialize(epoch: Long) {
+        if (!eligible(epoch)) return
         val model = if (schedule.useLite) "pose_landmarker_lite" else "pose_landmarker_full"
-        fun delegates() = if (capability.gpuEligible && !capability.emulator) listOf(DelegateKind.GPU, DelegateKind.CPU) else listOf(DelegateKind.CPU)
-        for (delegate in delegates()) {
-            try { pose = MediaPipePoseSource(context, delegate, model); break }
-            catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
-                Log.w("Phase2Perception", "pose_init_failure delegate=$delegate type=${error.javaClass.simpleName}", error)
+        val delegates = if (!cpuOnly && capability.gpuEligible && !capability.emulator) listOf(DelegateKind.GPU, DelegateKind.CPU) else listOf(DelegateKind.CPU)
+        if (pose == null) for (delegate in delegates) {
+            try { pose = makePose(delegate, model); break }
+            catch (error: Throwable) { logNonfatal("pose_init_failure delegate=$delegate", error) }
+        }
+        if (!eligible(epoch)) { closeSources(); return }
+        if (face == null) for (delegate in delegates) {
+            try { face = makeFace(delegate); break }
+            catch (error: Throwable) { logNonfatal("face_init_failure delegate=$delegate", error) }
+        }
+        val published = synchronized(this) {
+            if (!eligible(epoch)) false else {
+                mutableState.value = mutableState.value.copy(
+                pose = pose?.diagnostic ?: SourceDiagnostic(SourceStatus.UNAVAILABLE, model = model, errorCode = "POSE_INIT_FAILED"),
+                face = face?.diagnostic ?: SourceDiagnostic(SourceStatus.UNAVAILABLE, model = "face_landmarker", errorCode = "FACE_INIT_FAILED"))
+                true
             }
         }
-        if (closed.get() || !active.get()) { closeSources(); return }
-        for (delegate in delegates()) {
-            try { face = MediaPipeFaceSource(context, delegate); break }
-            catch (error: Throwable) {
-                if (error is VirtualMachineError || error is ThreadDeath) throw error
-                Log.w("Phase2Perception", "face_init_failure delegate=$delegate type=${error.javaClass.simpleName}", error)
-            }
-        }
-        if (closed.get() || !active.get()) { closeSources(); return }
-        mutableState.value = mutableState.value.copy(
-            pose = pose?.diagnostic ?: SourceDiagnostic(SourceStatus.UNAVAILABLE, model = model, errorCode = "POSE_INIT_FAILED"),
-            face = face?.diagnostic ?: SourceDiagnostic(SourceStatus.UNAVAILABLE, model = "face_landmarker", errorCode = "FACE_INIT_FAILED"))
+        if (!published) { closeSources(); return }
         Log.i("Phase2Perception", "configured pose=${mutableState.value.pose} face=${mutableState.value.face}; runtime_delegate_evidence=NOT_MEASURED")
+        if (pose == null || face == null) scheduleRecovery(epoch)
+    }
+    private fun logNonfatal(message: String, error: Throwable) {
+        if (error is VirtualMachineError || error is ThreadDeath) throw error
+        Log.w("Phase2Perception", message, error)
+    }
+    private fun scheduleRecovery(epoch: Long) {
+        if (!eligible(epoch) || retry?.isDone == false) return
+        val delay = recovery.nextDelayMs() ?: return
+        retry = worker.schedule({ retry = null; if (eligible(epoch)) initialize(epoch) }, retryDelay(delay), TimeUnit.MILLISECONDS)
     }
     @Synchronized override fun acquire(timestampMs: Long, geometry: FrameGeometry, device: DeviceState): RgbFrame? {
         if (closed.get() || !active.get() || mutableState.value.pose.status != SourceStatus.READY) return null
+        require(timestampMs >= 0 && geometry.width > 0 && geometry.height > 0)
         metrics = metrics.copy(offered = metrics.offered + 1)
         if (startedNs == 0L) startedNs = SystemClock.elapsedRealtimeNanos()
         if (timestampMs <= lastTimestampMs || (lastPoseMs >= 0 && timestampMs - lastPoseMs < schedule.posePeriodMs)) {
             metrics = metrics.copy(cadenceSkipped = metrics.cadenceSkipped + 1); return null
         }
+        val size = Math.multiplyExact(geometry.width, geometry.height)
         val token = gate.acquire()
         if (token == null) { metrics = metrics.copy(busySkipped = metrics.busySkipped + 1); return null }
         lastPoseMs = timestampMs; lastTimestampMs = timestampMs
-        if (pixels.size != geometry.width * geometry.height) pixels = IntArray(geometry.width * geometry.height)
+        if (pixels.size != size) pixels = IntArray(size)
         val frame = RgbFrame(timestampMs, geometry, device, pixels)
         batch = Batch(frame, token, gate.epoch(), SystemClock.elapsedRealtimeNanos())
         metrics = metrics.copy(accepted = metrics.accepted + 1)
         return frame
     }
     override fun submit(frame: RgbFrame) {
-        val current = batch?.takeIf { it.frame === frame } ?: return
-        if (closed.get()) { gate.release(current.token); return }
-        worker.execute {
-            if (!gate.valid(current.token, current.epoch) || closed.get()) { release(current); return@execute }
-            if (geometry != null && geometry != frame.geometry) {
-                closeSources(); assembler.reset(); lastFace = null; schedule.resetMotion(); initialize()
-            }
-            geometry = frame.geometry
-            val poseSource = pose ?: run { release(current); return@execute }
-            val faceSource = face
-            val runFace = face != null && mutableState.value.snapshot?.subjects?.isNotEmpty() == true &&
-                (lastFaceMs < 0 || frame.timestampMs - lastFaceMs >= schedule.facePeriodMs)
-            current.outstanding = if (runFace) 2 else 1
-            val poseStart = SystemClock.elapsedRealtimeNanos()
-            beginTrace("phase2_pose", current.token)
-            poseSource.submit(frame, { result -> enqueue {
-                endTrace("phase2_pose", current.token)
-                if (batch !== current) return@enqueue
-                windows.getValue("pose").record(SystemClock.elapsedRealtimeNanos() - poseStart)
-                poseSource.releaseImage(); current.poseResult = result
-                synchronized(this) { metrics = metrics.copy(poseCompleted = metrics.poseCompleted + 1, poseDetected = metrics.poseDetected + if (result.landmarks.isEmpty()) 0 else 1) }
-                completed(current)
-            } }, { code -> enqueue { endTrace("phase2_pose", current.token); if (batch === current) { poseSource.releaseImage(); failed(current, code) } } })
-            if (runFace) {
-                lastFaceMs = frame.timestampMs
-                val faceStart = SystemClock.elapsedRealtimeNanos()
-                beginTrace("phase2_face", current.token)
-                faceSource?.submit(frame, { result -> enqueue {
-                    endTrace("phase2_face", current.token)
-                    if (batch !== current) return@enqueue
-                    windows.getValue("face").record(SystemClock.elapsedRealtimeNanos() - faceStart)
-                    faceSource.releaseImage()
-                    if (gate.valid(current.token, current.epoch)) lastFace = result
-                    synchronized(this) { metrics = metrics.copy(faceCompleted = metrics.faceCompleted + 1, faceDetected = metrics.faceDetected + if (result.face == null) 0 else 1) }
-                    completed(current)
-                } }, { code -> enqueue { endTrace("phase2_face", current.token); if (batch === current) { faceSource.releaseImage(); failed(current, code) } } })
-            }
-            // One watchdog per admitted batch; timeout closes tasks before permitting any buffer reuse.
-            current.watchdog = worker.schedule({ if (batch === current && current.outstanding > 0 && !closed.get()) {
-                Log.e("Phase2Perception", "INFERENCE_TIMEOUT")
-                synchronized(this) { metrics = metrics.copy(errors = metrics.errors + 1) }
-                closeSources()
-                assembler.reset(); lastFace = null
-                mutableState.value = mutableState.value.copy(pose = mutableState.value.pose.copy(status = SourceStatus.UNAVAILABLE, errorCode = "INFERENCE_TIMEOUT"),
-                    face = mutableState.value.face.copy(status = SourceStatus.UNAVAILABLE, errorCode = "INFERENCE_TIMEOUT"), snapshot = null)
-                release(current)
-            } }, 5, TimeUnit.SECONDS)
+        synchronized(this) {
+            val current = batch?.takeIf { it.frame === frame } ?: return
+            if (closed.get() || !current.submitted.compareAndSet(false, true)) return
+            worker.execute { submitOwned(current) }
         }
     }
+    private fun submitOwned(current: Batch) {
+        if (!gate.valid(current.token, current.epoch) || closed.get()) { release(current); return }
+        val frame = current.frame
+        if (geometry != null && geometry != frame.geometry) {
+            retry?.cancel(false); retry = null
+            closeSources(); clearResults(); schedule.resetObservations(); initialize(current.epoch)
+        }
+        geometry = frame.geometry
+        val poseSource = pose ?: run { release(current); return }
+        val faceSource = face
+        val runFace = faceSource != null && mutableState.value.snapshot?.subjects?.isNotEmpty() == true &&
+            (lastFaceMs < 0 || frame.timestampMs - lastFaceMs >= schedule.facePeriodMs)
+        current.outstanding = if (runFace) 2 else 1
+        val poseStart = SystemClock.elapsedRealtimeNanos()
+        trace(current, "pose", true)
+        poseSource.submit(frame, { result -> enqueue {
+            trace(current, "pose", false)
+            if (!valid(current)) return@enqueue
+            poseSource.releaseImage()
+            if (result.timestampMs != frame.timestampMs) { failed(current, "POSE_TIMESTAMP_INVALID"); return@enqueue }
+            windows.getValue("pose").record(SystemClock.elapsedRealtimeNanos() - poseStart)
+            current.poseResult = result
+            synchronized(this) { metrics = metrics.copy(poseCompleted = metrics.poseCompleted + 1, poseDetected = metrics.poseDetected + if (result.landmarks.isEmpty()) 0 else 1) }
+            completed(current)
+        } }, { code -> enqueue { trace(current, "pose", false); if (valid(current)) { poseSource.releaseImage(); failed(current, code) } } })
+        if (runFace) {
+            lastFaceMs = frame.timestampMs
+            val faceStart = SystemClock.elapsedRealtimeNanos()
+            trace(current, "face", true)
+            faceSource!!.submit(frame, { result -> enqueue {
+                trace(current, "face", false)
+                if (!valid(current)) return@enqueue
+                faceSource.releaseImage()
+                if (result.timestampMs != frame.timestampMs) { failed(current, "FACE_TIMESTAMP_INVALID"); return@enqueue }
+                windows.getValue("face").record(SystemClock.elapsedRealtimeNanos() - faceStart)
+                lastFace = result
+                synchronized(this) { metrics = metrics.copy(faceCompleted = metrics.faceCompleted + 1, faceDetected = metrics.faceDetected + if (result.face == null) 0 else 1) }
+                completed(current)
+            } }, { code -> enqueue { trace(current, "face", false); if (valid(current)) { faceSource.releaseImage(); failed(current, code) } } })
+        }
+        current.watchdog = worker.schedule({ if (valid(current) && current.outstanding > 0) {
+            if (failedState(current, "INFERENCE_TIMEOUT")) recover(current)
+        } }, 5, TimeUnit.SECONDS)
+    }
+    private fun valid(current: Batch) = batch === current && gate.valid(current.token, current.epoch) && !closed.get()
     private fun enqueue(completion: () -> Unit) {
         if (!closed.get() && completions.trySend(completion).isFailure) Log.e("Phase2Perception", "COMPLETION_CHANNEL_FULL")
     }
-    private fun failed(current: Batch, code: String) {
+    private fun failedState(current: Batch, code: String): Boolean {
         Log.e("Phase2Perception", code)
-        synchronized(this) { metrics = metrics.copy(errors = metrics.errors + 1) }
-        current.failed = true
-        completed(current)
+        synchronized(this) {
+            if (!valid(current)) return false
+            metrics = metrics.copy(errors = metrics.errors + 1)
+            mutableState.value = mutableState.value.copy(snapshot = null, metrics = metrics,
+                pose = mutableState.value.pose.copy(status = SourceStatus.UNAVAILABLE, errorCode = code),
+                face = mutableState.value.face.copy(status = SourceStatus.UNAVAILABLE, errorCode = code))
+        }
+        return true
+    }
+    private fun failed(current: Batch, code: String) {
+        if (!failedState(current, code)) return
+        current.failed = true; completed(current)
+    }
+    private fun clearResults() {
+        assembler.reset(); lastFace = null; lastFaceMs = -1; windows.values.forEach { it.clear() }; summaries = emptyMap(); summariesNs = 0
+        synchronized(this) { mutableState.value = mutableState.value.copy(snapshot = null) }
+    }
+    private fun recover(current: Batch) {
+        retry?.cancel(false); retry = null
+        cpuOnly = true
+        closeSources(); clearResults(); release(current)
+        scheduleRecovery(current.epoch)
     }
     private fun completed(current: Batch) {
         current.outstanding--
         if (current.outstanding > 0 || batch !== current) return
+        if (current.failed) { recover(current); return }
         val now = SystemClock.elapsedRealtimeNanos()
         windows.getValue("batch").record(now - current.startNs)
-        if (gate.valid(current.token, current.epoch)) {
+        val refresh = summariesNs == 0L || now - summariesNs >= 1_000_000_000L
+        if (refresh) { summaries = windows.mapValues { it.value.summary() }; summariesNs = now }
+        var modelChanged = false
+        synchronized(this) {
+            if (!valid(current)) { release(current); return }
             val result = current.poseResult
-            val subjects = if (result == null || current.failed) emptyList() else assembler.assemble(result, current.frame.geometry, lastFace)
+            val subjects = if (result == null) emptyList() else assembler.assemble(result, current.frame.geometry, lastFace)
             val sourceAge = lastFace?.let { (current.frame.timestampMs - it.timestampMs).coerceAtLeast(0) } ?: Long.MAX_VALUE
+            val faceFresh = lastFace?.let { PerceptionFreshness.fresh(it.timestampMs, current.frame.timestampMs) } == true
             val quality = AnalysisQuality(mapOf(
-                "pose" to SourceQuality(0, windows.getValue("pose").summary().p50Ms, result == null || current.failed),
-                "face" to SourceQuality(sourceAge, windows.getValue("face").summary().p50Ms, sourceAge > PerceptionFreshness.MAX_AGE_MS)),
-                synchronized(this) { if (metrics.offered == 0L) 0.0 else metrics.busySkipped.toDouble() / metrics.offered }, level)
+                "pose" to SourceQuality(0, summaries["pose"]?.p50Ms, result == null),
+                "face" to SourceQuality(sourceAge, summaries["face"]?.p50Ms, !faceFresh)),
+                if (metrics.offered == 0L) 0.0 else metrics.busySkipped.toDouble() / metrics.offered, level)
             val snapshot = PerceptionSnapshot(current.frame.timestampMs, current.frame.geometry, current.frame.device, subjects, quality,
-                lastFace?.takeIf { PerceptionFreshness.fresh(it.timestampMs, current.frame.timestampMs) }?.face)
-            synchronized(this) { metrics = metrics.copy(elapsedSeconds = (now - startedNs) / 1e9, latencies = windows.mapValues { it.value.summary() }, degradationLevel = level) }
-            mutableState.value = mutableState.value.copy(snapshot = snapshot, metrics = synchronized(this) { metrics })
-            Log.i("Phase2Baseline", "${mutableState.value.metrics}; pose=${mutableState.value.pose.configuredDelegate}; face=${mutableState.value.face.configuredDelegate}")
+                lastFace?.takeIf { faceFresh }?.face)
+            metrics = metrics.copy(elapsedSeconds = (now - startedNs) / 1e9, latencies = summaries, degradationLevel = level)
+            mutableState.value = mutableState.value.copy(snapshot = snapshot, metrics = metrics)
+            if (refresh) Log.i("Phase2Baseline", "$metrics; pose=${mutableState.value.pose.configuredDelegate}; face=${mutableState.value.face.configuredDelegate}")
             val oldLite = schedule.useLite
-            synchronized(this) {
-                if (scheduleWindowMs < 0 || current.frame.timestampMs - scheduleWindowMs >= 1000) {
-                    val offered = metrics.offered - scheduleOffered
-                    recentBusyRatio = if (offered > 0) (metrics.busySkipped - scheduleBusy).toDouble() / offered else 0.0
-                    scheduleOffered = metrics.offered; scheduleBusy = metrics.busySkipped; scheduleWindowMs = current.frame.timestampMs
-                }
-                schedule.observe(current.frame.timestampMs, current.frame.device.thermalStatus,
-                    recentBusyRatio, windows.getValue("pose").summary().p95Ms, result?.landmarks)
+            if (scheduleWindowMs < 0 || current.frame.timestampMs - scheduleWindowMs >= 1000) {
+                val offered = metrics.offered - scheduleOffered
+                recentBusyRatio = if (offered > 0) (metrics.busySkipped - scheduleBusy).toDouble() / offered else 0.0
+                scheduleOffered = metrics.offered; scheduleBusy = metrics.busySkipped; scheduleWindowMs = current.frame.timestampMs
             }
-            if (oldLite != schedule.useLite) { closeSources(); assembler.reset(); lastFace = null; initialize() }
+            schedule.observe(current.frame.timestampMs, current.frame.device.thermalStatus,
+                recentBusyRatio, summaries["pose"]?.p95Ms, result?.landmarks)
+            modelChanged = oldLite != schedule.useLite
         }
+        if (modelChanged && eligible(current.epoch)) { closeSources(); clearResults(); initialize(current.epoch) }
         release(current)
     }
-    @Synchronized private fun release(current: Batch) { current.watchdog?.cancel(false); if (batch === current) batch = null; gate.release(current.token) }
-    override fun cancel(frame: RgbFrame) { batch?.takeIf { it.frame === frame }?.let(::release) }
-    override fun setActive(active: Boolean) {
-        if (closed.get()) return
-        if (this.active.getAndSet(active) == active) return
+    @Synchronized private fun release(current: Batch) {
+        current.watchdog?.cancel(false)
+        trace(current, "pose", false); trace(current, "face", false)
+        if (batch === current) batch = null
+        gate.release(current.token)
+    }
+    @Synchronized override fun cancel(frame: RgbFrame) {
+        batch?.takeIf { it.frame === frame && !it.submitted.get() }?.let(::release)
+    }
+    @Synchronized override fun setActive(active: Boolean) {
+        if (closed.get() || this.active.getAndSet(active) == active) return
         gate.setActive(active)
-        val epoch = gate.epoch()
         mutableState.value = mutableState.value.copy(snapshot = null,
             pose = mutableState.value.pose.copy(status = if (active) SourceStatus.INITIALIZING else SourceStatus.STOPPED),
             face = mutableState.value.face.copy(status = if (active) SourceStatus.INITIALIZING else SourceStatus.STOPPED))
+        requestLifecycleRefresh()
+    }
+    private fun requestLifecycleRefresh() {
+        if (closed.get() || !lifecycleQueued.compareAndSet(false, true)) return
         worker.execute {
-            if (gate.epoch() != epoch || closed.get()) return@execute
-            closeSources(); batch?.let(::release); assembler.reset(); lastFace = null; geometry = null
-            synchronized(this) {
-                lastPoseMs = -1; lastFaceMs = -1; lastTimestampMs = -1; schedule.resetMotion()
-                scheduleOffered = metrics.offered; scheduleBusy = metrics.busySkipped; scheduleWindowMs = -1; recentBusyRatio = 0.0
+            var epoch = -1L
+            try {
+                do {
+                    epoch = gate.epoch()
+                    retry?.cancel(false); retry = null
+                    closeSources(); batch?.let(::release); clearResults(); geometry = null
+                    recovery.reset(); cpuOnly = false
+                    synchronized(this) {
+                        lastPoseMs = -1; lastFaceMs = -1; lastTimestampMs = -1; schedule.resetObservations()
+                        startedNs = 0; metrics = PerceptionMetrics(sessionId = sessions.incrementAndGet())
+                        mutableState.value = mutableState.value.copy(metrics = metrics)
+                        scheduleOffered = 0; scheduleBusy = 0; scheduleWindowMs = -1; recentBusyRatio = 0.0
+                    }
+                    if (eligible(epoch)) initialize(epoch)
+                } while (!closed.get() && epoch != gate.epoch())
+            } finally {
+                lifecycleQueued.set(false)
+                if (!closed.get() && epoch != gate.epoch()) requestLifecycleRefresh()
             }
-            if (this.active.get()) initialize()
         }
     }
-    private fun closeSources() { pose?.close(); face?.close(); pose = null; face = null }
-    override fun close() {
+    private fun closeSources() {
+        val sources = listOfNotNull(pose, face); pose = null; face = null
+        sources.forEach { source -> try { source.close() } catch (error: Throwable) { logNonfatal("source_close_failure", error) } }
+    }
+    @Synchronized override fun close() {
         if (!closed.compareAndSet(false, true)) return
         gate.setActive(false)
         mutableState.value = mutableState.value.copy(snapshot = null, pose = mutableState.value.pose.copy(status = SourceStatus.STOPPED), face = mutableState.value.face.copy(status = SourceStatus.STOPPED))
         worker.execute {
+            retry?.cancel(false); retry = null
             closeSources(); batch?.let(::release)
             completions.close(); scope.cancel(); worker.shutdown(); dispatcher.close()
         }

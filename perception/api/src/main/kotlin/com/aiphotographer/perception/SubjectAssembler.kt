@@ -21,7 +21,12 @@ class LandmarkFilter {
 
 object PerceptionFreshness {
     const val MAX_AGE_MS = 500L // CALIBRATION_REQUIRED, diagnostic timeout; not a validated accuracy bound.
-    fun fresh(sourceTimestamp: Long, frameTimestamp: Long) = frameTimestamp >= sourceTimestamp && frameTimestamp - sourceTimestamp <= MAX_AGE_MS
+    fun fresh(sourceTimestamp: Long, frameTimestamp: Long) = sourceTimestamp >= 0 && frameTimestamp >= sourceTimestamp && frameTimestamp - sourceTimestamp <= MAX_AGE_MS
+    fun advance(source: SourceQuality, additionalAgeMs: Long): SourceQuality {
+        require(additionalAgeMs >= 0)
+        val age = if (source.ageMs < 0 || source.ageMs > Long.MAX_VALUE - additionalAgeMs) Long.MAX_VALUE else source.ageMs + additionalAgeMs
+        return source.copy(ageMs = age, stale = source.stale || age > MAX_AGE_MS)
+    }
     fun sameGeometry(a: FrameGeometry, b: FrameGeometry) = a == b
 }
 
@@ -37,7 +42,7 @@ class SubjectAssembler {
         if (!present) { trackId++; present = true; filter.reset() }
         val landmarks = filter.apply(pose.landmarks, pose.timestampMs)
         val measurable = landmarks.filter(LandmarkUsability::measurable)
-        if (measurable.isEmpty()) return emptyList()
+        if (measurable.isEmpty()) { filter.reset(); present = false; return emptyList() }
         val box = BoundingBox(measurable.minOf { it.x }, measurable.minOf { it.y }, measurable.maxOf { it.x }, measurable.maxOf { it.y })
         val visible = measurable.count { it.id in PoseLandmarks.coreIds }.toDouble() / PoseLandmarks.coreIds.size
         val nose = measurable.firstOrNull { it.id == "nose" }

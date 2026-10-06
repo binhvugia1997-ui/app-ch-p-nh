@@ -5,6 +5,31 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PerceptionContractTest {
+    @Test fun unusablePersonLossResetsSessionAndScoresRemainRaw() {
+        val assembler = SubjectAssembler()
+        val initial = assembler.assemble(pose(),geometry,null).single()
+        val unusable = pose(200).copy(landmarks=pose().landmarks.map { it.copy(visibility=.2,presence=1.0) })
+        assertTrue(assembler.assemble(unusable,geometry,null).isEmpty())
+        val resumed = assembler.assemble(pose(300),geometry,null).single()
+        assertNotEquals(initial.trackId,resumed.trackId)
+        assertTrue(resumed.landmarks.all { it.visibility==.9 && it.presence==.9 })
+        assertEquals(33,PoseLandmarks.ids.size); assertEquals(33,PoseLandmarks.ids.toSet().size)
+        val unknown = pose(400).copy(landmarks=pose().landmarks.map { it.copy(visibility=null,presence=null) })
+        assertTrue(assembler.assemble(unknown,geometry,null).isEmpty())
+    }
+    @Test fun freshnessRejectsFutureNegativeAndOverflowAndRecoveryIsBounded() {
+        assertFalse(PerceptionFreshness.fresh(-1,100))
+        assertFalse(PerceptionFreshness.fresh(Long.MIN_VALUE,Long.MAX_VALUE))
+        assertFalse(PerceptionFreshness.fresh(101,100))
+        assertEquals(Long.MAX_VALUE,PerceptionFreshness.advance(SourceQuality(Long.MAX_VALUE),100).ageMs)
+        assertTrue(PerceptionFreshness.advance(SourceQuality(Long.MAX_VALUE),100).stale)
+        assertFalse(PerceptionFreshness.advance(SourceQuality(0),500).stale)
+        assertTrue(PerceptionFreshness.advance(SourceQuality(0),501).stale)
+        val budget=RecoveryBudget()
+        assertEquals(1000L,budget.nextDelayMs()); assertEquals(2000L,budget.nextDelayMs()); assertEquals(4000L,budget.nextDelayMs())
+        repeat(10) { assertNull(budget.nextDelayMs()) }
+        budget.reset(); assertEquals(1000L,budget.nextDelayMs())
+    }
     private val geometry = FrameGeometry(480, 640, 90, false, CameraFacing.BACK, AnalysisResolution.R480P)
     private fun pose(time: Long = 100) = PoseFrameResult(time, PoseLandmarks.ids.mapIndexed { i, id ->
         Landmark(id, .25 + i / 100.0, .25 + i / 100.0, visibility = .9, presence = .9)

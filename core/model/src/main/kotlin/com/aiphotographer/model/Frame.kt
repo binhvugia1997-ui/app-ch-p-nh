@@ -8,7 +8,12 @@ data class FrameGeometry(
     val width: Int, val height: Int, val rotationDegrees: Int, val isMirrored: Boolean,
     val primaryCameraFacing: CameraFacing, val analysisResolution: AnalysisResolution,
     val aspectRatio: Double = width.toDouble() / height,
-)
+) {
+    init {
+        require(width > 0 && height > 0 && aspectRatio.isFinite() && aspectRatio > 0)
+        require(rotationDegrees == 0 || rotationDegrees == 90 || rotationDegrees == 180 || rotationDegrees == 270)
+    }
+}
 data class DeviceState(
     val tier: DeviceTier, val rollDegrees: Double? = null, val imuStability: Double? = null,
     val thermalStatus: ThermalStatus = ThermalStatus.UNKNOWN,

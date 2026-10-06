@@ -61,7 +61,7 @@ import com.aiphotographer.model.PoseLandmarks
                 }
             }
             val diagnostic = perception?.snapshot
-            if (diagnostic?.frame == frame && diagnostic.quality.sources["face"]?.stale == false &&
+            if (diagnostic?.frame == frame && snapshot?.analysis?.quality?.sources?.get("face")?.stale == false &&
                 snapshot?.analysis?.subjects?.firstOrNull()?.face == null) {
                 diagnostic.faceDiagnostic?.landmarks?.forEach { l ->
                     Coordinates.analysisToPreview(com.aiphotographer.geometry.Point(l.x, l.y), frame.width, frame.height,

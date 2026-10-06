@@ -36,4 +36,5 @@ class PerceptionSchedule(private val tier: DeviceTier) {
         previousPose = frame
     }
     fun resetMotion() { previousPose = null; stillSince = null; still = false }
+    fun resetObservations() { resetMotion(); overloadedSince = null; recoverySince = null }
 }

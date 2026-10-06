@@ -5,22 +5,36 @@ import com.aiphotographer.geometry.Point
 import java.nio.ByteBuffer
 
 data class Plane(val buffer: ByteBuffer, val rowStride: Int, val pixelStride: Int) {
-    fun at(x: Int, y: Int): Int = buffer.get(buffer.position() + y * rowStride + x * pixelStride).toInt() and 255
+    private val offset = buffer.position()
+    init { require(rowStride > 0 && pixelStride > 0) }
+    fun requireRegion(right: Int, bottom: Int) {
+        require(right >= 0 && bottom >= 0 && offset.toLong() + bottom.toLong() * rowStride + right.toLong() * pixelStride < buffer.limit())
+    }
+    fun at(x: Int, y: Int): Int = buffer.get(offset + y * rowStride + x * pixelStride).toInt() and 255
 }
-data class Crop(val left: Int, val top: Int, val width: Int, val height: Int)
+data class Crop(val left: Int, val top: Int, val width: Int, val height: Int) {
+    init { require(left >= 0 && top >= 0 && width > 0 && height > 0); Math.addExact(left, width); Math.addExact(top, height) }
+}
 
 object ImagePlanes {
-    fun luma(y: Plane, crop: Crop, rotation: Int, gridSize: Int = 64): List<Int> =
-        List(gridSize * gridSize) { index ->
+    fun luma(y: Plane, crop: Crop, rotation: Int, gridSize: Int = 64): List<Int> {
+        require(gridSize > 0)
+        Coordinates.uprightSize(crop.width, crop.height, rotation)
+        y.requireRegion(crop.left + crop.width - 1, crop.top + crop.height - 1)
+        return List(Math.multiplyExact(gridSize, gridSize)) { index ->
             val p = Coordinates.analysisToSensor(Point((index % gridSize + .5) / gridSize, (index / gridSize + .5) / gridSize), rotation)
             y.at(crop.left + (p.x * crop.width).toInt().coerceIn(0, crop.width - 1),
                 crop.top + (p.y * crop.height).toInt().coerceIn(0, crop.height - 1))
         }
+    }
 
     /** Reusable output, rotated in the conversion pass; never JPEG-encodes analysis frames. */
     fun rgb(y: Plane, u: Plane, v: Plane, crop: Crop, rotation: Int, output: IntArray) {
         val (width, height) = Coordinates.uprightSize(crop.width, crop.height, rotation)
-        require(output.size >= width * height)
+        require(output.size >= Math.multiplyExact(width, height))
+        y.requireRegion(crop.left + crop.width - 1, crop.top + crop.height - 1)
+        u.requireRegion((crop.left + crop.width - 1) / 2, (crop.top + crop.height - 1) / 2)
+        v.requireRegion((crop.left + crop.width - 1) / 2, (crop.top + crop.height - 1) / 2)
         for (sy in 0 until crop.height) for (sx in 0 until crop.width) {
             val x = crop.left + sx
             val py = crop.top + sy
