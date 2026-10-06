@@ -3,16 +3,15 @@
 STATUS: AUTHORIZED by the human owner on 2026-10-06 after Phase 1 acceptance and PR #2 merge.
 Branch: `codex/phase-2-pose-face-detection`. No Phase 2 acceptance is implied.
 
-Current checkpoint: pure contracts and CameraX-connected Android adapters implemented. The owner
-directed dependency/runtime investigation before any fork. Stock/exclusion paths fail; the official
-unmodified Core build with upstream's default dummy logger and unchanged Vision artifact passes
-eight SDK probe tests and production adapter emulator tests (docs/phase-2-sdk-audit.md). All three
-approved modules are integrated. Local validation and offline notice packaging are complete; physical
-gates remain pending. Physical verification is paused at the owner's request on 2026-10-07;
-remaining full-body/face checks must support a solo tester. The current completed/pending checklist
-and resume plan are in phase-status.md's owner-requested safe-pause handoff. Missing human checks
-are deferred, not a failure.
-No source-code modification/fork is underway, and no human acceptance is claimed.
+Current checkpoint: implementation is complete for the approved Phase 2 modules and interfaces.
+The autonomous robustness review adds bounded recovery, lifecycle/timestamp/freshness safeguards and
+coordinate regressions (ADR-018). Reproducible native cache truncation during overlapping activity
+recreation is addressed with official model-buffer loading (ADR-019), without modifying MediaPipe.
+Final automated validation is being completed. Human-subject gates are PENDING_PHYSICAL_VERIFICATION;
+owner acceptance is OWNER_ACCEPTANCE_PENDING. Deferred human tests are not implementation failure.
+The single current solo session plan is [../phase-2-physical-verification.md](../phase-2-physical-verification.md).
+Existing SDK/privacy/model/license results and recorded physical measurements remain preserved.
+No source-code modification/fork, Premium UI implementation or Phase 3 work is underway.
 
 ## Scope and boundaries
 

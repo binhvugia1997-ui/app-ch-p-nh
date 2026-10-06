@@ -171,3 +171,16 @@ storage, not MediaPipe source or the audited privacy architecture. Repeated same
 are now covered by the production adapter instrumentation regression. Failed physical inference
 is excluded from success evidence; actual rerun results and remaining framing gates are in
 phase-status.md.
+
+## Immutable model ownership after automated recreation review (2026-10-07)
+
+With camera permission granted, the optimized profile orientation/recreation test exposed native
+SIGBUS repeatedly. Pinned upstream
+[asset cache implementation](https://github.com/google-ai-edge/mediapipe/blob/8317ba78778738ba90a521e7e4580a2ba0129c81/mediapipe/util/android/asset_manager_util.cc)
+unconditionally truncates/rewrites a relative-path model cache. Overlapping asynchronous shutdown
+and initialization can leave an older task mapping that file. App adapters now use official
+`BaseOptions.setModelAssetBuffer` with per-task read-only mappings of uncompressed APK assets,
+avoiding the shared mutable cache. ADR-019 records the decision. No SDK patch or different model.
+The repaired profile suite passed three consecutive two-test runs; final results are in phase-status.md.
+This is emulator lifecycle evidence, not Samsung performance, human tracking or universal stability.
+Model hashes, notices, dependency graph and dummy logger implementation remain unchanged.

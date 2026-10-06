@@ -14,6 +14,13 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarker
 import java.util.concurrent.atomic.AtomicBoolean
 import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
+
+internal fun mappedModel(context: Context, path: String): ByteBuffer = context.assets.openFd(path).use { asset ->
+    asset.createInputStream().use { stream ->
+        stream.channel.map(FileChannel.MapMode.READ_ONLY, asset.startOffset, asset.declaredLength)
+    }
+}
 
 private fun NormalizedLandmark.domain(id: String): Landmark {
     val v = visibility().orElse(null)?.toDouble()
@@ -54,8 +61,9 @@ internal class MediaPipePoseSource(context: Context, delegate: DelegateKind, mod
     private var onError: ((String) -> Unit)? = null
     private val pending = AtomicBoolean(false)
     private var submittedTimestamp = -1L
+    private val modelBuffer = mappedModel(context, "models/$model.task")
     private val task = PoseLandmarker.createFromOptions(context, PoseLandmarker.PoseLandmarkerOptions.builder()
-        .setBaseOptions(BaseOptions.builder().setModelAssetPath("models/$model.task")
+        .setBaseOptions(BaseOptions.builder().setModelAssetBuffer(modelBuffer)
             .setDelegate(if (delegate == DelegateKind.GPU) Delegate.GPU else Delegate.CPU).build())
         .setNumPoses(1).setOutputSegmentationMasks(false).setRunningMode(RunningMode.LIVE_STREAM)
         .setResultListener { result, _ ->
@@ -95,8 +103,9 @@ internal class MediaPipeFaceSource(context: Context, delegate: DelegateKind) : O
     private var onError: ((String) -> Unit)? = null
     private val pending = AtomicBoolean(false)
     private var submittedTimestamp = -1L
+    private val modelBuffer = mappedModel(context, "models/face_landmarker.task")
     private val task = FaceLandmarker.createFromOptions(context, FaceLandmarker.FaceLandmarkerOptions.builder()
-        .setBaseOptions(BaseOptions.builder().setModelAssetPath("models/face_landmarker.task")
+        .setBaseOptions(BaseOptions.builder().setModelAssetBuffer(modelBuffer)
             .setDelegate(if (delegate == DelegateKind.GPU) Delegate.GPU else Delegate.CPU).build())
         .setNumFaces(1).setOutputFaceBlendshapes(false).setOutputFacialTransformationMatrixes(true)
         .setRunningMode(RunningMode.LIVE_STREAM).setResultListener { result, _ ->

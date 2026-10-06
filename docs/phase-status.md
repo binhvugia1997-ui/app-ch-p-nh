@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-07** by **Codex Local** (owner-requested pause; physical verification partially exercised, remaining solo tests pending).
+Last updated: **2026-10-07** by **Codex Local** (autonomous Phase 2 review; remaining solo physical tests pending).
 
 ---
 
@@ -16,15 +16,16 @@ Last updated: **2026-10-07** by **Codex Local** (owner-requested pause; physical
 PR #2 was merged by the human owner; local main synchronized to `81df0022fce4935a067ec1b47cbfa786a8bcbe42`.
 
 **PHASE 2 — IN PROGRESS: START AUTHORIZED by the human owner on 2026-10-06.**
-Pure contracts and Android adapters are implemented. Stock/exclusion paths fail the privacy/runtime
-checks; the official unmodified Core build with default dummy logging and unchanged Vision artifact
-passed IMAGE/LIVE_STREAM probes and production adapter emulator tests. Local builds, tests, lint,
-artifact/privacy checks and native notice packaging are complete; physical Phase 2 verification
-remains pending. Status is **partial — physical verification paused at the owner's request**;
-the missing human tests are deferred, not a failure. Draft PR #3 remains open for technical review.
-No Phase 2 acceptance. Phase 3 has not started. Phase 1 limitations and measurements remain unchanged.
+Approved Phase 2 implementation is complete. The official unmodified Core source build with
+upstream default dummy logging and unchanged Vision artifact preserves the privacy/offline contract.
+ADR-018/019 document automated robustness fixes and immutable model ownership. Automated final
+regressions are being completed; all manual human-subject gates remain PENDING_PHYSICAL_VERIFICATION.
+Overall status is partial; deferred physical checks are not implementation failure.
+OWNER_ACCEPTANCE_PENDING. Draft PR #3 remains open. No Premium UI or Phase 3 implementation.
+Historical Phase 1/2 measurements and known limitations remain unchanged.
 
-Latest resumable state: see **Owner-requested safe pause — 2026-10-07** at the end of this document.
+Latest resumable state: see the autonomous non-physical review at the end of this document.
+Current solo session: [phase-2-physical-verification.md](phase-2-physical-verification.md).
 
 ---
 
@@ -1431,7 +1432,7 @@ be generalized to other devices. Human full-body/face physical verification is t
 dependency, now explicitly planned for a solo tester. Resume only when the owner is available.
 
 
-### Phase 2 autonomous non-physical review ? 2026-10-07 (in progress)
+### Phase 2 autonomous non-physical review - 2026-10-07 (in progress)
 
 Owner authorized all useful non-physical work while unavailable. Manual gates remain
 PENDING_PHYSICAL_VERIFICATION; the earlier pause is superseded only for automated engineering work.
@@ -1442,3 +1443,13 @@ The current review fixes compile: debug/release/profile builds and strict app/ad
 reruns and handoff are in progress. Emulator API 37 evidence is not Samsung performance or human tracking.
 The consolidated solo plan is [phase-2-physical-verification.md](phase-2-physical-verification.md).
 No owner acceptance, Premium UI or Phase 3 implementation. Historical physical numbers remain unchanged.
+
+
+Native profile regression investigation: repeated activity recreation with camera permission exposed
+SIGBUS in the official native task library (failed runs retained locally, not counted as PASS).
+Upstream's relative-asset cache overwrites files unconditionally while an older graph can still map
+one. ADR-019 uses supported model buffers mapped read-only from uncompressed packaged assets;
+no SDK/model modification or privacy exception. The repaired profile suite passed three consecutive
+runs (2 tests per run) with camera permission
+granted. Final rebuild/adapter checks are in progress. Model asset hashes/licensing are unchanged;
+all three APKs contain uncompressed, exact-hash models. No physical stability or memory claim follows.

@@ -17,6 +17,41 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PipelineInstrumentedTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+    @Test fun liteModelRepeatedBlankFramesPreserveInputAndReportNoPerson() {
+        val model = mappedModel(context,"models/pose_landmarker_lite.task")
+        assertTrue(model.isDirect);assertTrue(model.isReadOnly)
+        assertThrows(java.nio.ReadOnlyBufferException::class.java) { model.put(0,0.toByte()) }
+        val geometry = FrameGeometry(256,256,0,false,CameraFacing.BACK,AnalysisResolution.R480P)
+        MediaPipePoseSource(context,DelegateKind.CPU,"pose_landmarker_lite").use { source ->
+            repeat(3) { index ->
+                val pixels=IntArray(256*256) { 0xff000000.toInt() }
+                val done=java.util.concurrent.CountDownLatch(1)
+                var result: PoseFrameResult? = null
+                var error: String? = null
+                source.submit(RgbFrame((index+1)*200L,geometry,DeviceState(DeviceTier.MEDIUM),pixels),
+                    { result=it;done.countDown() },{ error=it;done.countDown() })
+                assertTrue(done.await(30,java.util.concurrent.TimeUnit.SECONDS))
+                assertNull(error);assertEquals((index+1)*200L,result!!.timestampMs)
+                assertTrue(result!!.landmarks.isEmpty());assertTrue(pixels.all { it==0xff000000.toInt() })
+                source.releaseImage()
+            }
+        }
+    }
+    @Test fun faceRepeatedBlankFramesReportNoFaceWithCorrectTimestamps() {
+        val geometry = FrameGeometry(256,256,0,false,CameraFacing.BACK,AnalysisResolution.R480P)
+        MediaPipeFaceSource(context,DelegateKind.CPU).use { source ->
+            repeat(3) { index ->
+                val done=java.util.concurrent.CountDownLatch(1)
+                var result: FaceFrameResult? = null
+                var error: String? = null
+                source.submit(RgbFrame((index+1)*200L,geometry,DeviceState(DeviceTier.MEDIUM),IntArray(256*256) { 0xff000000.toInt() }),
+                    { result=it;done.countDown() },{ error=it;done.countDown() })
+                assertTrue(done.await(30,java.util.concurrent.TimeUnit.SECONDS))
+                assertNull(error);assertEquals((index+1)*200L,result!!.timestampMs);assertNull(result!!.face)
+                source.releaseImage()
+            }
+        }
+    }
     @Test fun localRuntimeOwnsOneFrameAndRestartsAcrossLifecycleAndGeometry() = runBlocking {
         assertEquals(PackageManager.PERMISSION_DENIED, context.checkSelfPermission("android.permission.INTERNET"))
         assertEquals("TasksStatsDummyLogger", TasksStatsLoggerFactory.create(context, "PoseLandmarker", "LIVE_STREAM").javaClass.simpleName)

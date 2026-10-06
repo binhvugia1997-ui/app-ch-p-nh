@@ -514,6 +514,18 @@ These are implementation safeguards, not new product behavior or measured device
 Automated fault injection belongs to adapter tests; no human tracking or physical acceptance follows
 from synthetic tests. Physical tests remain PENDING_PHYSICAL_VERIFICATION.
 
+**ADR-019 — immutable model input across overlapping recreation (2026-10-07).**
+
+R8 profile recreation with camera permission exposed reproducible native SIGBUS. Exact upstream
+`AssetManager::CachedFileFromAsset` unconditionally overwrites the relative-path cache; new task
+initialization can truncate a file still mapped by an older pipeline closing asynchronously.
+Use official `BaseOptions.setModelAssetBuffer` with a read-only mapped packaged asset. Package `.task`
+uncompressed so Android exposes its file descriptor; keep the mapping reachable throughout task life.
+There is no shared mutable cache file, SDK source patch, model modification or network operation.
+This trades a small APK compression saving for immutable model ownership and requires renewed
+profile/lifecycle regression and subsequent physical measurements. Do not infer physical stability
+from emulator tests or reinterpret earlier measurements.
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |
