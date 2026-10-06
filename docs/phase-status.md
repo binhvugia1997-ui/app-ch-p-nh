@@ -1185,10 +1185,13 @@ tools/audit-mediapipe-artifacts.py; tools/mediapipe-privacy-probe; tools/build-m
 DEVICES TESTED: Medium_Phone_API_37.0 x86_64 emulator / Android 17, isolated synthetic-image SDK probe.
 No SM-S918B connected. This is not physical camera/landmark acceptance.
 MEASURED: local telemetry queue counts 2 after pose, 3 after face; no Phase 2 performance baseline.
-VALIDATION: isolated stock/excluded APKs and test APKs build; 3 stock + 3 exclusion instrumentation
+VALIDATION: isolated stock/excluded APKs and test APKs build; 4 stock + 4 exclusion instrumentation
 tests PASS. Stock Pose/Face initialize and process black images without INTERNET; excluded transport
 causes NoClassDefFoundError for both landmarkers, asserted by the exclusion tests. Complete runtime
 graphs exported for both flavors. All 39 published Core POM/AAR versions inspected.
+Loopback-only socket creation fails with EPERM in both apps. All four transport-free early Vision
+alphas inspected: none contains the required Pose/Face APIs. Shipping debug/release/profile build,
+lint and 3 existing app instrumentation tests PASS on the same emulator; 21 JVM tests remain green.
 DECISION: previous demand for a modified SDK was premature. Official unmodified upstream default
 dummy logger is a candidate; Linux audit build prepared using pinned v0.10.32 source and official
 AAR targets. No Java/C++ source changes or fork. Outputs remain audit evidence until validated.

@@ -63,7 +63,8 @@ Runtime verification on existing `Medium_Phone_API_37.0`, x86_64 emulator / Andr
 | Permission assertion | INTERNET denied in both target apps |
 | Stock local telemetry assertion | SQLite event counts: 2 after pose, 3 after face |
 | Exclude DataTransport and Firebase groups | APKs build; both landmarker creation paths throw `NoClassDefFoundError: TransportRuntime` |
-| Instrumentation | 3 stock + 3 exclusion tests PASS; exclusion tests assert failure, **not** functioning inference |
+| Socket permission | Loopback-only socket creation fails with EPERM in both apps |
+| Instrumentation | 4 stock + 4 exclusion tests PASS; exclusion tests assert failure, **not** functioning inference |
 
 No Samsung phone is connected. These are SDK/privacy experiments, not physical perception acceptance
 or Phase 2 performance baselines.
@@ -72,8 +73,8 @@ or Phase 2 performance baselines.
 
 **A — Official Maven artifact:** `tools/audit-mediapipe-artifacts.py` downloaded metadata, POMs and
 Core AARs for all 39 listed versions (alpha-1 through 1.0.0, including 0.10.33/0.10.35). The first four
-alphas have no transport dependency. Alpha-4 Vision inspection shows no PoseLandmarker/FaceLandmarker
-API, so it cannot implement the approved contract. All later Core POMs declare transport. Older
+alphas have no transport dependency. All four Vision AARs lack PoseLandmarker/FaceLandmarker
+APIs, so they cannot implement the approved contract. All later Core POMs declare transport. Older
 TaskRunner classes invoke the proto logger directly; newer releases use the unconditional factory.
 No compatible telemetry-free Maven artifact was identified. This is bounded to the audited artifacts.
 

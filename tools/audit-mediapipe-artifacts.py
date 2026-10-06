@@ -59,10 +59,21 @@ def main():
             results.append(result.stdout)
         bytecode = "\n".join(results)
         (directory / "initialization.javap.txt").write_text(bytecode, encoding="utf-8")
+        vision_apis = None
+        if not any(dep["groupId"] == "com.google.android.datatransport" for dep in deps):
+            vision = fetch(f"{BASE}/tasks-vision/{version}/tasks-vision-{version}.aar", directory / "vision.aar")
+            with zipfile.ZipFile(vision) as archive:
+                import io
+                with zipfile.ZipFile(io.BytesIO(archive.read("classes.jar"))) as classes:
+                    names = set(classes.namelist())
+            prefix = "com/google/mediapipe/tasks/vision/"
+            vision_apis = {"pose": prefix + "poselandmarker/PoseLandmarker.class" in names,
+                           "face": prefix + "facelandmarker/FaceLandmarker.class" in names}
         return {"version": version, "aar_sha256": hashlib.sha256(aar.read_bytes()).hexdigest(),
                 "dependencies": deps, "factory_present": bool(factories),
                 "proto_logger_factory": "TasksStatsProtoLogger.create" in bytecode,
-                "dummy_logger_factory": "TasksStatsDummyLogger" in bytecode}
+                "dummy_logger_factory": "TasksStatsDummyLogger" in bytecode,
+                "transport_free_vision_apis": vision_apis}
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         results = list(executor.map(audit, versions))
@@ -70,7 +81,8 @@ def main():
     for row in results:
         transport = any(dep["groupId"] == "com.google.android.datatransport" for dep in row["dependencies"])
         print(f"{row['version']}: transport={transport} proto={row['proto_logger_factory']} "
-              f"dummy={row['dummy_logger_factory']} factory={row['factory_present']}")
+              f"dummy={row['dummy_logger_factory']} factory={row['factory_present']} "
+              f"transport_free_vision_apis={row['transport_free_vision_apis']}")
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ bind(name = "android/crosstool", actual = "@androidndk//:toolchain")
 EOF
 git diff -- WORKSPACE > "$output_dir/environment-configuration.patch"
 test "$(git diff --name-only | tr '\n' ' ')" = "WORKSPACE "
-bazel build -c opt --config=android --fat_apk_cpu=arm64-v8a,x86_64 \
+bazel build -c opt --config=android --cpu=arm64-v8a --fat_apk_cpu=arm64-v8a,x86_64 \
   --jobs=2 --local_ram_resources=8192 \
   --define=ENABLE_TASKS_USAGE_LOGGING=0 \
   //mediapipe/tasks/java/com/google/mediapipe/tasks/core:tasks_core.aar \
@@ -34,6 +34,6 @@ cp bazel-bin/mediapipe/tasks/java/com/google/mediapipe/tasks/vision/tasks_vision
 cp LICENSE "$output_dir/MediaPipe-LICENSE.txt"
 printf '%s\n' "$source_commit" > "$output_dir/source-commit.txt"
 bazel cquery 'deps(//mediapipe/tasks/java/com/google/mediapipe/tasks/core:tasks_core.aar)' \
-  --config=android --fat_apk_cpu=arm64-v8a,x86_64 --define=ENABLE_TASKS_USAGE_LOGGING=0 \
+  --config=android --cpu=arm64-v8a --fat_apk_cpu=arm64-v8a,x86_64 --define=ENABLE_TASKS_USAGE_LOGGING=0 \
   > "$output_dir/core-build-graph.txt"
 sha256sum "$output_dir"/*.aar > "$output_dir/SHA256SUMS"

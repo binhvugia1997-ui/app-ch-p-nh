@@ -44,6 +44,20 @@ public class PrivacyProbeTest {
         });
     }
 
+    @Test public void networkSocketIsDenied() throws Exception {
+        try (java.net.Socket socket = new java.net.Socket()) {
+            // Loopback only: exercise OS socket permission without sending to an external host.
+            socket.connect(new java.net.InetSocketAddress("127.0.0.1", 9), 1000);
+            fail("No-INTERNET app unexpectedly opened a socket");
+        } catch (java.io.IOException denied) {
+            String text = denied.toString();
+            assertTrue(text, text.contains("EACCES") || text.contains("EPERM") || text.contains("Permission denied"));
+            Log.i("PrivacyProbe", "SOCKET_PERMISSION_DENIED " + text);
+        } catch (SecurityException denied) {
+            Log.i("PrivacyProbe", "SOCKET_PERMISSION_DENIED " + denied);
+        }
+    }
+
     @Test public void faceCreationAndInference() throws Exception {
         probe(() -> {
             try (FaceLandmarker task = FaceLandmarker.createFromOptions(context,
