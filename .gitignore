@@ -6,3 +6,4 @@ local.properties
 *.hprof
 device-evidence/
 .tools/
+**/__pycache__/

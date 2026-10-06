@@ -7,7 +7,8 @@ Current checkpoint: implementation is complete for the approved Phase 2 modules 
 The autonomous robustness review adds bounded recovery, lifecycle/timestamp/freshness safeguards and
 coordinate regressions (ADR-018). Reproducible native cache truncation during overlapping activity
 recreation is addressed with official model-buffer loading (ADR-019), without modifying MediaPipe.
-Final automated validation is being completed. Human-subject gates are PENDING_PHYSICAL_VERIFICATION;
+IMPLEMENTATION_COMPLETE and AUTOMATED_VALIDATION_COMPLETE. Human-subject gates are
+PENDING_PHYSICAL_VERIFICATION;
 owner acceptance is OWNER_ACCEPTANCE_PENDING. Deferred human tests are not implementation failure.
 The single current solo session plan is [../phase-2-physical-verification.md](../phase-2-physical-verification.md).
 Existing SDK/privacy/model/license results and recorded physical measurements remain preserved.

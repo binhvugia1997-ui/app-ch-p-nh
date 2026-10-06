@@ -12,7 +12,9 @@ directories under ignored `device-evidence/phase2/physical/`. Never commit/uploa
 No phone is required for `tools/run-phase2-solo.py --plan` or collector regression tests.
 
 The runner requires an installed app with permission already granted. It creates a fresh activity
-task, uses observed UI bounds for existing diagnostic controls, and stops the app afterward. It does
+task, uses observed UI bounds for existing diagnostic controls, and stops the app afterward.
+It checks camera permission/displayed orientation first and the `--lifecycle` option batches
+home/resume and camera switch/return with local snapshots. It does
 not change OS rotation, connectivity or permissions. A missing control stops the run for diagnosis.
 The collector rejects overwritten evidence, interrupted collection, process/session changes and
 nonmonotonic counters. COMPLETE means collection finished, **not** a tracking or accuracy PASS.
@@ -37,7 +39,7 @@ Example (substitute authorized serial and a NEW output path; run only when the o
 & .tools/python/cpython-3.13.16-windows-x86_64-none/python.exe tools/run-phase2-solo.py `
   --adb C:/Users/anelb/AppData/Local/Android/Sdk/platform-tools/adb.exe `
   --serial R5CW40EE9QK --configuration rear-portrait --debug-matrix `
-  --output device-evidence/phase2/physical/session-rear-portrait --trace
+  --output device-evidence/phase2/physical/session-rear-portrait --trace --lifecycle
 ```
 
 Each 60-second sequence: 0–10 s still full body; 10–20 raise/lower both arms; 20–30 step left/right;

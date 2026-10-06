@@ -18,8 +18,8 @@ PR #2 was merged by the human owner; local main synchronized to `81df0022fce4935
 **PHASE 2 — IN PROGRESS: START AUTHORIZED by the human owner on 2026-10-06.**
 Approved Phase 2 implementation is complete. The official unmodified Core source build with
 upstream default dummy logging and unchanged Vision artifact preserves the privacy/offline contract.
-ADR-018/019 document automated robustness fixes and immutable model ownership. Automated final
-regressions are being completed; all manual human-subject gates remain PENDING_PHYSICAL_VERIFICATION.
+ADR-018/019 document automated robustness fixes and immutable model ownership. Automated
+non-physical validation is complete; manual human-subject gates remain PENDING_PHYSICAL_VERIFICATION.
 Overall status is partial; deferred physical checks are not implementation failure.
 OWNER_ACCEPTANCE_PENDING. Draft PR #3 remains open. No Premium UI or Phase 3 implementation.
 Historical Phase 1/2 measurements and known limitations remain unchanged.
@@ -1432,24 +1432,76 @@ be generalized to other devices. Human full-body/face physical verification is t
 dependency, now explicitly planned for a solo tester. Resume only when the owner is available.
 
 
-### Phase 2 autonomous non-physical review - 2026-10-07 (in progress)
+### Phase 2 autonomous non-physical review - 2026-10-07
 
-Owner authorized all useful non-physical work while unavailable. Manual gates remain
-PENDING_PHYSICAL_VERIFICATION; the earlier pause is superseded only for automated engineering work.
-ADR-018 documents bounded initialization/runtime recovery, lifecycle coalescing, timestamp validation
-and stale publication prevention without replacing the architecture or SDK privacy solution.
-The current review fixes compile: debug/release/profile builds and strict app/adapter/camera lint PASS;
-29 JVM tests, 7 adapter emulator regressions and 5 debug app emulator tests PASS. Final privacy/profile
-reruns and handoff are in progress. Emulator API 37 evidence is not Samsung performance or human tracking.
-The consolidated solo plan is [phase-2-physical-verification.md](phase-2-physical-verification.md).
-No owner acceptance, Premium UI or Phase 3 implementation. Historical physical numbers remain unchanged.
+Overall STATUS: partial. IMPLEMENTATION_COMPLETE; AUTOMATED_VALIDATION_COMPLETE;
+PENDING_PHYSICAL_VERIFICATION; OWNER_ACCEPTANCE_PENDING. Manual deferral is not implementation
+failure. The owner authorized automated work while unavailable; no human positioning was requested.
+Branch remains codex/phase-2-pose-face-detection; existing Draft PR #3, no merge.
 
+IMPLEMENTATION REVIEW / REPAIRS:
+- Approved modules/interfaces and 33-landmark single-person contract retained. Raw visibility/presence
+  and unknown-channel semantics remain normative; no sigmoid or validated calibration claim.
+- ADR-018: bounded initialization/runtime recovery, unavailable error diagnostics, lifecycle job
+  coalescing, callback shape/timestamp checks, post-submit lease ownership and worker-owned closure.
+  Session IDs are process-unique diagnostic epochs; they are not identity recognition.
+- Router rejects future, old-session, wrong-geometry and expired snapshots; unavailable source ages
+  saturate rather than overflow. Unusable-person loss resets filtering/session; stale face diagnostics
+  are not drawn. Rotation/dimensions/crop/strides/plane bounds are validated before conversion.
+- Percentile sorting/logging is capped at 1 Hz; plane wrappers are allocated only for admitted work.
+  Latest-frame backpressure, one RGB lease, bounded callback channel and coalesced recovery remain.
+- Native SIGBUS reproduced during R8 profile recreation with camera permission. Exact upstream relative
+  asset loading overwrites shared cache files; overlapping pipelines can still map them. ADR-019 uses
+  official model-buffer input backed by per-task read-only mapped, uncompressed packaged assets.
+  No MediaPipe source/model modification, fork or privacy exception. Failed runs remain excluded.
+  Repair confirmed by three consecutive profile suites and a final suite on the final APK.
 
-Native profile regression investigation: repeated activity recreation with camera permission exposed
-SIGBUS in the official native task library (failed runs retained locally, not counted as PASS).
-Upstream's relative-asset cache overwrites files unconditionally while an older graph can still map
-one. ADR-019 uses supported model buffers mapped read-only from uncompressed packaged assets;
-no SDK/model modification or privacy exception. The repaired profile suite passed three consecutive
-runs (2 tests per run) with camera permission
-granted. Final rebuild/adapter checks are in progress. Model asset hashes/licensing are unchanged;
-all three APKs contain uncompressed, exact-hash models. No physical stability or memory claim follows.
+ACTUAL AUTOMATED VALIDATION:
+- JVM: 29 tests PASS, including confidence/freshness, geometry/corners/rotation/crop/mirror, ownership,
+  scheduling, filter and shot-estimator contracts. Tool evidence-window regression: 3 Python tests PASS.
+- Android 17 / API 37 x86_64 emulator only: adapter 9 tests PASS (fault/lifecycle/timestamp ownership,
+  actual full/lite Tasks, repeated direct RGB storage and no-person/no-face outputs); debug app 5 PASS;
+  R8 profile app 2 PASS. Counts inspected; crashed/zero-test runs do not count as passes.
+- SDK audit rerun: stock control 4, excluded negative control 4, adopted upstream 8 tests PASS.
+  Exclusion control proves initialization fails; it is not an approved production solution.
+- Debug/release/profile builds PASS; strict app debug/release/profile, camera debug and adapter debug
+  lint PASS. Spec validator PASS: 0 errors, 0 warnings. Final diff/scope inspection performed.
+- Exported runtime: 110 artifacts / 107 unique components; pinned registry unchanged. DataTransport,
+  Firebase transport/analytics and known telemetry transport identifiers absent. Exact Core/Vision
+  bytecode/native identifier checker PASS, dummy factory true, four native ABIs retained.
+- Final merged manifests for all variants lack INTERNET. No cloud endpoint/API key/analytics config
+  added. Models are local, exact hashes unchanged, all required third-party notices packaged.
+  APK bytes: debug 81,379,811; release 66,403,157; profile 66,975,245. Models total 18,934,540 bytes.
+  APK sizes are build artifacts, not device memory measurements. No project-wide license added.
+
+AUTOMATION / RESUME:
+The single consolidated plan is [phase-2-physical-verification.md](phase-2-physical-verification.md).
+`tools/run-phase2-solo.py` batches diagnostic aspects/resolutions after countdowns, selects observed
+controls, checks permission/displayed orientation, collects local screenshots/counters/thermal/memory,
+and optionally home/resume plus switch/return. `tools/collect-phase2-device.py` refuses overwritten
+runs, rejects process/session/reset/interrupted counter windows and retains rolling percentiles honestly.
+Trace capture has a unique ID and only its matching PID is stopped; evidence remains ignored.
+Emulator smoke tests completed four debug configurations with four retrieved traces, then front
+selection/home/resume/switch-return with local snapshots and continued inference. This validates
+controls/capture machinery, not real-human tracking, physical rotation, numerical accuracy or phone
+performance. Actual Windows signal interruption tests also PASS with and without Perfetto: owned
+capture stopped, partial trace retained, INCOMPLETE recorded and valid rate claims rejected.
+Estimated later human actions: four physical setup confirmations plus one optimized baseline/soak
+setup, with countdowns allowing a solo tester to walk into frame. No second person is required.
+
+PENDING_PHYSICAL_VERIFICATION:
+Real full-body pose/arm/side movement, visible face/head tracking, still/loss/freshness, actual front/rear
+portrait/landscape and both aspect combinations, qualitative mirrored overlay alignment, real camera
+switch/lifecycle/manual capture/offline behavior, optimized 480p/720p baselines with delivered-resolution
+review, sustained preview/backlog/crash/ANR evidence, memory/thermal and five-minute soak. Final repaired
+APK must be used. No Samsung phone was connected during this automated review. Historical limited
+20-second debug observations remain exactly as recorded above; they are not new or optimized baselines.
+
+KNOWN LIMITATIONS: numerical reprojection accuracy remains unmeasured; unsupported-device fallback
+remains hardware-unverified; results from Samsung SM-S918B must not be generalized to other devices.
+Calibration-required constants remain unvalidated; CameraX internal drops remain UNKNOWN. Profile
+includes instrumentation ABI keep rules, so its footprint is not exact release footprint. No universal
+native-network proof or GPU calculator-placement claim is inferred from bounded audits/configuration.
+No unresolved non-physical engineering blocker or new human privacy/license/product decision identified.
+No Premium UI implementation, Phase 3 behavior, owner acceptance or merge. Remaining meaningful work
+requires the owner to return for the consolidated solo physical session.
