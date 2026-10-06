@@ -38,7 +38,7 @@ jobs:
           CXX: clang++-16
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.1.13356709"
-          bash tools/build-mediapipe-upstream.sh "$RUNNER_TEMP/mediapipe" "$RUNNER_TEMP/mediapipe-audit"
+          bash tools/build-mediapipe-upstream.sh "$RUNNER_TEMP/mediapipe" "$RUNNER_TEMP/mediapipe-audit" core
       - name: Retain audit evidence (not a shipping dependency)
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
