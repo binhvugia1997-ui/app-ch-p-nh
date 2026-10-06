@@ -1,7 +1,6 @@
 package com.aiphotographer.app
 
 import android.Manifest
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -36,15 +35,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aiphotographer.camera.*
 import com.aiphotographer.model.*
-import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val launchNs = SystemClock.elapsedRealtimeNanos()
-    override fun attachBaseContext(newBase: Context) {
-        val config = Configuration()
-        config.setLocale(Locale.forLanguageTag("vi"))
-        super.attachBaseContext(newBase.createConfigurationContext(config))
-    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { MaterialTheme { CameraApp(launchNs, intent.getBooleanExtra("benchmarkRgb", false), intent.getBooleanExtra("analysis720p", false)) } }

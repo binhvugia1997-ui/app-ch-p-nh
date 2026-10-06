@@ -1107,3 +1107,23 @@ for baseline/soak. Instrumentation covers the regenerated debug build. Measured-
 Review checkpoint uses existing codex/phase-1-camerax-foundation branch and repository-local
 Git identity. Only appropriate tracked documentation is committed; ignored evidence remains
 on disk. Owner acceptance is not recorded on the owner's behalf. No push, merge or Phase 2.
+
+### PR #2 final review fixes (2026-10-06)
+
+PHASE: 1
+STATUS: partial — review findings addressed; GitHub review and explicit owner acceptance pending.
+FILES: app/src/main/kotlin/com/aiphotographer/app/MainActivity.kt;
+docs/tasks/phase-1-camerax-foundation.md; docs/phase-status.md.
+DEVICES TESTED: no device connected for this review-fix session; physical locale switching not rerun.
+MEASURED: no new device measurements; earlier SM-S918B / Android 16 evidence remains recorded above.
+DEVIATIONS FROM SPEC: none; removed the forced Vietnamese Activity locale so normal Android/app
+resource selection applies. Vietnamese resources remain in values-vi; English fallback remains in values.
+The task brief now records implementation and physical verification complete, with qualitative coordinate
+evidence, numerical reprojection accuracy unmeasured, and review/owner acceptance pending.
+VALIDATION: debug/release/profile APK builds and app lint PASS; 11 existing JVM tests freshly rerun
+with zero failures/errors; spec validation 0 errors, 0 warnings; English/Vietnamese string keys match
+(18); diff/whitespace inspection PASS. All three merged manifests have no INTERNET permission.
+No new user-facing strings, cloud API, MediaPipe dependency or Phase 2 work added.
+BLOCKERS: none for re-review; physical locale switching remains unverified for this fix.
+NEXT PROPOSED: update PR #2 on the existing branch for GitHub review and explicit owner acceptance.
+Do not merge or start Phase 2.
