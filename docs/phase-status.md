@@ -1174,3 +1174,26 @@ unsupported-device fallback hardware-unverified, SM-S918B results not generaliza
 face association, head-angle conventions and shot classification remain uncalibrated/device-unverified.
 NEXT PROPOSED: resolve the SDK privacy decision, finish compliant adapters, then physical Phase 2
 verification and measurements. No Phase 2 acceptance, Phase 3+ work or merge performed.
+
+### Phase 2 deeper artifact/runtime investigation (2026-10-06)
+
+PHASE: 2
+STATUS: partial — investigation continuing under owner instruction; no fork permitted unless necessary.
+FILES: docs/phase-2-sdk-audit.md; docs/tasks/phase-2-pose-face-detection.md; this handoff;
+tools/audit-mediapipe-artifacts.py; tools/mediapipe-privacy-probe; tools/build-mediapipe-upstream.sh;
+.github/workflows/mediapipe-upstream-audit.yml.
+DEVICES TESTED: Medium_Phone_API_37.0 x86_64 emulator / Android 17, isolated synthetic-image SDK probe.
+No SM-S918B connected. This is not physical camera/landmark acceptance.
+MEASURED: local telemetry queue counts 2 after pose, 3 after face; no Phase 2 performance baseline.
+VALIDATION: isolated stock/excluded APKs and test APKs build; 3 stock + 3 exclusion instrumentation
+tests PASS. Stock Pose/Face initialize and process black images without INTERNET; excluded transport
+causes NoClassDefFoundError for both landmarkers, asserted by the exclusion tests. Complete runtime
+graphs exported for both flavors. All 39 published Core POM/AAR versions inspected.
+DECISION: previous demand for a modified SDK was premature. Official unmodified upstream default
+dummy logger is a candidate; Linux audit build prepared using pinned v0.10.32 source and official
+AAR targets. No Java/C++ source changes or fork. Outputs remain audit evidence until validated.
+BLOCKERS: compliant runtime not yet demonstrated; ordinary upstream-build investigation continues.
+Shipping app/dependency graph unchanged. Phase 1 limitations remain exactly valid: numerical
+reprojection unmeasured, fallback hardware-unverified, SM-S918B evidence not generalizable.
+NEXT PROPOSED: build/audit official source artifacts, verify Pose/Face runtime and notices, then
+continue bounded camera integration. No Phase 2 acceptance, Phase 3+ work or merge.

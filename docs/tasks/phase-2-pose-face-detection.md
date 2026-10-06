@@ -3,9 +3,11 @@
 STATUS: AUTHORIZED by the human owner on 2026-10-06 after Phase 1 acceptance and PR #2 merge.
 Branch: `codex/phase-2-pose-face-detection`. No Phase 2 acceptance is implied.
 
-Current checkpoint: pure contracts implemented; stock SDK integration is blocked by the privacy audit
-in `docs/phase-2-sdk-audit.md`. Only api and photography modules are included so far; mediapipe adapter
-work is preserved locally outside the shipping build pending the required decision.
+Current checkpoint: pure contracts implemented. The owner directed deeper stock dependency/runtime
+investigation before any fork. Stock/exclusion probes are complete; the official unmodified source
+build with upstream's default dummy logger is under investigation (docs/phase-2-sdk-audit.md).
+Only api and photography modules ship so far; adapter work remains outside production pending a
+verified compliant artifact. No source-code modification/fork is authorized or underway.
 
 ## Scope and boundaries
 
