@@ -29,7 +29,7 @@ public class PrivacyProbeTest {
         boolean present;
         try { Class.forName("com.google.android.datatransport.runtime.TransportRuntime"); present = true; }
         catch (ClassNotFoundException e) { present = false; }
-        assertEquals(!BuildConfig.EXCLUDED, present);
+        assertEquals(BuildConfig.TELEMETRY_EXPECTED, present);
     }
 
     @Test public void poseCreationAndInference() throws Exception {
@@ -80,6 +80,12 @@ public class PrivacyProbeTest {
             return;
         }
         action.run();
+        if (!BuildConfig.TELEMETRY_EXPECTED) {
+            Thread.sleep(500);
+            assertFalse("No transport event database should be created",
+                context.getDatabasePath("com.google.android.datatransport.events").exists());
+            return;
+        }
         // Transport scheduling/persistence is asynchronous. No INTERNET permission is granted.
         long deadline = android.os.SystemClock.elapsedRealtime() + 10000;
         long count = 0;

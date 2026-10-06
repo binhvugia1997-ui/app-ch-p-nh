@@ -3,11 +3,13 @@
 STATUS: AUTHORIZED by the human owner on 2026-10-06 after Phase 1 acceptance and PR #2 merge.
 Branch: `codex/phase-2-pose-face-detection`. No Phase 2 acceptance is implied.
 
-Current checkpoint: pure contracts implemented. The owner directed deeper stock dependency/runtime
-investigation before any fork. Stock/exclusion probes are complete; the official unmodified source
-build with upstream's default dummy logger is under investigation (docs/phase-2-sdk-audit.md).
-Only api and photography modules ship so far; adapter work remains outside production pending a
-verified compliant artifact. No source-code modification/fork is authorized or underway.
+Current checkpoint: pure contracts and CameraX-connected Android adapters implemented. The owner
+directed dependency/runtime investigation before any fork. Stock/exclusion paths fail; the official
+unmodified Core build with upstream's default dummy logger and unchanged Vision artifact passes
+eight SDK probe tests and production adapter emulator tests (docs/phase-2-sdk-audit.md). All three
+approved modules are integrated. Local validation and offline notice packaging are complete; physical
+gates remain pending. The final evidence is recorded in phase-status.md's 2026-10-07 handoff.
+No source-code modification/fork is underway, and no human acceptance is claimed.
 
 ## Scope and boundaries
 
@@ -44,7 +46,8 @@ Implementation seeds for review, not validated constants: One Euro minimum/deriv
 beta 0.007; face freshness 500 ms; static-motion diagnostic <0.003 normalized displacement per result
 for 1 s. Scheduling overload/recovery follow performance-strategy §5 (3 s / 15 s); diagnostic pose
 latency trigger uses twice the 20 ms upper design budget. They require device calibration, and the
-pure scheduler is not connected to production camera/model behaviour in this checkpoint.
+pure scheduler is connected to production inference cadence/model selection. The final degradation
+step requests 480p only when capture is not saving; device tuning remains pending.
 
 No Phase 1 measurement is a Phase 2 baseline. Numerical reprojection accuracy remains unmeasured;
 unsupported-device fallback remains hardware-unverified; SM-S918B evidence cannot be generalized.

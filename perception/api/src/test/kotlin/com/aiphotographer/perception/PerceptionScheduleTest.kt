@@ -45,4 +45,13 @@ class PerceptionScheduleTest {
         identity[0] = Float.NaN
         assertNull(HeadPoseMatrix.decode(identity))
     }
+    @Test fun headMatrixKnownColumnMajorAxisRotations() {
+        val c = .8660254f
+        val yaw = HeadPoseMatrix.decode(floatArrayOf(c,0f,-.5f,0f, 0f,1f,0f,0f, .5f,0f,c,0f, 0f,0f,0f,1f))!!
+        assertEquals(30.0, yaw.yawDegrees, 1e-4); assertEquals(0.0, yaw.pitchDegrees, 1e-4)
+        val pitch = HeadPoseMatrix.decode(floatArrayOf(1f,0f,0f,0f, 0f,c,.5f,0f, 0f,-.5f,c,0f, 0f,0f,0f,1f))!!
+        assertEquals(30.0, pitch.pitchDegrees, 1e-4); assertEquals(0.0, pitch.rollDegrees, 1e-4)
+        val roll = HeadPoseMatrix.decode(floatArrayOf(c,-.5f,0f,0f, .5f,c,0f,0f, 0f,0f,1f,0f, 0f,0f,0f,1f))!!
+        assertEquals(-30.0, roll.rollDegrees, 1e-4); assertEquals(0.0, roll.yawDegrees, 1e-4)
+    }
 }

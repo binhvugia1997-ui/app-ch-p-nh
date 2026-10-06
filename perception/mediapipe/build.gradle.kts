@@ -4,7 +4,10 @@ plugins { alias(libs.plugins.android.library) }
 android {
     namespace = "com.aiphotographer.perception.mediapipe"
     compileSdk = 37
-    defaultConfig { minSdk = 24; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
+    defaultConfig {
+        minSdk = 24; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("consumer-rules.pro")
+    }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     lint { warningsAsErrors = true }
     androidResources { noCompress += "task" }

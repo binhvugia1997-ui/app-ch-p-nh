@@ -78,6 +78,10 @@ import com.aiphotographer.model.PoseLandmarks
         if (visible) {
             fun Double.f() = String.format(Locale.ROOT, "%.2f", this)
             val cap = state.capability
+            val delegateLine = stringResource(R.string.perception_delegate_diagnostic, perception?.pose.toString(), perception?.face.toString())
+            val perceptionLine = stringResource(R.string.perception_metrics_diagnostic, perception?.metrics.toString())
+            val subjectLine = stringResource(R.string.perception_subject_diagnostic, snapshot?.analysis?.subjects?.size ?: 0,
+                snapshot?.analysis?.subjects?.firstOrNull()?.shotType.toString())
             Text(buildString {
                 appendLine("Preview capture FPS (not display): ${metrics.previewCaptureFps.f()}")
                 appendLine("Analysis delivery FPS: ${metrics.analysisFps.f()}; luma ${metrics.lumaFps.f()} Hz")
@@ -88,9 +92,9 @@ import com.aiphotographer.model.PoseLandmarks
                 appendLine("$rss; thermal=$thermal")
                 appendLine("${cap.tier} heuristic/CALIBRATION_REQUIRED; GL=${cap.glEsVersion}")
                 appendLine("GPU eligible=${cap.gpuEligible}; emulator=${cap.emulator}")
-                appendLine("Configured pose=${perception?.pose}; face=${perception?.face}; runtime delegate NOT_MEASURED")
-                appendLine("Perception metrics=${perception?.metrics}")
-                appendLine("Subjects=${snapshot?.analysis?.subjects?.size}; shot=${snapshot?.analysis?.subjects?.firstOrNull()?.shotType}")
+                appendLine(delegateLine)
+                appendLine(perceptionLine)
+                appendLine(subjectLine)
                 appendLine("Camera ${cap.cameraId}; 3-use-case=${cap.threeUseCaseSupported}; ${state.mode}")
                 appendLine("YUV resolutions=${cap.supportedYuvSizes}")
                 appendLine("Fallback=${state.fallbackAttempts}")

@@ -1,0 +1,7 @@
+<resources>
+    <string name="perception_delegate_diagnostic">Configured pose=%1$s; face=%2$s; runtime delegate NOT_MEASURED</string>
+    <string name="perception_metrics_diagnostic">Perception metrics=%1$s</string>
+    <string name="perception_subject_diagnostic">Subjects=%1$d; shot=%2$s</string>
+    <string name="phase2_diagnostics">Phase 2 diagnostics</string>
+    <string name="single_person_diagnostic">Single-person perception only; accuracy and device calibration pending.</string>
+</resources>

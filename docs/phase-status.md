@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-06** by **Codex Local** (Phase 2 start authorized; stock SDK privacy blocker under investigation).
+Last updated: **2026-10-07** by **Codex Local** (Phase 2 implementation and local validation; physical verification pending).
 
 ---
 
@@ -18,8 +18,9 @@ PR #2 was merged by the human owner; local main synchronized to `81df0022fce4935
 **PHASE 2 — IN PROGRESS: START AUTHORIZED by the human owner on 2026-10-06.**
 Pure contracts and Android adapters are implemented. Stock/exclusion paths fail the privacy/runtime
 checks; the official unmodified Core build with default dummy logging and unchanged Vision artifact
-passed IMAGE probes and production adapter emulator tests. Final validation/native notice collection
-is in progress; physical Phase 2 verification remains pending.
+passed IMAGE/LIVE_STREAM probes and production adapter emulator tests. Local builds, tests, lint,
+artifact/privacy checks and native notice packaging are complete; physical Phase 2 verification
+remains pending. Status is **partial**, ready for technical review in Draft PR #3.
 No Phase 2 acceptance. Phase 3 has not started. Phase 1 limitations and measurements remain unchanged.
 
 ---
@@ -1206,3 +1207,100 @@ continue bounded camera integration. No Phase 2 acceptance, Phase 3+ work or mer
 Prepared (not yet executed against source AARs): upstream dummy-factory, no local transport database,
 and Pose/Face LIVE_STREAM callback tests in the isolated probe. The artifact checker rejects known
 telemetry identifiers in stock Core; native identifier scan is bounded, not a universal privacy proof.
+
+---
+
+## Phase 2 local implementation handoff — 2026-10-07
+
+PHASE: 2
+STATUS: partial — implementation and available local validation complete; physical gates pending.
+BRANCH: codex/phase-2-pose-face-detection
+PR: Draft #3, https://github.com/binhvugia1997-ui/app-ch-p-nh/pull/3
+
+This entry supersedes the earlier SDK-blocker checkpoint, not its recorded observations. Owner
+authorized deeper investigation and options A/B/C; no privacy-policy exception was used.
+
+IMPLEMENTED: the three approved modules (`perception:api`, `perception:mediapipe`,
+`core:photography`), pure confidence/usability, smoothing, freshness/association and diagnostic
+shot estimation; single-person local Pose/Face adapters, bounded CameraX RGB ownership, lifecycle
+epochs, geometry resets, cadence/degradation, latency/drop counters and resource-backed diagnostic
+landmark visualization. Existing camera switching, capture and aspect/rotation contracts are reused.
+No pose matching, target guides, product guidance, recommendations, composition engine, auto-capture,
+scene models or multi-person production pipeline.
+
+SDK DECISION: option C. Unmodified official MediaPipe v0.10.32 source commit
+`8317ba78778738ba90a521e7e4580a2ba0129c81` builds Core with upstream's default dummy logger.
+Core AAR SHA256 `f05d8c4432613342fa15d93914d0d7079381b941f4e1cd069dee9f41aa5c365f` is
+vendored in the restricted local Maven repository; unchanged official `tasks-vision:0.10.32`
+supplies Vision/JNI. Only Vision's stock `tasks-core` edge is excluded. No fork, SDK source patch,
+fake logger or reflective telemetry bypass. Rebuild script, pinned CI and ADR-017 record provenance.
+Core-only build and native-source notice collection passed in upstream audit CI.
+
+PRIVACY: stock Core unconditionally initializes DataTransport and queues task metrics locally;
+absence of INTERNET prevents transmission but does not prevent that collection. Removing transport
+dependencies breaks both landmarkers. All 39 published Core artifacts were inspected; early
+transport-free Vision alphas lack the required APIs. The selected production graph has 107 unique
+components and no stock Core, DataTransport or Firebase encoder artifacts. Factory bytecode calls
+the real upstream dummy logger. Known telemetry identifiers are absent in the selected AAR payloads
+and production DEX; this bounded static scan is not proof of every native call path. Emulator runtime
+probes show no transport class/database; loopback socket fails with EPERM. Debug/release/profile
+merged manifests have neither INTERNET nor ACCESS_NETWORK_STATE. No cloud endpoint, API key,
+analytics configuration, model download or frame upload is introduced in production. Audit probes
+are isolated developer tools, not production dependencies.
+
+MODELS / LICENSE: unchanged official version-1 float16 pose lite/full and face bundles are local
+assets with verified hashes (model-licenses.md §8). All three APKs contain those exact assets and
+all 36 retained third-party notice texts. Models/code are Apache-2.0; other runtime/native terms and
+Eigen MPL source availability are recorded and packaged. No project-wide license was added.
+Combined model size is 18,934,540 bytes, exceeding the previous approximate <15 MB hypothesis;
+both pose variants are retained for tier/degradation selection. This is a documented target
+deviation, not a silently reinterpreted measurement or requirement.
+
+COORDINATES: crop-local upright unmirrored ANALYSIS inputs; rotation once, normalized landmarks,
+Phase 1 crop/preview projection and explicit preview-only front mirroring. Filter/face state resets
+on source geometry/lifecycle changes. World coordinates retain their nonmetric caveat. Deterministic
+tests cover all four YUV rotations with padded offset crops, preview combinations, usability floors,
+unknown channels and known facial-matrix axes. Numerical physical reprojection remains unmeasured.
+
+VALIDATION ACTUALLY EXECUTED:
+- Gradle `test assembleDebug assembleRelease assembleProfile`, app debug/release/profile lint,
+  camera/adapter debug lint and runtime export: PASS (final build 30 s; offline cached dependencies).
+- 23 JVM tests: PASS, zero failures/errors.
+- Production adapter debug instrumentation: 1 PASS (rapid stop/resume, one lease, cadence/busy
+  rejection and rear/front-like portrait/landscape geometry with synthetic frames).
+- App debug instrumentation: 4 PASS; profile instrumentation: 2 PASS, including packaged-model
+  production initialization/inference after R8 and launcher recreation. XML counts verified.
+- Isolated SDK probes: 4 stock + 4 exclusions + 8 upstream PASS. Exclusion tests assert the expected
+  initialization failure, not working detection. Upstream includes IMAGE, sequential LIVE_STREAM,
+  actual 33-pose/478-face fixture landmarks, matrix output and disabled blendshapes.
+- Spec validator: PASS, 0 errors, 0 warnings. Model/Core/Vision hashes, complete production graph,
+  merged manifests, APK models/notices, vi/en resource-key parity and git diff inspected: PASS.
+  Staged whitespace warnings are confined to verbatim upstream notice texts (trailing spaces/blank
+  EOF lines retained); source/documentation diff check is clean.
+
+FIXES / EVIDENCE CAUTIONS: source test folder corrected so all eight upstream tests actually execute.
+Zero-test runner successes are rejected. R8 JNI/reflection and protobuf field retention fixes a real
+shrunk-runtime initialization failure; only two unused classic-Graph missing proto types are narrowly
+suppressed. Profile test-facing ABI keeps differ from release and cannot establish exact release
+footprint. A final emulator package-manager Broken-pipe failure was recovered by cold-starting the
+same AVD; failed zero-test run is excluded, debug instrumentation rerun passed. No device data or
+raw fixture images/logs are committed; intentional model and vetted Core artifacts are tracked.
+
+DEVICES TESTED: Android 17 x86_64 Medium_Phone_API_37.0 emulator, CPU, debug/profile and isolated
+probe builds. No physical SM-S918B connected in this session. Synthetic tests do not establish real
+camera landmark tracking, mirror accuracy, GPU delegate execution, device robustness or acceptance.
+MEASURED: Phase 2 phone pose/face/conversion latency/rate, preview FrameTimeline, memory impact,
+thermal run, 480p/720p full-body quality at 3–4 m and physical reprojection: NOT_MEASURED. Emulator
+test durations are test evidence, not performance baselines. Watchdog, scheduling/filter/freshness
+seeds remain CALIBRATION_REQUIRED; no model-card confidence is converted with invented sigmoid math.
+
+KNOWN LIMITATIONS: numerical reprojection accuracy remains unmeasured; unsupported-device fallback
+remains hardware-unverified; results from Samsung SM-S918B must not be generalized to other devices.
+No previous Phase 1 result is claimed as Phase 2 evidence. Physical eight camera/orientation/aspect
+combinations, capture/lifecycle during inference, visible body/face tracking, thermal/performance and
+GPU/fallback verification remain pending. No human Phase 2 acceptance.
+BLOCKERS: no remaining local implementation/build/license blocker; physical verification only.
+HUMAN ACTION REQUIRED: connect/unlock authorized SM-S918B, approve USB if prompted, and arrange
+one consolidated full-body/face posing session for both cameras, orientations and aspects.
+NEXT PROPOSED: physical Phase 2 verification and factual measurements, then GitHub review and
+explicit owner acceptance. Phase 3 has not started. No merge performed.

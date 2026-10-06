@@ -2,8 +2,6 @@
     <string name="perception_starting">Đang khởi động nhận diện trên thiết bị…</string>
     <string name="perception_unavailable">Không thể nhận diện tư thế. Bạn vẫn có thể chụp ảnh.</string>
     <string name="face_unavailable">Không có điểm mốc khuôn mặt. Nhận diện tư thế vẫn có thể tiếp tục.</string>
-    <string name="phase2_diagnostics">Chẩn đoán Giai đoạn 2</string>
-    <string name="single_person_diagnostic">Chỉ nhận diện một người; độ chính xác và hiệu chuẩn thiết bị đang chờ kiểm chứng.</string>
     <string name="app_name">AI Photographer</string>
     <string name="permission_title">Quyền truy cập máy ảnh</string>
     <string name="permission_explanation">Cho phép dùng máy ảnh để xem trước và chụp ảnh. Khung hình được xử lý trên điện thoại này. Bạn vẫn có thể dùng màn hình này khi chưa cấp quyền.</string>

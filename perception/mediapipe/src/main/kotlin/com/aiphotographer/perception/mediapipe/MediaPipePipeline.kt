@@ -44,6 +44,10 @@ private class MediaPipePipeline(private val context: Context, private val capabi
     private var lastFaceMs = -1L
     private var lastTimestampMs = -1L
     private var startedNs = 0L
+    private var scheduleOffered = 0L
+    private var scheduleBusy = 0L
+    private var scheduleWindowMs = -1L
+    private var recentBusyRatio = 0.0
     private var metrics = PerceptionMetrics()
     private val windows = mapOf("pose" to LatencyWindow(), "face" to LatencyWindow(), "batch" to LatencyWindow())
     private val schedule = PerceptionSchedule(capability.tier)
@@ -63,7 +67,7 @@ private class MediaPipePipeline(private val context: Context, private val capabi
             try { pose = MediaPipePoseSource(context, delegate, model); break }
             catch (error: Throwable) {
                 if (error is VirtualMachineError || error is ThreadDeath) throw error
-                Log.w("Phase2Perception", "pose_init_failure delegate=$delegate type=${error.javaClass.simpleName}")
+                Log.w("Phase2Perception", "pose_init_failure delegate=$delegate type=${error.javaClass.simpleName}", error)
             }
         }
         if (closed.get() || !active.get()) { closeSources(); return }
@@ -71,7 +75,7 @@ private class MediaPipePipeline(private val context: Context, private val capabi
             try { face = MediaPipeFaceSource(context, delegate); break }
             catch (error: Throwable) {
                 if (error is VirtualMachineError || error is ThreadDeath) throw error
-                Log.w("Phase2Perception", "face_init_failure delegate=$delegate type=${error.javaClass.simpleName}")
+                Log.w("Phase2Perception", "face_init_failure delegate=$delegate type=${error.javaClass.simpleName}", error)
             }
         }
         if (closed.get() || !active.get()) { closeSources(); return }
@@ -84,11 +88,11 @@ private class MediaPipePipeline(private val context: Context, private val capabi
         if (closed.get() || !active.get() || mutableState.value.pose.status != SourceStatus.READY) return null
         metrics = metrics.copy(offered = metrics.offered + 1)
         if (startedNs == 0L) startedNs = SystemClock.elapsedRealtimeNanos()
+        if (timestampMs <= lastTimestampMs || (lastPoseMs >= 0 && timestampMs - lastPoseMs < schedule.posePeriodMs)) {
+            metrics = metrics.copy(cadenceSkipped = metrics.cadenceSkipped + 1); return null
+        }
         val token = gate.acquire()
         if (token == null) { metrics = metrics.copy(busySkipped = metrics.busySkipped + 1); return null }
-        if (timestampMs <= lastTimestampMs || (lastPoseMs >= 0 && timestampMs - lastPoseMs < schedule.posePeriodMs)) {
-            metrics = metrics.copy(cadenceSkipped = metrics.cadenceSkipped + 1); gate.release(token); return null
-        }
         lastPoseMs = timestampMs; lastTimestampMs = timestampMs
         if (pixels.size != geometry.width * geometry.height) pixels = IntArray(geometry.width * geometry.height)
         val frame = RgbFrame(timestampMs, geometry, device, pixels)
@@ -175,8 +179,13 @@ private class MediaPipePipeline(private val context: Context, private val capabi
             Log.i("Phase2Baseline", "${mutableState.value.metrics}; pose=${mutableState.value.pose.configuredDelegate}; face=${mutableState.value.face.configuredDelegate}")
             val oldLite = schedule.useLite
             synchronized(this) {
+                if (scheduleWindowMs < 0 || current.frame.timestampMs - scheduleWindowMs >= 1000) {
+                    val offered = metrics.offered - scheduleOffered
+                    recentBusyRatio = if (offered > 0) (metrics.busySkipped - scheduleBusy).toDouble() / offered else 0.0
+                    scheduleOffered = metrics.offered; scheduleBusy = metrics.busySkipped; scheduleWindowMs = current.frame.timestampMs
+                }
                 schedule.observe(current.frame.timestampMs, current.frame.device.thermalStatus,
-                    quality.droppedFrameRatio, windows.getValue("pose").summary().p95Ms, result?.landmarks)
+                    recentBusyRatio, windows.getValue("pose").summary().p95Ms, result?.landmarks)
             }
             if (oldLite != schedule.useLite) { closeSources(); assembler.reset(); lastFace = null; initialize() }
         }
@@ -195,7 +204,10 @@ private class MediaPipePipeline(private val context: Context, private val capabi
         worker.execute {
             if (gate.epoch() != epoch || closed.get()) return@execute
             closeSources(); batch?.let(::release); assembler.reset(); lastFace = null; geometry = null
-            synchronized(this) { lastPoseMs = -1; lastFaceMs = -1; lastTimestampMs = -1; schedule.resetMotion() }
+            synchronized(this) {
+                lastPoseMs = -1; lastFaceMs = -1; lastTimestampMs = -1; schedule.resetMotion()
+                scheduleOffered = metrics.offered; scheduleBusy = metrics.busySkipped; scheduleWindowMs = -1; recentBusyRatio = 0.0
+            }
             if (this.active.get()) initialize()
         }
     }

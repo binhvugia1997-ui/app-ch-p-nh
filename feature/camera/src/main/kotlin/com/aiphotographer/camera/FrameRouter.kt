@@ -99,6 +99,9 @@ class FrameRouter(
                 val planes = image.planes.map { Plane(it.buffer, it.rowStride, it.pixelStride) }
                 val timestamp = image.imageInfo.timestamp / 1_000_000
                 val geometry = FrameGeometry(w, h, rotation, facing == CameraFacing.FRONT, facing, resolution)
+                if (currentGeometry != null && !PerceptionFreshness.sameGeometry(currentGeometry!!, geometry)) {
+                    lastPerception = null; lastLuma = null; mutableSnapshot.value = null; scheduler.reset()
+                }
                 currentGeometry = geometry
                 val lease = perception?.acquire(timestamp, geometry, device())
                 if (lease != null) {

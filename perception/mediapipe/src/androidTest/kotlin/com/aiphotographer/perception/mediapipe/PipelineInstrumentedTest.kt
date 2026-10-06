@@ -34,11 +34,13 @@ class PipelineInstrumentedTest {
                 }
                 val owned = requireNotNull(lease)
                 val before = pipeline.state.value.metrics.poseCompleted
+                assertNull(pipeline.acquire(time + 1, geometry, DeviceState(DeviceTier.MEDIUM)))
                 assertNull(pipeline.acquire(time + 100, geometry, DeviceState(DeviceTier.MEDIUM)))
                 owned.pixels.fill(0xff000000.toInt())
                 pipeline.submit(owned)
                 withTimeout(30000) { pipeline.state.first { it.metrics.poseCompleted > before } }
                 assertEquals(0, pipeline.state.value.metrics.errors)
+                assertTrue(pipeline.state.value.metrics.cadenceSkipped > 0)
                 assertEquals(geometry, pipeline.state.value.snapshot?.frame)
                 assertTrue(pipeline.state.value.snapshot?.subjects.orEmpty().isEmpty())
             }

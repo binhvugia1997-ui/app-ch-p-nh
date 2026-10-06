@@ -497,8 +497,8 @@ Pin both binaries and local models by hash; retain Core in a restricted local Ma
 reproducible app builds. The build script records the upstream commit and Android environment
 configuration. No fork, fake logger, new model architecture or network fallback. Version updates
 require renewed graph/manifest, bytecode and runtime verification. Evidence and remaining limits:
-`docs/phase-2-sdk-audit.md`. Native notice collection and final shrunk-runtime checks remain in progress
-at this implementation checkpoint. No physical-device or owner-acceptance claim.
+`docs/phase-2-sdk-audit.md`. Native notices/source availability are packaged. Emulator and final
+shrunk-runtime checks are reported in the session handoff. No physical-device or owner-acceptance claim.
 
 ## 13. Risks owned by the architecture
 

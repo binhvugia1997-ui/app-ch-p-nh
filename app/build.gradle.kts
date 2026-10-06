@@ -1,6 +1,7 @@
 import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
 import java.security.MessageDigest
+import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
@@ -106,6 +107,8 @@ android {
             initWith(getByName("release"))
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += "release"
+            testProguardFiles("test-proguard-rules.pro")
+            proguardFiles("profile-test-target-rules.pro")
         }
     }
     sourceSets.getByName("main").assets.directories.add(noticesDirectory.get().asFile.path)
@@ -117,6 +120,16 @@ android {
 tasks.configureEach {
     if ((name.startsWith("merge") && name.endsWith("Assets")) || name.contains("lint", ignoreCase = true)) {
         dependsOn(generateThirdPartyNotices)
+    }
+    if (name in setOf("connectedDebugAndroidTest", "connectedProfileAndroidTest")) {
+        doLast {
+            val variant = if (name.contains("Profile")) "profile" else "debug"
+            val reports = layout.buildDirectory.dir("outputs/androidTest-results/connected/$variant").get().asFile
+                .listFiles()?.filter { it.name.startsWith("TEST-") && it.extension == "xml" }.orEmpty()
+            val count = reports.sumOf { DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(it)
+                .documentElement.getAttribute("tests").toInt() }
+            check(count > 0) { "Instrumentation executed zero tests; do not report this as PASS." }
+        }
     }
 }
 dependencies {
