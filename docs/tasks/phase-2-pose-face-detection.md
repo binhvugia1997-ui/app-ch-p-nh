@@ -8,7 +8,10 @@ directed dependency/runtime investigation before any fork. Stock/exclusion paths
 unmodified Core build with upstream's default dummy logger and unchanged Vision artifact passes
 eight SDK probe tests and production adapter emulator tests (docs/phase-2-sdk-audit.md). All three
 approved modules are integrated. Local validation and offline notice packaging are complete; physical
-gates remain pending. The final evidence is recorded in phase-status.md's 2026-10-07 handoff.
+gates remain pending. Physical verification is paused at the owner's request on 2026-10-07;
+remaining full-body/face checks must support a solo tester. The current completed/pending checklist
+and resume plan are in phase-status.md's owner-requested safe-pause handoff. Missing human checks
+are deferred, not a failure.
 No source-code modification/fork is underway, and no human acceptance is claimed.
 
 ## Scope and boundaries

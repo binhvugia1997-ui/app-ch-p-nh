@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-07** by **Codex Local** (Phase 2 implementation and local validation; physical verification pending).
+Last updated: **2026-10-07** by **Codex Local** (owner-requested pause; physical verification partially exercised, remaining solo tests pending).
 
 ---
 
@@ -20,8 +20,11 @@ Pure contracts and Android adapters are implemented. Stock/exclusion paths fail 
 checks; the official unmodified Core build with default dummy logging and unchanged Vision artifact
 passed IMAGE/LIVE_STREAM probes and production adapter emulator tests. Local builds, tests, lint,
 artifact/privacy checks and native notice packaging are complete; physical Phase 2 verification
-remains pending. Status is **partial**, ready for technical review in Draft PR #3.
+remains pending. Status is **partial — physical verification paused at the owner's request**;
+the missing human tests are deferred, not a failure. Draft PR #3 remains open for technical review.
 No Phase 2 acceptance. Phase 3 has not started. Phase 1 limitations and measurements remain unchanged.
+
+Latest resumable state: see **Owner-requested safe pause — 2026-10-07** at the end of this document.
 
 ---
 
@@ -1344,3 +1347,85 @@ photographs/raw evidence are committed. Rebuilt debug/profile/release, JVM tests
 debug/release/profile plus adapter debug lint PASS. Phase 1 accuracy/fallback/device-generalization
 limitations remain unchanged. No Phase 3 or owner acceptance. Local collection helper's first real
 run completed and recorded counters/latency/memory/thermal; no unmeasured compositor claim.
+
+### Owner-requested safe pause — 2026-10-07
+
+STATUS: partial; physical verification paused by the owner because remaining human full-body/face
+tests cannot be completed now. This is a scheduling deferral, not a failed verification gate.
+Implementation/fix checkpoint: `c8d82899b74c19027bf08612d6b38bc18e719712`, pushed on
+`codex/phase-2-pose-face-detection`; Draft PR #3. No Phase 2 owner acceptance or merge.
+
+SAFE STOP: no active task-specific host collector/logcat/instrumentation/performance process found.
+No active phone Perfetto or instrumentation session found. Camera application and library test
+application force-stopped on SM-S918B; camera app PID absent afterward. No active measurement was
+interrupted. The completed short run and regression report are retained. Unrecorded camera uptime
+after that run is not a soak or valid measurement. No phone rotation/connectivity settings were
+changed in this session; original rotation settings remain recorded above. No production change
+made as part of the pause. No UI integration or Phase 3 work started as part of this request.
+
+COMPLETED PHYSICAL CHECKS:
+- Authorized USB ADB, model SM-S918B, Android 16 / API 36 confirmed; current debug build installed
+  and launched, camera permission confirmed through actual live preview/inference.
+- Rear preview observed with near-field arm/desk. Live submission failure reproduced, diagnosed
+  and fixed; corrected 20-second debug inference run completed without recorded inference errors.
+- Same-geometry repeat, single-frame ownership and stop/resume/geometry regression PASS on the
+  real phone with CPU synthetic input (1 instrumentation test). This does not verify real-camera
+  background/foreground behavior or human tracking.
+- Profile merged manifest reconfirmed without INTERNET permission. Existing complete dependency,
+  bytecode/native identifier, dummy logger, manifest/model/license and emulator privacy audit
+  results remain preserved; no new network/privacy exception or SDK source patch.
+
+PENDING PHYSICAL CHECKS (not PASS, not failed): full-body pose tracking during movement; actual
+visible-face landmark/head tracking; front preview; physical portrait/landscape transitions;
+rear/front × portrait/landscape × 4:3/16:9 combinations; camera switching, manual capture and
+real-camera background/foreground recovery during inference; qualitative overlay alignment and
+front mirroring; sustained backlog/preview stability; explicit offline run on the phone; optimized
+480p/720p full-body comparison around 3–4 m; GPU execution/fallback evidence; sustained crash/ANR
+audit. The brief repaired run is not sufficient to mark the final no-crash/ANR or soak gate PASS.
+
+COMPLETED MEASUREMENTS: limited debug counter window, rolling task-to-callback pose/face latency
+summaries, sampled process PSS/RSS and thermal state exactly as recorded in the preceding checkpoint.
+Face inference completed but no face was detected; pose detections on the observed partial scene
+are not verified anatomical accuracy. Do not relabel these numbers as full-body, optimized-profile,
+steady-state or acceptance measurements. No numerical reprojection measurement was collected.
+PENDING MEASUREMENTS: fresh optimized-profile 60-second 480p/720p baselines with a visible person,
+pose/face rates and latency, conversion cost, skipped work, compositor FrameTimeline, steady-state
+memory, five-minute thermal/soak interval and sustained crash/ANR review. CameraX internal drops
+remain UNKNOWN unless a supported measurement is obtained. No fabricated or substituted values.
+
+SOLO TEST PLAN FOR RESUME (no second person required):
+1. Confirm this pushed branch and clean tree, reconnect/unlock the authorized phone and recheck
+   model/API/permissions. Install the current debug diagnostic build. Verify ignored evidence
+   exists locally; retain old evidence separately from new run directories.
+2. Prepare automation before asking for positioning: delayed starts allow the tester to walk into
+   frame; automate aspect/resolution changes, local screenshot samples and counter/trace capture.
+   Use the computer's locally captured preview for framing and later qualitative review. Keep
+   photographs/screenshots/recordings ignored; do not upload or commit them.
+3. Ask for one consolidated setup per physical camera/orientation: prop the USB-connected phone
+   securely, include the tester's face/head, hands and feet at roughly 3–4 m in good light when
+   practical. The tester starts the delayed run, walks into view, raises/lowers both arms, steps
+   sideways and turns the head. No precise photographic pose or external helper is required.
+   If a full-body face is too small, include a closer face segment in the same setup and label it.
+4. Run both aspects and 480p/720p plus applicable switching/lifecycle checks automatically while
+   each setup remains valid. Request physical rotation/front-camera repositioning in consolidated
+   bundles; preserve/restore any temporary rotation/connectivity settings. Clearly distinguish
+   forced viewport rotation from a real physical transition. Compare front mirrored movement and
+   overlay alignment against the locally recorded preview, without claiming numerical accuracy.
+5. Collect optimized-profile baselines and a sustained thermal run only after tracking works;
+   rerun on the final APK after any bug fix. Label interrupted/poorly framed runs incomplete and
+   exclude them from valid baselines. Review actual crash/ANR and trace records, document measured
+   results and remaining limits, validate, commit/push and update the same Draft PR. No automatic
+   Phase 2 acceptance, merge, UI integration expansion or Phase 3 transition.
+
+EVIDENCE / RECOVERY: `device-evidence/phase2/physical/rear-debug-fixed/` contains completed raw
+log/samples/summary; `pipeline-regression.txt` contains the actual phone test result. Local preview
+screenshot retained only under ignored physical evidence. `pause-inventory.json` records 14 files,
+their sizes/hashes and evidence limitations. Existing MediaPipe audits/build provenance remain
+unchanged. Only factual handoff/task documentation is tracked for this stop; no raw evidence or
+build artifacts added to Git. Closing Codex is safe; reopening uses repository documentation and
+the retained local evidence rather than relying on chat. This pause does not delete device evidence.
+
+KNOWN LIMITATIONS remain unchanged: numerical reprojection accuracy remains unmeasured;
+unsupported-device fallback remains hardware-unverified; results from Samsung SM-S918B must not
+be generalized to other devices. Human full-body/face physical verification is the remaining
+dependency, now explicitly planned for a solo tester. Resume only when the owner is available.
