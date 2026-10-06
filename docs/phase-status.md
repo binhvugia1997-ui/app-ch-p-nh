@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-06** by **Codex Local** (Phase 1 checkpoint; physical verification pending).
+Last updated: **2026-10-06** by **Codex Local** (corrected-build physical evidence and final baselines/soak recorded; review/acceptance pending).
 
 ---
 
@@ -12,7 +12,7 @@ Last updated: **2026-10-06** by **Codex Local** (Phase 1 checkpoint; physical ve
 **PHASE 0 — ACCEPTED by the human owner.** Owner explicitly reported PR #1 merged and authorized
 "START PHASE 1" on 2026-10-03.
 
-**PHASE 1 — PARTIAL: ROTATION OWNER-VERIFIED; REAR PORTRAIT AND FINAL BASELINES/SOAK PENDING.**
+**PHASE 1 — PARTIAL: CORRECTED-BUILD PHYSICAL CHECKS AND FINAL BASELINES/SOAK RECORDED; REVIEW/OWNER ACCEPTANCE PENDING.**
 Phase 1 is not accepted. Phase 2 has not started.
 
 ---
@@ -34,7 +34,7 @@ Phase 1 is not accepted. Phase 2 has not started.
 | Roadmap | ✅ done (`docs/roadmap.md`) |
 | Phase 0 report | ✅ done (`docs/phase-0-report.md`) |
 | Phase 1 task brief | Authorized by owner; implementation handed back for review |
-| **Phase 1 implementation** | Local and physical instrumentation PASS; cooled physical 480p/720p baselines recorded; manual gates/owner acceptance pending |
+| **Phase 1 implementation** | Local and physical instrumentation PASS; corrected-build target observations, final optimized 480p/720p baselines and final soak recorded; coordinate evidence review/owner acceptance pending |
 
 ---
 
@@ -841,3 +841,269 @@ Raw phone JPEGs/screenshots/traces and local verification helpers remain preserv
 and evidence paths are committed in this document. The checkpoint alone does not carry those raw files
 to a different checkout/machine; retain that local evidence directory when resuming. No reset/revert,
 discard, push, merge, Phase 2, INTERNET permission, cloud API or MediaPipe dependency introduced.
+
+### Resumed rear portrait 16:9 capture (2026-10-06)
+
+Connected physical SM-S918B serial R5CW40EE9QK. UI rotation 0 and portrait 16:9
+TextureView bounds [42,62][679,1195] asserted before shutter; R720P observed.
+Manual save MediaStore 14758 succeeded: 4080x2294, orientation 90. Decoded JPEG
+is upright with readable printed detail and qualitatively corresponding scene/framing.
+Save, displayed orientation and readable detail PASS by inspection. Precise edge alignment
+and numerical reprojection accuracy remain NOT_VERIFIED: marker was below the printed
+rectangle edge. The save message changes available preview height (after screenshot shows
+a smaller 16:9 preview), so bracket screenshots have different view bounds; do not interpret
+this alone as physical camera movement or claim identical pixel framing.
+Ignored evidence preserved under device-evidence/samsung-sm-s918b/resume-rear-portrait-16x9-*
+(initial/saved XML, before/after PNG, JPEG, metadata). No previous evidence discarded.
+Stopped for physical realignment: retain rear portrait 16:9; put the bottom edge of the
+lower-left blue printed book rectangle directly through the centre of the cyan crosshair,
+keep text sharp and brace the phone/target. Repeat precise 16:9 check before changing to 4:3,
+which will need its own alignment. Final current-build baselines, soak, review and owner
+acceptance remain pending. No new performance measurements, production changes or Phase 2.
+
+### Corrected rear portrait pair and visible edge repeat (2026-10-06)
+
+Physical SM-S918B: portrait rotation 0 verified. Rear 16:9 MediaStore 14764,
+4080x2294 orientation 90; rear 4:3 MediaStore 14769, 3060x2295 orientation 90.
+Both saves, portrait display, readable printed detail and qualitative preview/JPEG crop
+correspondence PASS by visual inspection. The target itself is upside down in both preview
+and JPEG; this is preserved scene orientation, not an inferred camera rotation failure.
+The observed target differs from the owner's named blue rectangle: the outer vertical
+book edge crosses the cyan marker in 16:9, and remains visually near its centre in 4:3.
+Bracketed 16:9 views retain stable bounds/framing. Changing aspect clears the save message;
+4:3 save then reduces available preview height again, preserving 4:3 shape. Visual edge
+correspondence PASS for these rear portrait observations; no numerical reprojection error
+or independent analysis-space target coordinate measured. Do not claim the entire precise
+coordinate gate complete solely from overlay/JPEG visual correspondence.
+Evidence: ignored precise-rear-portrait-16x9-* and precise-rear-portrait-4x3-* under
+ device-evidence/samsung-sm-s918b/. Prior raw evidence preserved. R720P observed.
+Selected front camera, retaining portrait 4:3, for the unresolved front portrait edge check.
+Stopped for physical interaction: aim front lens at a stationary readable non-person target,
+place a distinct straight edge directly through cyan right-quarter/half-height marker and
+brace phone/target. No front capture yet. Final optimized baselines, soak, review and owner
+acceptance pending. No production code changes, Phase 2, push or merge.
+
+### Front portrait 4:3 visible edge repeat (2026-10-06)
+
+Physical SM-S918B, UI portrait rotation 0, 4:3 TextureView [0,149][720,1109]
+confirmed before capture; HUD R480P observed (do not assume prior R720P persisted).
+Manual JPEG MediaStore 14774: 4000x3000, orientation 270. Save, readable detail,
+mirrored preview/unmirrored JPEG and qualitative crop correspondence PASS by inspection.
+Outer book edge meets the cyan right-quarter marker in the pre-capture preview; the
+corresponding unmirrored left-side edge is visually near quarter-width in the decoded JPEG.
+This resolves the previously absent direct edge target for front portrait 4:3 as a visual
+observation; numerical reprojection error and independent analysis-space coordinate remain
+unmeasured. Save message again changes available preview height, so compare normalized
+scene framing rather than raw screen coordinates across bracket screenshots.
+Evidence preserved locally: precise-front-portrait-4x3-* (initial/saved XML, setup/before/
+after PNG, JPEG, metadata). Selected front portrait 16:9. Immediate rebind screenshot was
+black; subsequent settled screenshot confirms live readable preview, not sustained failure.
+16:9 edge is now to the right of the cyan centre (roughly x580 versus x520 in screenshot).
+Stopped before 16:9 shutter for physical realignment: retain front portrait 16:9 and shift
+phone/target until the outer vertical book edge crosses the cyan centre, keep it sharp and
+stationary. Local precise-front-portrait-16x9-setup.xml/png and -settled.png retained.
+Final optimized baselines, soak, review and owner acceptance remain pending; no production
+code change, Phase 2, push or merge.
+
+### Front portrait 16:9 visible edge repeat (2026-10-06)
+
+Physical SM-S918B portrait rotation 0 confirmed; 16:9 TextureView [42,62][679,1195],
+HUD R480P. Manual save MediaStore 14783: 4000x2248 orientation 270. Save, readable
+printed detail, mirrored preview/unmirrored JPEG and qualitative crop/edge correspondence
+PASS by visual inspection. Outer edge meets cyan centre in preview and the corresponding
+unmirrored edge is visually near quarter-width in JPEG. Save message changes preview bounds
+as previously recorded; no numerical reprojection error measured. Ignored evidence:
+precise-front-portrait-16x9-initial/saved.xml, -ready/before/after.png, -capture.jpg,
+-metadata.txt. Prior evidence preserved. Post-capture thermal status NONE (0), BAT 37.9 C,
+battery 89 percent; these are setup observations, not final baseline/soak numbers.
+An inspection tap accidentally enabled RGB instrumentation after capture; inspected true
+state and issued a second tap to restore false. Captured JPEG preceded that toggle.
+Rear and front portrait direct-edge observations now recorded. Earlier corrected landscape
+pairs have qualitative near-edge correspondence but no direct centre-edge repeat. Next
+physical setup: retain front 16:9, rotate landscape, wait for wide live UI, align a stationary
+straight readable edge through the cyan right-quarter/half-height marker, brace and hold.
+Stop for owner setup before landscape shutter. Final optimized baselines, 10-minute soak,
+review and owner acceptance remain pending. No production changes, Phase 2, push or merge.
+
+### Front landscape direct edge pair (2026-10-06)
+
+Physical SM-S918B landscape rotation 3 confirmed, R480P, RGB benchmark false.
+Front 16:9 MediaStore 14790: 4000x2250 orientation 180; front 4:3 MediaStore 14796:
+4000x3000 orientation 180. Both saves, readable detail, mirrored preview/unmirrored JPEG
+and qualitative crop/direct-edge correspondence PASS by inspection. The outer book edge
+visually meets the right-quarter cyan marker in both pre-capture views and corresponds to
+the near-quarter unmirrored JPEG edge. No numerical reprojection error or independent
+analysis-space feature measured. Save message changes preview allocation as previously
+recorded. Evidence retained: precise-front-landscape-16x9-* and -4x3-* XML/PNG/JPEG/metadata
+under ignored device-evidence/samsung-sm-s918b/. No previous evidence discarded.
+Selected rear camera, retaining landscape 4:3. Next physical action: aim rear lens at a
+stationary readable non-person straight edge, align it directly through cyan left-quarter/
+half-height centre, brace and hold. Rear landscape direct-edge pair remains pending;
+final optimized baselines, soak, review and owner acceptance pending. No production changes,
+Phase 2, push or merge.
+
+### Rear landscape 4:3 direct edge repeat (2026-10-06)
+
+Physical SM-S918B landscape rotation 1, 4:3 TextureView [593,56][1013,371],
+R480P and RGB benchmark false confirmed before capture. Manual save MediaStore 14802:
+4080x3060 orientation 180. Save, readable detail and qualitative crop/direct-edge
+correspondence PASS by visual inspection; outer book edge meets left-quarter marker and
+corresponding JPEG edge is visually near quarter-width. Numerical reprojection error and
+independent analysis-space feature remain unmeasured. Ignored precise-rear-landscape-4x3-*
+XML/PNG/JPEG/metadata preserved. Earlier evidence untouched.
+Selected rear landscape 16:9. Settled setup screenshot shows readable target but distinct
+edge no longer passes through cyan centre; target scene orientation also differs from the
+4:3 setup. No cause inferred and no 16:9 shutter/pass claimed. Stop for physical alignment:
+retain rear landscape 16:9, place a distinct printed/book straight edge through cyan
+left-quarter/half-height centre, brace and hold. Setup XML/PNG retained under
+precise-rear-landscape-16x9-setup.*. Final optimized baselines, soak, review and owner
+acceptance pending. No production changes, Phase 2, push or merge.
+
+### Rear landscape 16:9 direct edge; final baseline preparation (2026-10-06)
+
+Physical SM-S918B landscape rotation 1 confirmed, 16:9 view [523,56][1083,371],
+R480P and RGB benchmark false. Manual save MediaStore 14810: 4080x2296 orientation 0.
+Save, readable detail and qualitative preview/JPEG crop/direct-edge correspondence PASS by
+inspection. The outer book edge visibly meets cyan left-quarter centre and corresponds to
+near-quarter-width JPEG edge. No numerical reprojection error or independent analysis-space
+feature measured. All eight corrected-build camera/orientation/aspect combinations now have
+recorded direct-edge visual observations; this does not establish numerical coordinate accuracy.
+Ignored precise-rear-landscape-16x9-* XML/PNG/JPEG/metadata retained; prior evidence preserved.
+Camera force-stopped for baseline setup. Thermal LIGHT (1), BAT 39.7 C observed after target
+checks; timeout still 600000 ms. Existing optimized profile APK installed successfully,
+SHA256 F5ED7C351BFF7A49724D037C938553EC348EB262D982D58F3C7CD73CAAAEE9A5,
+then app force-stopped. Final corrected-build 480p/720p baselines and soak NOT_MEASURED yet.
+Next owner setup: leave camera app stopped, keep USB connected, place phone upright portrait
+with rear lens unobstructed and aimed at well-lit stationary non-person target; allow cooling,
+then unlock and leave screen on (10-minute timeout), with third-party lock-screen interruptions
+disabled as in prior controlled run. Do not launch/reinstall the app; automation starts profile
+cold launch after verifying thermal conditions. Stop for physical setup before baseline launch.
+Phase 1 remains partial; review/owner acceptance pending. No production changes, Phase 2,
+INTERNET permission, cloud API, MediaPipe dependency, push or merge.
+
+### Final corrected-build optimized baselines (2026-10-06)
+
+Physical Samsung SM-S918B, Android 16, serial R5CW40EE9QK; corrected optimized profile
+APK SHA256 F5ED7C351BFF7A49724D037C938553EC348EB262D982D58F3C7CD73CAAAEE9A5.
+Rear portrait 4:3, RGB benchmark ON (1 Hz), luma grid at 2 Hz. Airplane mode already ON.
+All five-second warmup/steady/start/end thermal samples NONE (0) for both runs. USB
+powered true, battery 89 percent throughout; temperature 33.7 to 34.8 C for 480p,
+34.8 to 34.8 C for 720p. Both complete approximately 60-second windows retained;
+no nonzero trace errors or overwritten chunks from the existing audit query. MainActivity
+focused at end of both runs. These measurements supersede older-build baselines for the
+corrected checkpoint only; do not extend results to untested devices/tiers.
+
+| Corrected optimized rear-camera measurement | 480p | 720p |
+| --- | --- | --- |
+| Actual buffer / upright crop | 640x480 / 480x640 | 1280x720 / 720x960 |
+| Retained steady window | 60.003053 s | 60.002265 s |
+| App-layer presented / submitted frames | 1800 / 1800 | 1800 / 1800 |
+| Presented app-layer rate | 29.998474 Hz | 29.998867 Hz |
+| Analysis router slices / rate | 1799 / 29.981808 Hz | 1798 / 29.965535 Hz |
+| Luma n / rate / p50 / p95 | 115 / 1.916569 Hz / 0.561927 / 1.376927 ms | 116 / 1.933260 Hz / 0.612864 / 2.500364 ms |
+| RGB + rotation n / rate / p50 / p95 | 59 / 0.983283 Hz / 21.015469 / 34.585468 ms | 59 / 0.983296 Hz / 43.212865 / 54.967291 ms |
+| Router n / p50 / p95 | 1799 / 0.042969 / 3.233178 ms | 1798 / 0.051093 / 4.270209 ms |
+| Intentional luma skips / delivered slices | 1684 / 1799 | 1682 / 1798 |
+| CameraX internal discarded count | UNKNOWN, not exposed | UNKNOWN, not exposed |
+| Capture callback cumulative rate / elapsed | 30.013317 Hz / 84.096002 s | 30.009093 Hz / 84.041194 s |
+| RSS min / max, 61 process-stat samples | 121.109375 / 153.210938 MiB | 126.105469 / 158.871094 MiB |
+| RSS watermark max | 156.371094 MiB | 160.457031 MiB |
+| Cold Activity TotalTime / WaitTime | 317 / 321 ms | 281 / 284 ms |
+| Activity construction to STREAMING proxy | 930.394479 ms | 772.600469 ms |
+| Traced launch to first presented camera texture | 1074.894896 ms | 883.574063 ms |
+| Thermal start / all polls / end | NONE (0) | NONE (0) |
+
+Cold audit: 480p launch 118247945101667 ns, first acquired camera texture
+118249011155521 ns, DrawFrames token 28387063, presentation 118249019996563 ns;
+720p launch 118351648927565 ns, acquired 118352524548711 ns, token 28420466,
+presentation 118352532501628 ns. Both On-time Present. Existing cold.sql follows
+SurfaceTexture acquireBuffer through DrawFrames to actual FrameTimeline presentation;
+these are camera-texture presentation measurements, not splash/Activity completion.
+Rates are slightly below 30 Hz; do not round into a numeric target pass. No submitted
+app-layer drops reported; this does not prove unique camera contents on every presentation.
+Router includes stage work; do not sum stage durations again. Intentional skip counts derive
+from router minus luma slices in retained window; cumulative callback logs are separate.
+
+Local evidence: checkpoint-final-480p/720p-{cold,steady}.pftrace, -summary.csv,
+-cold-summary.csv, matching event/log/launch/memory/battery/thermal/focus/ANR files;
+baseline.sql, cold.sql, checkpoint_final_verify.py in ignored device-evidence/samsung-sm-s918b/.
+Final corrected debug APK restored (SHA256 90C33FC6861EF20BE5274CBD47047D4AC293BDCBE90B173D044E3A5C303BDAA9)
+and ten-minute soak started at NONE (0). Soak result pending; Phase 1 remains partial,
+review/owner acceptance pending. No production changes, Phase 2, push or merge.
+
+### Final corrected-build ten-minute soak (2026-10-06)
+
+Physical Samsung SM-S918B, Android 16 (fingerprint
+samsung/dm3qxxx/dm3q:16/BP4A.251205.006/S918BXXSAFZH3:user/release-keys), corrected
+checkpoint debug APK SHA256 90C33FC6861EF20BE5274CBD47047D4AC293BDCBE90B173D044E3A5C303BDAA9.
+Host monotonic duration 600.0004430999979 s, completed=true. Camera switches near 126/481 s,
+background/resume near 260 s and resolution switch near 372 s all returned camera-ready.
+Post-action XML confirms portrait rotation 0, RGB benchmark OFF, 480p then 720p controls.
+Every approximately 25-second thermal sample and start/end stayed NONE (0).
+Airplane mode was already ON (1), remained ON for the full run, and final read confirms 1;
+no connectivity setting was changed. Analysis continued offline. Camera app force-stopped
+at completion. Filtered AndroidRuntime/Phase1Camera/Phase1Baseline log has no error/FATAL
+entries; independent crash buffer is empty; lastanr reports no ANR since boot. These are
+observed results for this phone/build, not general device guarantees.
+
+USB powered true; battery 89 to 89 percent, temperature 34.8 to 36.7 C. This is not a
+battery-drain measurement. Debug dumpsys TOTAL RSS 231044 KiB initially, 218332 KiB at
+end; 24 collected snapshots range 208592 to 268968 KiB. TOTAL PSS 142067 to 151525 KiB;
+TOTAL SWAP PSS 366 to 25262 KiB. Snapshot evidence does not establish a long-term leak
+claim or replace optimized-profile RSS baselines. Final pipeline session reports errors=0,
+1280x720 buffer / 720x960 crop; rolling debug latency is not substituted for Perfetto data.
+FULL sessions on rear/front and 480p/720p observed; unsupported-device fallback remains
+hardware-unverified on this fully supporting phone.
+
+Evidence preserved under ignored device-evidence/samsung-sm-s918b/: checkpoint-final-soak-*
+(result JSON, initial/action XML, log, crash buffer, ANR, battery, memory and thermal dumps),
+checkpoint-final-events-soak-events.json, checkpoint-final-device-fingerprint.txt. Earlier
+raw captures/traces/helpers remain intact. No production source or spec changes; git diff
+check PASS. No Phase 2, INTERNET permission, cloud API, MediaPipe, push or merge.
+
+Current handoff: corrected rear portrait pair, all eight direct-edge visual observations,
+final optimized 480p/720p baselines and final ten-minute soak are recorded. Coordinate
+observations are manual/qualitative; numerical reprojection error and independent feature
+coordinates remain unmeasured and must not be claimed. Final review must assess this evidence
+against the manual crosshair gate. Phase 1 remains PARTIAL pending GitHub Agent review and
+explicit human owner acceptance; Phase 2 must not start. No further physical interaction
+is currently required by these completed baseline/soak measurements.
+
+### Final Phase 1 review validation checkpoint (2026-10-06)
+
+PHASE: 1
+STATUS: partial — implementation/physical verification finished; review and owner acceptance pending.
+FILES: docs/phase-status.md, docs/phase-1-verification.md (production fixes/tests already in 6c863a5).
+DEVICES TESTED: Samsung SM-S918B, Android 16, optimized profile baselines; debug soak/instrumentation.
+MEASURED: exact final optimized baseline table and 600.0004430999979-second soak above.
+DEVIATIONS FROM SPEC: none introduced; manual coordinate evidence is qualitative, numerical accuracy unmeasured.
+BLOCKERS: none for preparing owner review; GitHub Agent review/explicit owner acceptance remain required.
+NEXT PROPOSED: review Phase 1 evidence and obtain owner acceptance; do not start Phase 2.
+
+Final validation on the unchanged corrected production source:
+- Gradle debug/release/profile APKs, all JVM tests, app debug/release/profile lint,
+  camera debug lint and debug test APK assembly: BUILD SUCCESSFUL, 24 s,
+  271 tasks (9 executed, 262 up-to-date). Existing valid task outputs reused where unchanged.
+- JVM reports: 11 tests across CoordinatesTest (5), ModuleGraphTest (1), SchedulerTest (2)
+  and ImagePlanesTest (3), zero failures/errors.
+- Connected instrumentation explicitly rerun (--rerun-tasks): BUILD SUCCESSFUL, 46 s,
+  95 tasks executed; SM-S918B Android 16, 3 tests, zero failures/errors/skips. Synthetic
+  renderer combinations and ImageProxy closure tested; these do not replace physical targets.
+- Spec validation: offline workspace Python/jsonschema runner, 0 errors, 0 warnings.
+- Final diff/whitespace check PASS. Diff reviewed: documentation only; no Phase 2 code,
+  cloud APIs, MediaPipe, secrets, generated/build artifacts or raw device evidence included.
+  Debug/release/profile merged manifests inspected: no INTERNET or ACCESS_NETWORK_STATE
+  permission (the source remove directive strips a transitive network-state permission).
+- Local validation logs remain ignored: review-checkpoint-gradle-validation.txt and
+  review-checkpoint-instrumentation.txt under device-evidence/samsung-sm-s918b/.
+
+Validation regenerated APK archives: current debug SHA256
+0FB5FB35ED4AEC124A572340538E57A0943F83424DD20BC0ED373CB6CC133762,
+profile SHA256 275693CA3F4089C0BB463AD1124597D2675F613229B36E29048C4BA7B2642718.
+These archives differ from the exact earlier physical-run hashes recorded above. Production
+source remained unchanged; do not label the regenerated archives as the exact binaries used
+for baseline/soak. Instrumentation covers the regenerated debug build. Measured-run hashes and provenance remain recorded separately from regenerated archives; raw evidence is preserved.
+
+Review checkpoint uses existing codex/phase-1-camerax-foundation branch and repository-local
+Git identity. Only appropriate tracked documentation is committed; ignored evidence remains
+on disk. Owner acceptance is not recorded on the owner's behalf. No push, merge or Phase 2.

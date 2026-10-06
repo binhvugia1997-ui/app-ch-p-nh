@@ -1,7 +1,7 @@
 # Phase 1 local build and physical-device verification
 
 Phase 1 is authorized; acceptance requires the owner and physical-device evidence. Phase 2 is not started.
-No physical phone was connected during the implementation session. Physical verification subsequently
+No physical phone was connected during the initial implementation session. Physical verification subsequently
 started on SM-S918B; completed checks, measured windows and pending steps are recorded in `phase-status.md`.
 
 ## Toolchain and local validation
@@ -164,3 +164,60 @@ across the 10-minute session. GL eligibility is not a runtime delegate probe; no
 Put measured tables, raw-stage sample counts, screenshots/trace locations, fallback outcome, and any
 missed targets in `docs/phase-status.md`. Keep all untested tiers/targets `NOT_MEASURED`. Only then request
 GitHub Agent review and owner Phase 1 acceptance; do not start Phase 2.
+
+## Final corrected-state physical review checkpoint — 2026-10-06
+
+Physical verification is finished on Samsung SM-S918B, Android 16, build
+S918BXXSAFZH3. Phase 1 is ready for evidence review, not owner-accepted. Phase 2 has
+not started. Historical measurements above/in the status log remain historical;
+the final corrected-build results are the authoritative review evidence.
+
+All eight camera/orientation/aspect direct-edge combinations were physically observed
+**qualitatively** using a stationary readable non-person target, bracketed screenshots
+and saved JPEGs. Observed crop, edge correspondence, orientation and front preview
+mirroring were visually inspected. **Numerical reprojection accuracy remains unmeasured**;
+no numerical error, pixel tolerance pass or independent analysis-space feature coordinate
+is claimed. Review must assess this manual evidence against the crosshair acceptance gate.
+
+| Camera | Orientation | Aspect | Saved JPEG MediaStore ID |
+| --- | --- | --- | --- |
+| Rear | Portrait | 4:3 | 14769 |
+| Rear | Portrait | 16:9 | 14764 |
+| Front | Portrait | 4:3 | 14774 |
+| Front | Portrait | 16:9 | 14783 |
+| Rear | Landscape | 4:3 | 14802 |
+| Rear | Landscape | 16:9 | 14810 |
+| Front | Landscape | 4:3 | 14796 |
+| Front | Landscape | 16:9 | 14790 |
+
+Optimized baselines use profile APK SHA256
+F5ED7C351BFF7A49724D037C938553EC348EB262D982D58F3C7CD73CAAAEE9A5,
+rear portrait 4:3, RGB conversion/rotation benchmark enabled. Full retained windows:
+480p **60.003053 s**, 720p **60.002265 s**, no reported trace errors/overwritten chunks.
+First presented camera texture: **1074.894896 ms / 883.574063 ms**. Both runs remained
+thermal NONE (0), with airplane mode ON. Actual buffer/crop dimensions, exact per-stage
+sample counts/p50/p95, presented frame rates, callback rates, RSS, skip accounting and
+auditable cold timestamps live in the canonical table in
+[phase-status.md — Final corrected-build optimized baselines](phase-status.md#final-corrected-build-optimized-baselines-2026-10-06).
+Do not round the slightly sub-30 Hz presented rates into a numeric 30 FPS target pass.
+CameraX internal dropped-frame counts are UNKNOWN; compositor presentation does not
+prove a unique camera image on every frame. Router durations already include stage work.
+
+Final debug soak uses APK SHA256
+90C33FC6861EF20BE5274CBD47047D4AC293BDCBE90B173D044E3A5C303BDAA9:
+**600.0004430999979 s**, completed=true, all four camera/resolution/background-resume
+actions passed. Thermal start/all samples/end NONE (0); airplane mode remained ON.
+No collected camera/analyzer/AndroidRuntime errors, empty crash buffer, no ANR since boot.
+Battery 89 to 89 percent, 34.8 to 36.7 C, USB powered: not a battery-drain measurement.
+Exact RSS/PSS snapshots and limitations are recorded in
+[phase-status.md — Final corrected-build ten-minute soak](phase-status.md#final-corrected-build-ten-minute-soak-2026-10-06).
+Unsupported-hardware fallbacks, other phones/tiers, runtime model delegates, numerical
+coordinate error and long-term memory/battery behaviour remain unverified/unmeasured.
+
+Raw captures, screenshots, XML, traces, event JSON and local verification helpers remain
+ignored and preserved in `device-evidence/samsung-sm-s918b/`; they are excluded from the
+public checkpoint. Keep this directory on this machine. The Git checkpoint contains
+review documentation and production/tests already implemented, not private raw evidence.
+Final local validation results are recorded in the status document after the checks finish.
+GitHub Agent review and explicit human owner acceptance remain outstanding; no acceptance
+is inferred from successful physical testing or validation. No push or merge is authorized.
