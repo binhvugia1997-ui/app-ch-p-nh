@@ -1,0 +1,6 @@
+<lint>
+    <!-- Versions are pinned to the verified local toolchain; see docs/phase-1-verification.md. -->
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
+</lint>

@@ -1,7 +1,9 @@
 # Task Brief — Phase 1: CameraX Foundation
 
-> **STATUS: PREPARED, DO NOT START.** Phase 1 begins only after the human owner approves Phase 0
-> (`docs/phase-status.md` → "NEXT APPROVAL REQUIRED").
+> **STATUS: PHASE 1 ACCEPTED BY THE HUMAN OWNER ON 2026-10-06.**
+> The human owner approved Phase 0 and authorized Phase 1 on 2026-10-03; see `docs/phase-status.md`.
+> Coordinate observations are qualitative; numerical reprojection accuracy remains unmeasured.
+> PR #2 remains unmerged pending final merge review. Phase 2 has not started.
 
 Owner: **Codex Local**. Reviewer: GitHub Agent (against this brief and the referenced specs).
 
@@ -78,8 +80,9 @@ debug HUD are in scope).
 
 ### 2.6a UX orientation
 
-Portrait-first MVP UX (owner decision 2026-10-03): the app locks to portrait by default behind a flag, while
-the coordinate transforms and analysis must remain **landscape-correct and tested** in both orientations.
+Portrait-first MVP UX (owner clarification 2026-10-05): portrait is the initial design preference, not an
+orientation lock. System Auto rotate controls orientation in every build. No debug flag is required.
+The coordinate transforms and analysis must remain **landscape-correct and tested** in both orientations.
 The overlay uses the single tested `ANALYSIS → PREVIEW` transform; no orientation-specific geometry branches.
 
 ### 2.7 Dev screen

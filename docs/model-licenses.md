@@ -150,3 +150,27 @@ Legend — **SHIP**: `OK` / `TEST` (dev-only) / `REVIEW` / `REJECT`.
 > AI Photographer ships only models whose **weights** may be redistributed in a closed-source application,
 > keeps the required attribution, performs **all** inference on the user's device, and does not include any
 > component whose terms forbid commercial use.
+
+## 7. Phase 1 library audit (2026-10-03)
+
+No model, weights, dataset, MediaPipe runtime, network/analytics SDK or project licence was added.
+`third_party/runtime-components.tsv` records the 101 resolved runtime component versions and licences.
+AndroidX (CameraX/Compose/lifecycle/activity and their transitive libraries), Kotlin/JetBrains runtimes,
+Guava, AutoValue annotations, Dagger, Error Prone, J2ObjC, JSR305, Jakarta Inject and javax.inject are
+Apache-2.0: **redistribution OK with attribution**. These are dependencies, not newly implemented features.
+Checker Framework **checker-qual 3.43.0 only** is MIT: **OK**. The GPL compiler/checker is not included;
+the [upstream licence](https://github.com/typetools/checker-framework/blob/checker-framework-3.43.0/LICENSE.txt)
+explicitly identifies checker-qual as MIT. Resolved Maven POM licence fields and packaged upstream
+LICENSE/NOTICE entries are the local audit evidence.
+
+The build rejects a runtime graph that differs from the checked-in inventory. It generates an APK asset
+listing the exact component versions, full Apache-2.0 text, Kotlin notice, and unmodified upstream
+LICENSE/NOTICE entries from dependency archives (including nested classes.jar). The checker-qual archive's
+MIT text is retained. The app's **Giấy phép / Licences** dialog displays that asset offline.
+`third_party/notices/` contains upstream texts, not an AI Photographer licence. Compiler/test/build tools
+are not shipped as app code. Kotlin notice provenance:
+[Kotlin 2.2.10](https://github.com/JetBrains/kotlin/tree/v2.2.10/license).
+Do not interpret this inventory as approval for future versions/components or models; re-audit changes.
+CameraX camera-view transitively brings camera-video and Media3 common/container utilities. No video or
+network feature is called. The unused Media3 `ACCESS_NETWORK_STATE` permission is explicitly removed by
+manifest merge; no INTERNET permission exists. Runtime frames/photos remain on the device.

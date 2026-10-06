@@ -1,6 +1,6 @@
 # Architecture — AI Photographer
 
-Status: **Phase 0 specification** (no production code exists yet).
+Status: **Phase 0 accepted; Phase 1 implementation underway** (owner authorization 2026-10-03).
 Audience: Codex Local (implementer), future reviewers.
 
 ---
@@ -96,7 +96,7 @@ when their first real dependency exists:
 
 | Phase | Modules created | Why this is the minimum |
 | --- | --- | --- |
-| **1** | `:app`, `:core:model`, `:core:geometry`, `:core:image`*(see note)*, `:feature:camera` | The Phase 1 deliverables are: a camera session, the ANALYSIS→PREVIEW transform with unit tests, a minimal `FrameAnalysis` (empty subjects + luma grid), `CapabilityReport`, and a dev/perf screen. That needs the app shell, the pure data types, pure geometry, the luma/Y-plane producer, and the camera feature. `:core:geometry` must be a separate module **now** because it is the module whose unit tests are the Phase 1 exit evidence. |
+| **1** | `:app`, `:core:model`, `:core:geometry`, `:feature:camera` | Camera session, pure snapshot types, independently tested geometry, and camera-owned Y-plane producer. The brief §2.1 allows folding image production into the camera module; ADR-014 records this resolution of the inconsistent image-module names. |
 | **2** | `:perception:api`, `:perception:mediapipe`, `:core:photography` | The interfaces and the MediaPipe implementation appear together with the first landmark source; the framing rules (subject presence/size) land with them. Splitting `api` from `mediapipe` exists to keep the Android dependency out of the interfaces. |
 | **3** | `:core:pose`, `:feature:guide`, `:tools:pose-authoring` | The template loader/matcher domain and the overlay UI appear with the dashed guide. The authoring tool ships with the first templates that need validating. |
 | **4–5** | `:core:guidance`, `:core:light`, `:feature:settings`*, `:feature:poselib` | Guidance/readiness and the lighting engine are their own pure domains; settings hosts the mode switch and the capability report UI; the pose library UI arrives with the library. |
@@ -429,6 +429,42 @@ scanning. *Status:* accepted (Phase 0).
 *Consequences:* `docs/model-licenses.md` must be updated in the same PR that adds a model, and NOTICE
 files must be bundled. *Status:* accepted (Phase 0).
 
+**ADR-014 — Phase 1 implementation boundaries and supported API equivalents.**
+*Rationale:* the approved brief allows image production inside `:feature:camera`; the phase table formerly
+named `:core:image`, while the brief/handoff named `:perception:image`, and §2.1 deferred a separate image
+module. Four modules suffice: app, model, geometry, camera. Capability collection remains in camera and its
+debug presentation in app; `:feature:settings` stays deferred. No new analysis engines are created.
+*Consequences:* a JVM test inspects an exported actual Gradle dependency graph. Android adapters never
+enter core. `ImageSnapshot` carries `FrameAnalysis` plus luma; the frozen FrameAnalysis schema has no
+luma property, so no invented JSON field or `LightReport` is added. Phase 1 subjects are empty.
+CameraX 1.6.2 `SessionConfig` shares a `ViewPort`; cropRect is rotated into upright ANALYSIS dimensions,
+then the pure transform maps it to the aspect-filled, front-mirrored preview. Rotation is applied once.
+Camera2 `SCALER_STREAM_CONFIGURATION_MAP` supplies supported YUV sizes; CameraInfo
+`isSessionConfigSupported(SessionConfig)` queries the combination, then binding verifies it. No fictitious
+`getSupportedResolutions` API is used. Failed combinations retry lower analysis resolution, then
+Preview+Analysis with serial manual capture, then Preview+Capture. JPEGs use MediaStore on API 29+ and
+app-private storage on API 24–28, requiring no storage permission.
+Preview camera capture callback FPS is a delivery proxy, explicitly labelled as such; displayed FPS and
+frame loss must be checked with Perfetto. CameraX internal dropped-frame counts are unavailable; the
+reported ratio is intentional luma cadence skips / delivered analysis frames, with internal drops UNKNOWN.
+GPU eligibility is a GL/emulator preflight, not a claim that a model delegate works. Tier assignment is a
+provisional RAM heuristic (`CALIBRATION_REQUIRED`), never a benchmark result. IMU stability is null until
+calibrated; gravity and roll are collected. RGB benchmarking is opt-in in debug at 1 Hz; conversion uses a
+reusable ARGB array and BT.601 limited-range arithmetic, with rotation in the same pass. This measures this
+implementation, not a future model ingestion path. Immutable luma snapshots allocate at 2 Hz; they must
+not be claimed allocation-free. No pixels from analysis are written to disk.
+*Status:* implementation decision recorded by Codex Local; review pending (2026-10-03).
+An optimized `profile` app build type inherits release shrinking and uses a debug signing key for local
+installation only; it creates no Gradle module and includes no HUD/marker. Measurement flags can enable
+the conversion benchmark and 720p request via ADB without changing release defaults. CameraX's unused
+transitive Media3 network-state permission is removed in the app manifest. Backup/transfer of private
+captures is excluded by platform-specific rules.
+*API/toolchain sources:* [AGP 9.4 compatibility](https://developer.android.com/build/releases/agp-9-4-0-release-notes),
+[CameraX stable releases](https://developer.android.com/jetpack/androidx/releases/camera),
+[CameraInfo](https://developer.android.com/reference/androidx/camera/core/CameraInfo),
+[ProcessCameraProvider](https://developer.android.com/reference/androidx/camera/lifecycle/ProcessCameraProvider),
+[Compose BOM](https://developer.android.com/develop/ui/compose/bom).
+
 ---
 
 ## 13. Risks owned by the architecture
@@ -448,6 +484,18 @@ files must be bundled. *Status:* accepted (Phase 0).
 
 ---
 
+**ADR-015 — System-controlled orientation in Phase 1 (owner clarification 2026-10-05).**
+
+Portrait-first is a design preference, not a runtime orientation restriction. Every build leaves
+activity orientation unspecified and uses normal Android recreation; no configChanges opt-out,
+verification intent override or orientation preference is used. Compose observes LocalConfiguration,
+retains camera/aspect/resolution controls with rememberSaveable and fits a 4:3 or 16:9 viewport in
+the actual orientation. Camera objects are recreated after layout with the current display rotation;
+the previous lifecycle-bound session is disposed. The locale override changes language only rather
+than freezing a copied orientation/size configuration. This follows Android's
+[configuration handling guidance](https://developer.android.com/guide/topics/resources/runtime-changes).
+No core coordinate transform or module boundary changes. Physical rotation must be owner-verified.
+
 ## 14. Open architectural questions (for the human owner / later phases)
 
 1. **Who holds the phone?** Two product modes exist and they need different guidance:
@@ -457,6 +505,7 @@ files must be bundled. *Status:* accepted (Phase 0).
 2. **Auto-capture default.** Proposed: off in MVP, opt-in with a visible countdown.
 3. **Bundled pose library size in MVP.** Proposed: 6–10 seed templates for Phase 3–6, curated later.
 4. **Orientation policy.** Portrait-only MVP lock, or landscape supported from Phase 1?
-   Proposed: portrait-locked first, landscape handled by the coordinate contract anyway.
+   Resolved by owner on 2026-10-05: portrait-first design preference only; no orientation lock.
+   System Auto rotate controls all builds. See ADR-015.
 5. **Minimum supported device tier** (API level is 24, but which SoC classes are "supported" vs
    "best effort"?). Proposed: `LOW` tier = 4 GB RAM, mid-range 2019+ SoC, pose at 10–15 FPS, lite model.
