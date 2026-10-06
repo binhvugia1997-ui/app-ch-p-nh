@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-06** by **Codex Local** (corrected-build physical evidence and final baselines/soak recorded; review/acceptance pending).
+Last updated: **2026-10-06** by **Codex Local** (explicit human owner acceptance of Phase 1 recorded).
 
 ---
 
@@ -12,8 +12,8 @@ Last updated: **2026-10-06** by **Codex Local** (corrected-build physical eviden
 **PHASE 0 — ACCEPTED by the human owner.** Owner explicitly reported PR #1 merged and authorized
 "START PHASE 1" on 2026-10-03.
 
-**PHASE 1 — PARTIAL: CORRECTED-BUILD PHYSICAL CHECKS AND FINAL BASELINES/SOAK RECORDED; REVIEW/OWNER ACCEPTANCE PENDING.**
-Phase 1 is not accepted. Phase 2 has not started.
+**PHASE 1 — ACCEPTED by the human owner on 2026-10-06.**
+Phase 2 has not started. PR #2 remains unmerged pending final merge review.
 
 ---
 
@@ -33,8 +33,8 @@ Phase 1 is not accepted. Phase 2 has not started.
 | Test plan | ✅ done (`docs/test-plan.md`) |
 | Roadmap | ✅ done (`docs/roadmap.md`) |
 | Phase 0 report | ✅ done (`docs/phase-0-report.md`) |
-| Phase 1 task brief | Authorized by owner; implementation handed back for review |
-| **Phase 1 implementation** | Local and physical instrumentation PASS; corrected-build target observations, final optimized 480p/720p baselines and final soak recorded; coordinate evidence review/owner acceptance pending |
+| Phase 1 task brief | ACCEPTED by the human owner on 2026-10-06 |
+| **Phase 1 implementation** | ACCEPTED by the human owner on 2026-10-06; existing evidence, measurements and limitations remain unchanged |
 
 ---
 
@@ -227,10 +227,11 @@ Remaining Phase 1 work:
 
 ---
 
-## NEXT APPROVAL REQUIRED
+## OWNER ACCEPTANCE
 
-The human owner approved Phase 0 and authorized Phase 1 on 2026-10-03. The next approval is
-**Phase 1 acceptance**, after device evidence and GitHub Agent review. Codex Local must not accept it.
+The human owner approved Phase 0 and authorized Phase 1 on 2026-10-03, and explicitly accepted
+**Phase 1 on 2026-10-06**. This records the owner's decision, not acceptance by Codex Local.
+PR #2 remains unmerged pending final merge review. Phase 2 has not started.
 Suggested review checklist (round 1 corrections are already applied; see the review notes in this file):
 
 - [x] Architecture and module boundaries (`docs/architecture.md`) — **reviewed in round 1**, module phasing
@@ -1127,3 +1128,15 @@ No new user-facing strings, cloud API, MediaPipe dependency or Phase 2 work adde
 BLOCKERS: none for re-review; physical locale switching remains unverified for this fix.
 NEXT PROPOSED: update PR #2 on the existing branch for GitHub review and explicit owner acceptance.
 Do not merge or start Phase 2.
+
+### Explicit Phase 1 owner acceptance (2026-10-06)
+
+PHASE: 1
+STATUS: ACCEPTED by the human owner on 2026-10-06, by explicit owner instruction.
+FILES: docs/phase-status.md; docs/tasks/phase-1-camerax-foundation.md.
+This acceptance supersedes earlier pending-acceptance status entries; historical evidence is unchanged.
+Numerical reprojection accuracy remains unmeasured. Unsupported-device fallback remains
+hardware-unverified. Results from Samsung SM-S918B must not be generalized to other devices.
+All other recorded limitations, measurements and measurement provenance remain unchanged.
+No production changes or new device measurements. Phase 2 has not started; PR #2 has not been merged.
+NEXT PROPOSED: final merge review of PR #2; no Phase 2 work authorized by this documentation update.

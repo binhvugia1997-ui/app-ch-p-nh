@@ -1,9 +1,9 @@
 # Task Brief — Phase 1: CameraX Foundation
 
-> **STATUS: IMPLEMENTATION AND PHYSICAL VERIFICATION COMPLETE; GITHUB REVIEW AND OWNER ACCEPTANCE PENDING.**
+> **STATUS: PHASE 1 ACCEPTED BY THE HUMAN OWNER ON 2026-10-06.**
 > The human owner approved Phase 0 and authorized Phase 1 on 2026-10-03; see `docs/phase-status.md`.
 > Coordinate observations are qualitative; numerical reprojection accuracy remains unmeasured.
-> Explicit Phase 1 owner acceptance remains pending. Phase 2 has not started.
+> PR #2 remains unmerged pending final merge review. Phase 2 has not started.
 
 Owner: **Codex Local**. Reviewer: GitHub Agent (against this brief and the referenced specs).
 
