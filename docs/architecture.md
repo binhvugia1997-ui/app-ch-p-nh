@@ -1,6 +1,6 @@
 # Architecture — AI Photographer
 
-Status: **Phase 0 accepted; Phase 1 implementation underway** (owner authorization 2026-10-03).
+Status: **Phases 0 and 1 accepted; Phase 2 authorized** (owner authorization 2026-10-06).
 Audience: Codex Local (implementer), future reviewers.
 
 ---
@@ -467,6 +467,27 @@ captures is excluded by platform-specific rules.
 
 ---
 
+**ADR-016 — Phase 2 perception ownership and conservative diagnostics (2026-10-06).**
+
+Only the three Phase 2 modules in §2.1 are added. The pure perception API accepts a leased upright
+unmirrored ARGB frame; CameraX only knows this API, not MediaPipe. The app wires the Android factory.
+One batch at a time owns the reusable pixels/image until all accepted callbacks complete; cadence
+and busy skips are separate counters. GPU task initialization/submission/closure share one worker.
+Callbacks enter a bounded channel and immutable flow; lifecycle epochs discard old results. Task
+creation attempts GPU only after the Phase 1 eligibility check, then CPU on failure. Diagnostics
+distinguish successfully configured delegate from runtime evidence; no unobserved acceleration claim.
+Face meshes associate conservatively to the pose nose and expire; no identity inference or multi-person
+tracking. Frame schema fields only are used; facial matrix remains diagnostic alongside derived head
+angles, with no gaze or pose-correction product behaviour. Confidence lives in core:model once, linked
+to pose-system §4.1.1; filters live in geometry. core:photography only estimates visible body extent,
+with confidence zero pending local capture calibration and UNKNOWN for unestablished close portraits.
+All tuning seeds remain CALIBRATION_REQUIRED. No guidance engine/rules/templates are implemented.
+Immutable publication and model result mapping allocate; allocation-free performance is not claimed.
+Phase 1 measurement/coordinate limitations remain unchanged. Physical Phase 2 gates are required.
+Status: intended Phase 2 implementation decision, not owner acceptance. The pure api and photography
+boundaries are implemented; Android adapters are locally preserved but excluded from the shipping
+build pending the stock SDK privacy blocker in `docs/phase-2-sdk-audit.md`. No inference claim is made.
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |
@@ -491,12 +512,13 @@ activity orientation unspecified and uses normal Android recreation; no configCh
 verification intent override or orientation preference is used. Compose observes LocalConfiguration,
 retains camera/aspect/resolution controls with rememberSaveable and fits a 4:3 or 16:9 viewport in
 the actual orientation. Camera objects are recreated after layout with the current display rotation;
-the previous lifecycle-bound session is disposed. The locale override changes language only rather
-than freezing a copied orientation/size configuration. This follows Android's
+the previous lifecycle-bound session is disposed. The forced locale override was removed in the final
+Phase 1 review; Android/app resource locale selection now applies normally. This follows Android's
 [configuration handling guidance](https://developer.android.com/guide/topics/resources/runtime-changes).
 No core coordinate transform or module boundary changes. Physical rotation must be owner-verified.
 
 ## 14. Open architectural questions (for the human owner / later phases)
+
 
 1. **Who holds the phone?** Two product modes exist and they need different guidance:
    `PHOTOGRAPHER_MODE` (a second person holds the phone → camera-movement instructions are actionable)

@@ -7,6 +7,11 @@ be verified are marked **`UNKNOWN`** — they are never invented.
 Licensing is summarised here for engineering decisions but the normative document is
 `model-licenses.md`.
 
+**Phase 2 adoption checkpoint (2026-10-06):** exact version-1 pose lite/full and face bundle URLs,
+SHA256 hashes and model-card licensing are recorded in `model-licenses.md` §8. Models are audit-only,
+not packaged yet. Stock Tasks SDK adoption is blocked by remote telemetry/DataTransport, documented
+in `phase-2-sdk-audit.md`; the Phase 0 model choice does not waive the privacy gate.
+
 
 > **Tier policy (owner decision 2026-10-03):** MEDIUM is the primary MVP target; LOW must degrade
 > gracefully (`performance-strategy.md` §5) and HIGH may enable the additional analysis listed here

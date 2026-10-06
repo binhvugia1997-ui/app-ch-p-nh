@@ -5,3 +5,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "AI Photographer"
 include(":app", ":core:model", ":core:geometry", ":feature:camera")
+include(":perception:api", ":core:photography")

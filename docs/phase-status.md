@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-06** by **Codex Local** (explicit human owner acceptance of Phase 1 recorded).
+Last updated: **2026-10-06** by **Codex Local** (Phase 2 start authorized; stock SDK privacy blocker under investigation).
 
 ---
 
@@ -13,7 +13,11 @@ Last updated: **2026-10-06** by **Codex Local** (explicit human owner acceptance
 "START PHASE 1" on 2026-10-03.
 
 **PHASE 1 — ACCEPTED by the human owner on 2026-10-06.**
-Phase 2 has not started. PR #2 remains unmerged pending final merge review.
+PR #2 was merged by the human owner; local main synchronized to `81df0022fce4935a067ec1b47cbfa786a8bcbe42`.
+
+**PHASE 2 — BLOCKED: START AUTHORIZED by the human owner on 2026-10-06.**
+Pure perception contracts are implemented; stock MediaPipe SDK integration is blocked by the privacy gate.
+No Phase 2 acceptance. Phase 3 has not started. Phase 1 limitations and measurements remain unchanged.
 
 ---
 
@@ -204,20 +208,15 @@ without a new explicit owner decision.
 
 ## TASKS FOR CODEX LOCAL
 
-Implement and verify only `docs/tasks/phase-1-camerax-foundation.md`. Phase 0 owner approval is recorded above.
-
-Remaining Phase 1 work:
-
-1. Connect the MEDIUM reference phone, authorize ADB, and record exact model/Android build.
-2. Follow `docs/phase-1-verification.md` for physical camera/permission/capture/lifecycle and crosshair checks.
-3. Record the two resolution baselines, cold start, RSS/thermal and 10-minute session with Perfetto evidence.
-4. Ask GitHub Agent to review and the owner to accept Phase 1. Do not proceed to Phase 2 beforehand.
+Implement and verify only `docs/tasks/phase-2-pose-face-detection.md` on
+`codex/phase-2-pose-face-detection`. Phase 1 acceptance/merge and explicit Phase 2 start authorization
+are recorded above. Resolve the SDK privacy blocker before packaging a perception runtime, then
+complete Phase 2 physical verification/measurement. Do not start Phase 3 or claim Phase 2 acceptance.
 
 ---
 
 ## DO NOT IMPLEMENT YET
 
-* MediaPipe integration (Phase 2)
 * Dashed guide rendering (Phase 3)
 * Pose matching (Phase 4)
 * Composition rules / guidance / readiness (Phase 5)
@@ -231,7 +230,8 @@ Remaining Phase 1 work:
 
 The human owner approved Phase 0 and authorized Phase 1 on 2026-10-03, and explicitly accepted
 **Phase 1 on 2026-10-06**. This records the owner's decision, not acceptance by Codex Local.
-PR #2 remains unmerged pending final merge review. Phase 2 has not started.
+PR #2 was subsequently merged by the owner. Phase 2 start was explicitly authorized on 2026-10-06;
+this does not imply Phase 2 acceptance or Phase 3 authorization.
 Suggested review checklist (round 1 corrections are already applied; see the review notes in this file):
 
 - [x] Architecture and module boundaries (`docs/architecture.md`) — **reviewed in round 1**, module phasing
@@ -1140,3 +1140,37 @@ hardware-unverified. Results from Samsung SM-S918B must not be generalized to ot
 All other recorded limitations, measurements and measurement provenance remain unchanged.
 No production changes or new device measurements. Phase 2 has not started; PR #2 has not been merged.
 NEXT PROPOSED: final merge review of PR #2; no Phase 2 work authorized by this documentation update.
+
+### Phase 2 pure-contract checkpoint and SDK privacy blocker (2026-10-06)
+
+PHASE: 2
+STATUS: blocked — pure foundation validated; compliant runtime decision required.
+BRANCH: codex/phase-2-pose-face-detection, from synchronized main 81df002.
+FILES: core/model, core/geometry, core/photography, perception/api, settings.gradle.kts;
+docs/architecture.md, docs/roadmap.md, docs/ai-models.md, docs/model-licenses.md,
+docs/tasks/phase-2-pose-face-detection.md, docs/phase-2-sdk-audit.md, this handoff.
+IMPLEMENTED: schema-compatible optional subject/world/face types; one normative usability mapping;
+One Euro filter; pure source/pipeline interfaces, single-batch lifecycle epoch ownership guard;
+subject filtering/assembly with conservative face association and freshness; diagnostic head-matrix
+decoder, visible-body shot classification and schedulable degradation/recovery decisions.
+The new pure modules are not wired into the shipping camera app yet. No pose matcher or guidance.
+DEVICES TESTED: none connected (ADB checked at start and final verification); no Phase 2 device test.
+MEASURED: NOT_MEASURED — pose/face FPS and latency, preview impact, memory, thermal, actual delegate,
+full-body 480p/720p experiment and shot-type calibration all require the compliant runtime/device.
+VALIDATION: safe shipping checkpoint debug/release/profile APKs, all JVM tests, app lint for all three
+variants, camera debug lint and debug test APK assembly PASS (2m34s, 285 tasks). JVM XML reports
+21 tests, zero failures/errors (11 existing + 10 new). Connected instrumentation NOT_RUN: no device.
+Spec validation PASS, 0 errors/0 warnings. Diff/whitespace and packaging inspection PASS; no model
+assets or MediaPipe/transport dependencies in APK notice inventory, all merged manifests no INTERNET.
+No project license, cloud API, secrets, raw evidence or build outputs added to tracked files.
+DEVIATIONS FROM SPEC: Phase 2 runtime/module wiring deliberately held outside shipping build because
+stock SDK telemetry contradicts the privacy contract. Only two of the three planned modules included;
+mediapipe adapters/models and attempted wiring preserved under ignored
+device-evidence/phase2/blocked-integration/. API interface methods describe batch ownership explicitly.
+BLOCKERS: stock Tasks SDK remote telemetry; owner decision requested for an audited telemetry-free
+source-modified artifact or an approved alternative architecture. See docs/phase-2-sdk-audit.md.
+KNOWN LIMITATIONS: all Phase 1 limitations remain valid: numerical reprojection accuracy unmeasured,
+unsupported-device fallback hardware-unverified, SM-S918B results not generalizable. New tuning seeds,
+face association, head-angle conventions and shot classification remain uncalibrated/device-unverified.
+NEXT PROPOSED: resolve the SDK privacy decision, finish compliant adapters, then physical Phase 2
+verification and measurements. No Phase 2 acceptance, Phase 3+ work or merge performed.

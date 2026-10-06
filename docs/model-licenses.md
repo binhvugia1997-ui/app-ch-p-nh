@@ -174,3 +174,26 @@ Do not interpret this inventory as approval for future versions/components or mo
 CameraX camera-view transitively brings camera-video and Media3 common/container utilities. No video or
 network feature is called. The unused Media3 `ACCESS_NETWORK_STATE` permission is explicitly removed by
 manifest merge; no INTERNET permission exists. Runtime frames/photos remain on the device.
+
+## 8. Phase 2 artifact audit checkpoint (2026-10-06)
+
+Official version-1 float16 bundles were downloaded for audit only and are not packaged in the current
+APK. Redistribution remains **OK** under Apache-2.0: the official
+[BlazePose GHUM card](https://storage.googleapis.com/mediapipe-assets/Model%20Card%20BlazePose%20GHUM%203D.pdf),
+[Face Mesh V2 card](https://storage.googleapis.com/mediapipe-assets/Model%20Card%20MediaPipe%20Face%20Mesh%20V2.pdf),
+[BlazeFace short-range card](https://storage.googleapis.com/mediapipe-assets/MediaPipe%20BlazeFace%20Model%20Card%20(Short%20Range).pdf)
+and [Blendshape V2 card](https://storage.googleapis.com/mediapipe-assets/Model%20Card%20Blendshape%20V2.pdf)
+state Apache-2.0. Blendshapes would be disabled, but their bundled weights were also checked.
+All files remain unmodified. Code-license text from MediaPipe v0.10.32 has SHA256
+`8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8`.
+
+| Official model URL | SHA256 | SHIP / packaging |
+| --- | --- | --- |
+| https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task | 59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a | OK; not packaged |
+| https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task | 5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1 | OK; not packaged |
+| https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task | 64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff | OK; not packaged |
+
+Stock Tasks SDK 0.10.32 has Apache-2.0 code licensing but fails the separate privacy gate because of
+remote telemetry/DataTransport; see `docs/phase-2-sdk-audit.md`. No stock SDK or associated network
+component ships in this checkpoint. The Phase 1 runtime inventory/notices remain unchanged.
+No project-wide license is added. Model provenance does not grant approval for telemetry.
