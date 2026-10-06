@@ -6,8 +6,16 @@ compose = "2026.09.00"
 activity = "1.13.0"
 lifecycle = "2.10.0"
 coroutines = "1.10.2"
+mediapipe = "0.10.32"
 
 [libraries]
+mediapipe-vision = { module = "com.google.mediapipe:tasks-vision", version.ref = "mediapipe" }
+mediapipe-core-upstream = { module = "com.aiphotographer.thirdparty:mediapipe-tasks-core", version = "0.10.32-upstream" }
+guava-android = { module = "com.google.guava:guava", version = "27.0.1-android" }
+flogger = { module = "com.google.flogger:flogger", version = "0.6" }
+flogger-system-backend = { module = "com.google.flogger:flogger-system-backend", version = "0.6" }
+protobuf-javalite = { module = "com.google.protobuf:protobuf-javalite", version = "4.28.3" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 camera-core = { module = "androidx.camera:camera-core", version.ref = "camera" }
 camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camera" }
 camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camera" }

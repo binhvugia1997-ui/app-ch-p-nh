@@ -23,4 +23,21 @@ class ImagePlanesTest {
         val y = Plane(ByteBuffer.wrap(byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8)), 4, 1)
         assertEquals(listOf(3, 4, 7, 8), ImagePlanes.luma(y, Crop(2, 0, 2, 2), 0, 2))
     }
+    @Test fun rgbCropHonorsPlaneOffsetsPaddingAndAllFourRotationsWithoutMirroring() {
+        val yBuffer = ByteBuffer.allocate(2 + 6 * 4).apply { position(2) }
+        // Distinct upright crop corners: black, white, dark gray, light gray.
+        val corners = listOf(16, 235, 81, 145)
+        corners.forEachIndexed { i, value -> yBuffer.put(2 + (1 + i / 2) * 6 + 1 + i % 2, value.toByte()) }
+        val chroma = ByteBuffer.allocate(1 + 6 * 2).apply { position(1) }
+        for (row in 0..1) for (col in 0..1) chroma.put(1 + row * 6 + col * 2, 128.toByte())
+        val gray = intArrayOf(0xff000000.toInt(), 0xffffffff.toInt(), 0xff4c4c4c.toInt(), 0xff969696.toInt())
+        val arrangements = mapOf(0 to listOf(0, 1, 2, 3), 90 to listOf(2, 0, 3, 1),
+            180 to listOf(3, 2, 1, 0), 270 to listOf(1, 3, 0, 2))
+        arrangements.forEach { (rotation, order) ->
+            val output = IntArray(4)
+            ImagePlanes.rgb(Plane(yBuffer, 6, 1), Plane(chroma, 6, 2), Plane(chroma, 6, 2), Crop(1, 1, 2, 2), rotation, output)
+            assertArrayEquals(order.map { gray[it] }.toIntArray(), output)
+        }
+        assertEquals(2, yBuffer.position()); assertEquals(1, chroma.position())
+    }
 }

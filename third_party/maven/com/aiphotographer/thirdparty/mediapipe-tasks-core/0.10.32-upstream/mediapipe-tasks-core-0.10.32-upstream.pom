@@ -1,0 +1,9 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.aiphotographer.thirdparty</groupId>
+  <artifactId>mediapipe-tasks-core</artifactId>
+  <version>0.10.32-upstream</version>
+  <packaging>aar</packaging>
+  <name>Unmodified MediaPipe Tasks Core official source build</name>
+  <licenses><license><name>Apache License 2.0</name><url>https://www.apache.org/licenses/LICENSE-2.0</url></license></licenses>
+</project>

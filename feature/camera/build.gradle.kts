@@ -9,6 +9,7 @@ android {
 dependencies {
     api(project(":core:model"))
     api(project(":core:geometry"))
+    api(project(":perception:api"))
     api(libs.camera.view)
     implementation(libs.camera.core)
     implementation(libs.camera.camera2)

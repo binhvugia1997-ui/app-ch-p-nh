@@ -44,3 +44,15 @@ bazel cquery 'deps(//mediapipe/tasks/java/com/google/mediapipe/tasks/core:tasks_
   --config=android --cpu=arm64-v8a --fat_apk_cpu=arm64-v8a,x86_64 --define=ENABLE_TASKS_USAGE_LOGGING=0 --define=EXCLUDE_OPENCV_SO_LIB=1 \
   > "$output_dir/core-build-graph.txt"
 sha256sum "$output_dir"/*.aar > "$output_dir/SHA256SUMS"
+
+# Preserve license texts of the native runtime source dependencies resolved by
+# upstream. This conservative notice set also covers the unchanged Vision JNI.
+# Build tools/JDK/Python/NDK are deliberately not described as shipped SDK code.
+external="$(bazel info output_base)/external"
+mkdir -p "$output_dir/native-notices"
+for repo in FP16 FXdiv XNNPACK cpuinfo eigen eigen_archive farmhash_archive fft2d flatbuffers gemmlowp pthreadpool ruy zlib com_google_absl com_google_protobuf com_github_glog_glog_no_gflags org_tensorflow; do
+  if [ -d "$external/$repo" ]; then
+    find -L "$external/$repo" -maxdepth 1 -type f \( -iname '*license*' -o -iname '*copying*' -o -iname 'notice*' \) -print0 |
+      while IFS= read -r -d '' file; do cp "$file" "$output_dir/native-notices/${repo}-$(basename "$file")"; done
+  fi
+done

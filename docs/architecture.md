@@ -484,9 +484,21 @@ with confidence zero pending local capture calibration and UNKNOWN for unestabli
 All tuning seeds remain CALIBRATION_REQUIRED. No guidance engine/rules/templates are implemented.
 Immutable publication and model result mapping allocate; allocation-free performance is not claimed.
 Phase 1 measurement/coordinate limitations remain unchanged. Physical Phase 2 gates are required.
-Status: intended Phase 2 implementation decision, not owner acceptance. The pure api and photography
-boundaries are implemented; Android adapters are locally preserved but excluded from the shipping
-build pending the stock SDK privacy blocker in `docs/phase-2-sdk-audit.md`. No inference claim is made.
+Status: Phase 2 implementation decision, not owner acceptance. Pure boundaries and Android adapters
+are integrated. Synthetic emulator tests cover the production adapter, including rapid lifecycle
+restart and geometry changes; physical perception gates remain pending.
+
+**ADR-017 — Official upstream Core build with unchanged Vision SDK (2026-10-06).**
+
+Stock Maven Core initializes mandatory DataTransport telemetry; exclusions fail at runtime. Use the
+official v0.10.32 Core AAR target's default generated dummy logger, with no Java/C++ modification,
+and the unchanged official tasks-vision 0.10.32 artifact. Exclude only its stock tasks-core edge.
+Pin both binaries and local models by hash; retain Core in a restricted local Maven repository for
+reproducible app builds. The build script records the upstream commit and Android environment
+configuration. No fork, fake logger, new model architecture or network fallback. Version updates
+require renewed graph/manifest, bytecode and runtime verification. Evidence and remaining limits:
+`docs/phase-2-sdk-audit.md`. Native notice collection and final shrunk-runtime checks remain in progress
+at this implementation checkpoint. No physical-device or owner-acceptance claim.
 
 ## 13. Risks owned by the architecture
 

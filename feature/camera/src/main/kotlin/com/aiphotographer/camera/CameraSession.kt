@@ -32,6 +32,10 @@ import java.io.File
 import java.util.concurrent.Executors
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.*
+import com.aiphotographer.perception.PerceptionPipeline
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 enum class SessionMode { STARTING, FULL, ANALYSIS_ONLY, CAPTURE_ONLY, ERROR }
 enum class CaptureStatus { IDLE, SAVING, SAVED, ERROR }
@@ -51,8 +55,19 @@ class CameraSession(
     private val resolution: AnalysisResolution,
     benchmarkRgb: Boolean,
     private val launchNs: Long,
+    val perception: PerceptionPipeline? = null,
 ) {
-    val router = FrameRouter(facing, resolution, monitor::state, benchmarkRgb)
+    val router = FrameRouter(facing, resolution, monitor::state, benchmarkRgb, perception)
+    private val perceptionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val perceptionLifecycle = LifecycleEventObserver { _, event ->
+        if (event == Lifecycle.Event.ON_START) perception?.setActive(true)
+        if (event == Lifecycle.Event.ON_STOP) perception?.setActive(false)
+    }
+    init {
+        owner.lifecycle.addObserver(perceptionLifecycle)
+        perception?.setActive(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+        perceptionScope.launch { perception?.state?.collect { router.perceptionResult(it.snapshot) } }
+    }
     private val executor = Executors.newSingleThreadExecutor { Thread(it, "Phase1FrameRouter") }
     private val mainExecutor = ContextCompat.getMainExecutor(context)
     private val mutableState = MutableStateFlow(SessionState(capability = monitor.capability))
@@ -223,6 +238,9 @@ class CameraSession(
     }
     fun close() {
         closed = true
+        owner.lifecycle.removeObserver(perceptionLifecycle)
+        perceptionScope.cancel()
+        perception?.close()
         analysis?.clearAnalyzer()
         cameraStateObserver?.let { camera?.cameraInfo?.cameraState?.removeObserver(it) }
         boundSession?.let { provider?.unbind(it) }

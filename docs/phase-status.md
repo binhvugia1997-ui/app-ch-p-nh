@@ -15,8 +15,11 @@ Last updated: **2026-10-06** by **Codex Local** (Phase 2 start authorized; stock
 **PHASE 1 — ACCEPTED by the human owner on 2026-10-06.**
 PR #2 was merged by the human owner; local main synchronized to `81df0022fce4935a067ec1b47cbfa786a8bcbe42`.
 
-**PHASE 2 — BLOCKED: START AUTHORIZED by the human owner on 2026-10-06.**
-Pure perception contracts are implemented; stock MediaPipe SDK integration is blocked by the privacy gate.
+**PHASE 2 — IN PROGRESS: START AUTHORIZED by the human owner on 2026-10-06.**
+Pure contracts and Android adapters are implemented. Stock/exclusion paths fail the privacy/runtime
+checks; the official unmodified Core build with default dummy logging and unchanged Vision artifact
+passed IMAGE probes and production adapter emulator tests. Final validation/native notice collection
+is in progress; physical Phase 2 verification remains pending.
 No Phase 2 acceptance. Phase 3 has not started. Phase 1 limitations and measurements remain unchanged.
 
 ---
@@ -1200,3 +1203,6 @@ Shipping app/dependency graph unchanged. Phase 1 limitations remain exactly vali
 reprojection unmeasured, fallback hardware-unverified, SM-S918B evidence not generalizable.
 NEXT PROPOSED: build/audit official source artifacts, verify Pose/Face runtime and notices, then
 continue bounded camera integration. No Phase 2 acceptance, Phase 3+ work or merge.
+Prepared (not yet executed against source AARs): upstream dummy-factory, no local transport database,
+and Pose/Face LIVE_STREAM callback tests in the isolated probe. The artifact checker rejects known
+telemetry identifiers in stock Core; native identifier scan is bounded, not a universal privacy proof.

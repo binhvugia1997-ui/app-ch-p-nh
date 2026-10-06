@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aiphotographer.camera.*
 import com.aiphotographer.model.*
+import com.aiphotographer.perception.mediapipe.MediaPipePipelineFactory
 
 class MainActivity : ComponentActivity() {
     private val launchNs = SystemClock.elapsedRealtimeNanos()
@@ -97,7 +98,8 @@ class MainActivity : ComponentActivity() {
                     scaleType = PreviewView.ScaleType.FILL_CENTER
                 } }
                 val monitor = remember { DeviceMonitor(context) }
-                val camera = remember { CameraSession(context, owner, preview, monitor, facing, resolution, rgbBenchmark, launchNs) }
+                val camera = remember { CameraSession(context, owner, preview, monitor, facing, resolution, rgbBenchmark, launchNs,
+                    MediaPipePipelineFactory.create(context, monitor.capability)) }
                 DisposableEffect(camera) {
                     session = camera
                     val observer = androidx.lifecycle.Observer<PreviewView.StreamState> { if (it == PreviewView.StreamState.STREAMING) camera.previewStreaming() }
@@ -116,11 +118,18 @@ class MainActivity : ComponentActivity() {
                 }
                 AndroidView(factory = { preview.apply { doOnLayout { camera.start() } } }, modifier = Modifier.fillMaxSize())
                 DeveloperOverlay(camera)
+                PerceptionStatus(camera)
             }
           }
         }
         session?.let { camera ->
             val state by camera.state.collectAsStateWithLifecycle()
+            val perception = camera.perception?.state?.collectAsStateWithLifecycle()?.value
+            LaunchedEffect(perception?.metrics?.degradationLevel, state.capture) {
+                if ((perception?.metrics?.degradationLevel ?: 0) >= 6 && resolution != AnalysisResolution.R480P && state.capture != CaptureStatus.SAVING) {
+                    resolution = AnalysisResolution.R480P
+                }
+            }
             val message = when (state.mode) {
                 SessionMode.STARTING -> R.string.starting
                 SessionMode.FULL -> R.string.full_mode
