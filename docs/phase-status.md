@@ -1304,3 +1304,43 @@ HUMAN ACTION REQUIRED: connect/unlock authorized SM-S918B, approve USB if prompt
 one consolidated full-body/face posing session for both cameras, orientations and aspects.
 NEXT PROPOSED: physical Phase 2 verification and factual measurements, then GitHub review and
 explicit owner acceptance. Phase 3 has not started. No merge performed.
+
+### Physical verification preparation — 2026-10-07
+
+Authorized ADB device confirmed as Samsung SM-S918B, Android 16 / API 36. Clean Phase 2 starting
+checkpoint `e6aa2a36c08261be89ad9e45789572f871a7a4a3` was preserved. Current debug APK installed
+successfully and launcher opened; APK SHA256
+`bc1fb1a65282eb94824d01e3a4e14b829f7e2c826198d9135fe739cabfc0bc89`.
+Camera permission was denied, so live inference did not begin. The app's Android camera permission
+prompt was opened for human confirmation; no permission was granted automatically. Consolidated
+rear-camera full-body/face setup requested. Initial thermal status 0; original auto-rotation setting
+0 and user rotation 0 recorded without changes. Profile manifest still has no INTERNET permission.
+Local collection helper prepared for app counters, latency summaries, memory/thermal samples and
+optional Perfetto; live collection has not run. Actual pose/face tracking, combinations, lifecycle,
+latency/rates, memory, soak and accuracy remain pending, not PASS. No Phase 3 or acceptance claim.
+
+### First physical inference repair checkpoint — 2026-10-07
+
+Owner confirmed rear setup. Initial live run failed after its first results: MPImage closed and
+recycled the reused bitmap, leading to repeated pose submission errors. Preview remained active, but
+that run is not PASS. Exact upstream ownership behavior verified; app adapters now use supported
+task-owned direct RGB buffers rather than bitmap-backed images. Same-geometry repeat coverage
+added; the regression instrumentation actually ran on SM-S918B and PASS (1 test, CPU synthetic
+input). No SDK source modification or privacy-policy change.
+
+Fixed debug rerun collected a 20.017143482-second counter window: 600 offered, 150 accepted/pose
+completed, 37 face completed, 0 busy skips, 450 intentional cadence skips, 0 errors; effective
+rates 7.493576700 pose / 1.848415586 face Hz. Pose detection counter rose 144, face detection 0.
+Last rolling windows (not window-only quantiles) had pose count 252, p50/p95 46.901719/56.335833 ms;
+face count 64, 26.606250/41.800729 ms. Delegates configured GPU; native calculator placement is not
+fully established by that configuration label. Degradation level 6. Sampled thermal status 1,
+PSS 440037–475262 KiB, RSS 533904–570096 KiB. These are debug diagnostic observations, not optimized
+baselines. CameraX internal drops remain UNKNOWN.
+
+Local screenshot showed a near-field arm/desk, with neither full body nor face visible. Landmark
+presence is not accurate full-body tracking evidence. Consolidated corrected rear framing requested;
+full-body/face, alignment, other combinations, lifecycle/offline and soak remain pending. No phone
+photographs/raw evidence are committed. Rebuilt debug/profile/release, JVM tests and app
+debug/release/profile plus adapter debug lint PASS. Phase 1 accuracy/fallback/device-generalization
+limitations remain unchanged. No Phase 3 or owner acceptance. Local collection helper's first real
+run completed and recorded counters/latency/memory/thermal; no unmeasured compositor claim.

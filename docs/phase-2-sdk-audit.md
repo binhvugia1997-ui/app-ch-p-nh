@@ -159,3 +159,15 @@ was checked after the corrected run. No unexecuted or zero-test run counts as a 
 Runtime watchdog (5 s) and recent busy-ratio window (1 s) are engineering diagnostic seeds,
 CALIBRATION_REQUIRED, not measured accuracy/confidence thresholds. Intended cadence skips precede
 busy admission; overload/recovery uses a recent window, not an irreversible cumulative ratio.
+
+## Physical image-ownership repair (2026-10-07)
+
+The first Samsung SM-S918B live run exposed `IllegalStateException: Can't call setPixels() on a
+recycled bitmap`. Upstream `BitmapImageContainer.close()` recycles its bitmap when MPImage closes.
+The adapter now uses official `ByteBufferImageBuilder` with RGB format and a task-owned reusable
+direct buffer, held unchanged until the callback. Upstream `AndroidPacketCreator.createImage`
+supports RGB byte buffers and `ByteBufferImageContainer.close()` is a no-op. This changes app-side
+storage, not MediaPipe source or the audited privacy architecture. Repeated same-geometry frames
+are now covered by the production adapter instrumentation regression. Failed physical inference
+is excluded from success evidence; actual rerun results and remaining framing gates are in
+phase-status.md.

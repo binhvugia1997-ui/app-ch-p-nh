@@ -46,6 +46,8 @@ class PipelineInstrumentedTest {
             }
             val portrait = FrameGeometry(256, 320, 90, false, CameraFacing.BACK, AnalysisResolution.R480P)
             frame(portrait)
+            frame(portrait)
+            frame(portrait)
             pipeline.setActive(false)
             assertNull(pipeline.acquire(++time, portrait, DeviceState(DeviceTier.MEDIUM)))
             assertNull(pipeline.state.value.snapshot)

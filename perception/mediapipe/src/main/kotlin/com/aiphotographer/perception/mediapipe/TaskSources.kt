@@ -1,10 +1,10 @@
 package com.aiphotographer.perception.mediapipe
 
 import android.content.Context
-import android.graphics.Bitmap
+import android.util.Log
 import com.aiphotographer.model.*
 import com.aiphotographer.perception.*
-import com.google.mediapipe.framework.image.BitmapImageBuilder
+import com.google.mediapipe.framework.image.ByteBufferImageBuilder
 import com.google.mediapipe.framework.image.MPImage
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.core.BaseOptions
@@ -13,25 +13,27 @@ import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarker
 import java.util.concurrent.atomic.AtomicBoolean
+import java.nio.ByteBuffer
 
 private fun NormalizedLandmark.domain(id: String) = Landmark(id, x().toDouble(), y().toDouble(), z().toDouble(),
     visibility().orElse(null)?.toDouble(), presence().orElse(null)?.toDouble())
 
-/** Each task retains its own bitmap while native LIVE_STREAM inference reads it. */
+/** Each task owns RGB storage until its native LIVE_STREAM callback completes. */
 internal class TaskImage : AutoCloseable {
-    private var bitmap: Bitmap? = null
+    private var buffer: ByteBuffer? = null
     private var image: MPImage? = null
     fun prepare(frame: RgbFrame): MPImage {
         release()
         val w = frame.geometry.width; val h = frame.geometry.height
-        if (bitmap?.width != w || bitmap?.height != h) {
-            bitmap?.recycle(); bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        }
-        bitmap!!.setPixels(frame.pixels, 0, w, 0, 0, w, h)
-        return BitmapImageBuilder(bitmap!!).build().also { image = it }
+        val size = w * h * 3
+        if (buffer?.capacity() != size) buffer = ByteBuffer.allocateDirect(size)
+        val owned = requireNotNull(buffer).apply { clear() }
+        frame.pixels.forEach { pixel -> owned.put((pixel shr 16).toByte()); owned.put((pixel shr 8).toByte()); owned.put(pixel.toByte()) }
+        owned.rewind()
+        return ByteBufferImageBuilder(owned, w, h, MPImage.IMAGE_FORMAT_RGB).build().also { image = it }
     }
     fun release() { image?.close(); image = null }
-    override fun close() { release(); bitmap?.recycle(); bitmap = null }
+    override fun close() { release(); buffer = null }
 }
 
 internal class MediaPipePoseSource(context: Context, delegate: DelegateKind, model: String) : PoseSource {
@@ -61,7 +63,7 @@ internal class MediaPipePoseSource(context: Context, delegate: DelegateKind, mod
         check(!pending.get())
         onResult = result; onError = error; pending.set(true)
         try { task.detectAsync(input.prepare(frame), frame.timestampMs) }
-        catch (_: Exception) { if (pending.compareAndSet(true, false)) error("POSE_SUBMIT_ERROR") }
+        catch (failure: Exception) { Log.e("Phase2Perception", "POSE_SUBMIT_ERROR", failure); if (pending.compareAndSet(true, false)) error("POSE_SUBMIT_ERROR") }
     }
     fun releaseImage() { input.release() }
     override fun close() { pending.set(false); task.close(); input.close() }
@@ -93,7 +95,7 @@ internal class MediaPipeFaceSource(context: Context, delegate: DelegateKind) : F
     override fun submit(frame: RgbFrame, result: (FaceFrameResult) -> Unit, error: (String) -> Unit) {
         check(!pending.get()); onResult = result; onError = error; pending.set(true)
         try { task.detectAsync(input.prepare(frame), frame.timestampMs) }
-        catch (_: Exception) { if (pending.compareAndSet(true, false)) error("FACE_SUBMIT_ERROR") }
+        catch (failure: Exception) { Log.e("Phase2Perception", "FACE_SUBMIT_ERROR", failure); if (pending.compareAndSet(true, false)) error("FACE_SUBMIT_ERROR") }
     }
     fun releaseImage() { input.release() }
     override fun close() { pending.set(false); task.close(); input.close() }

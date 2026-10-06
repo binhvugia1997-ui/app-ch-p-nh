@@ -131,7 +131,7 @@ Consequence for Phase 1: the brief's module list is the table above, not the ful
         │                        ▼
         │                 :core:light  → LightReport        (2 Hz)
         │
-        ├──────────────► RgbaFrame producer (packed bitmap, rotated)  → MediaPipe
+        ├──────────────► RgbFrame producer (packed ARGB, rotated) → owned RGB byte buffer → MediaPipe
         │                        │
         │                        ├── PoseLandmarker  (LIVE_STREAM, numPoses=1)  → 15-30 Hz
         │                        ├── FaceLandmarker  (LIVE_STREAM, numFaces=1)  → 5-15 Hz adaptive
@@ -237,7 +237,7 @@ Rules:
 | CameraX ImageAnalysis | CameraX analyzer executor (single) | camera FPS (can be capped, see below) | `STRATEGY_KEEP_ONLY_LATEST` |
 | FrameRouter | dedicated single thread | per frame | Decides what to compute this frame (cadence scheduler) |
 | LumaBuffer | same as router (cheap) | 2 Hz | Y plane only, no RGB conversion |
-| RGBA conversion | dedicated thread | per inference | Reused bitmap buffer; rotation done once |
+| RGB conversion | dedicated thread | per inference | Reused packed ARGB array and task-owned direct RGB byte buffer; rotation done once |
 | MediaPipe Pose | MediaPipe's own LIVE_STREAM thread | 15–30 Hz (target) | Result callback → filter → assembler |
 | MediaPipe Face | MediaPipe's own LIVE_STREAM thread, may share pose results | 5–15 Hz adaptive | Only while a subject is tracked |
 | Engines (`core:*`) | engine executor (single) | per new snapshot | Pure, allocation-light (reuse buffers) |
