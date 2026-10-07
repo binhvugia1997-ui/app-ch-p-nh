@@ -52,7 +52,7 @@ def main():
                     (ROOT/'app/src/main/res/values/strings.xml',ROOT/'app/src/main/res/values-vi/strings.xml')}
 
     def adb(*parts):
-        return subprocess.run(command+list(parts),capture_output=True,text=True,timeout=45,check=True).stdout
+        return subprocess.run(command+list(parts),capture_output=True,text=True,encoding='utf-8',timeout=45,check=True).stdout
 
     def hierarchy():
         adb('shell','uiautomator','dump','/data/local/tmp/phase2-solo.xml')
@@ -133,7 +133,7 @@ def main():
                        '--serial',args.serial,'--output',str(run),'--seconds',str(args.seconds),'--preview-samples']
             if args.trace:
                 config = output/f'{index+1:02}-trace.pbtxt'
-                template = (ROOT/'tools/phase1-perfetto.pbtxt').read_text()
+                template = (ROOT/'tools/phase2-perfetto.pbtxt').read_text()
                 config.write_text(re.sub(r'duration_ms: \d+',f'duration_ms: {args.seconds*1000}',template))
                 capture += ['--trace-config',str(config)]
             collect(capture)

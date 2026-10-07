@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-07** by **Codex Local** (autonomous Phase 2 review; remaining solo physical tests pending).
+Last updated: **2026-10-07** by **Codex Local** (solo physical session checkpoint; owner stopped for the night).
 
 ---
 
@@ -24,7 +24,7 @@ Overall status is partial; deferred physical checks are not implementation failu
 OWNER_ACCEPTANCE_PENDING. Draft PR #3 remains open. No Premium UI or Phase 3 implementation.
 Historical Phase 1/2 measurements and known limitations remain unchanged.
 
-Latest resumable state: see the autonomous non-physical review at the end of this document.
+Latest resumable state: see the safe checkpoint at the end of this document.
 Current solo session: [phase-2-physical-verification.md](phase-2-physical-verification.md).
 
 ---
@@ -1505,3 +1505,97 @@ native-network proof or GPU calculator-placement claim is inferred from bounded 
 No unresolved non-physical engineering blocker or new human privacy/license/product decision identified.
 No Premium UI implementation, Phase 3 behavior, owner acceptance or merge. Remaining meaningful work
 requires the owner to return for the consolidated solo physical session.
+
+
+### Phase 2 resumed solo physical verification - 2026-10-07 (session record)
+
+Local/remote HEAD verified at `998444e3f7b05eea06a470a501599ef7c24828e6`; initial tree clean.
+Authorized USB Samsung SM-S918B, Android 16/API 36 confirmed. Final checkpoint debug APK installed
+(SHA-256 `93238a714c763fe961fa0c335b5da593211f38f4615db6513c84faec743a975d`),
+CameraX live preview and actual human pose/face detections observed. All final merged manifests lack INTERNET.
+
+Runner failure reproduced before collection: Windows cp1252 decoding of Vietnamese UI XML failed.
+ADB text decoding now explicitly UTF-8; same setup rerun completed all four 60-second windows and
+15-second lifecycle-return collection. Three evidence-window regressions PASS; no app/APK change.
+Raw screenshots/logs/video/traces remain ignored locally in
+`device-evidence/phase2/physical/resume-20261007/rear-portrait-utf8/`.
+Full-body pose and face overlay visible; arm/side changes and overlay clearing observed qualitatively.
+Motion alignment/head-turn and remaining physical configurations still require final evidence review.
+No numerical reprojection or overall physical PASS claimed. Four windows: pose detection deltas
+258/370/329/394; face detection deltas 3/9/9/25; inference errors 0 in each.
+Lifecycle return: pose detections 70, face detections 6, inference errors 0.
+Requested 720p conditions degraded to delivered 480p; these are not sustained 720p results.
+Diagnostic windows are not optimized baselines; fourth includes a local screen recording.
+Thermal samples reached MODERATE (2). First trace overwrote its ring and retained ~30 s;
+whole-window compositor/trace claims are invalid. Remaining optimized baselines/soak are pending.
+
+Temporary OS auto-rotation enabled for actual physical landscape transitions; original values
+accelerometer_rotation=0 and user_rotation=0 must be restored at session end.
+Session incomplete; OWNER_ACCEPTANCE_PENDING. No Phase 3, Premium UI or merge.
+
+Trace capture repair: Phase 2 now uses app-focused gfx/view/inference tracing with streaming
+file output every second, omitting system-wide scheduler event flood. Five-second no-person
+physical smoke collection completed; trace retrieved and parsed. This is instrumentation verification,
+not a human/performance baseline. Long-window retained bounds/overwrites still require inspection.
+
+Rear-landscape first 60-second window completed with 295 pose detections, 5 face detections,
+0 inference errors. Actual landscape confirmed, but table edge obscured lower legs/feet: full-body
+landscape gate remains pending. Second window interrupted for framing correction and excluded.
+Host collectors absent afterward; exact owned device trace stopped and partial trace retrieved.
+No product defect inferred from physical obstruction. Repositioning/retry required.
+Final streaming trace configuration adds periodic flush; second 5-second smoke parsed with no
+nonzero trace error/overwrite stats. Long-window verification still pending.
+
+
+### Owner-requested safe checkpoint - 2026-10-07
+
+STATUS: partial; verification stopped for the night at the owner's explicit request.
+Branch `codex/phase-2-pose-face-detection`; existing Draft PR #3. No owner acceptance,
+Phase 3, Premium UI, merge, or new physical test/soak during checkpoint creation.
+The authoritative remaining-work list and measurement table are in
+[phase-2-physical-verification.md](phase-2-physical-verification.md), checkpoint section.
+
+COMPLETED: Samsung SM-S918B / Android 16 / API 36 and checkpoint/remote verified; final
+unchanged diagnostic APK installed and live CameraX preview observed. Rear portrait four
+60-second diagnostic collections plus 15-second background/resume and camera-switch return
+completed. Human full-body pose, face overlay, arm/side changes, and clearing on loss were
+observed qualitatively. Callback validation enforces 33 pose / 478 face points; successful
+physical detections did not report validation/inference errors. No numerical alignment or
+complete movement/head-turn/freshness acceptance is inferred. Review existing evidence first.
+No INTERNET permission in final debug/profile/release merged manifests reconfirmed.
+
+PARTIAL: rear landscape 4:3 480p completed 60-second collection (295 pose / 5 face detections,
+0 inference errors), but lower legs/feet obscured by table: partial-body evidence only.
+Landscape 16:9 interrupted and excluded from valid rates/PASS; requested 720p landscape windows
+never ran. Portrait requested 720p windows adapted to 480p and do not establish sustained 720p.
+Diagnostic timing/memory/thermal exists; optimized baselines, final soak and final crash/ANR
+acceptance remain pending. Portrait traces with overwritten rings do not establish whole-window
+preview performance. Streaming capture repaired; two 5-second engineering smoke runs preserved,
+final flush-enabled smoke parsed with no nonzero trace error/overwrite stats. No new app defect
+proven; transient motion misalignment needs evidence review/reproduction before a product fix.
+
+FIXES: explicit UTF-8 ADB UI decoding; new app-focused Phase 2 Perfetto template with streamed
+file output and periodic flush, omitting system scheduler flood. No Android production code,
+SDK/model/dependency/privacy change, rebuild, or automatic-validation repeat required tonight.
+Python compile/plan checks, 3 previously run collection regression tests, actual runner rerun,
+trace parse checks, final spec validation and diff checks are the bounded verification evidence.
+Host interrupt terminated the landscape runner without its final cleanup; exact owned trace
+was stopped/retrieved manually, metadata marked INCOMPLETE. Do not assume host process termination
+runs Python finally; audit owned processes and trace metadata when interrupting future runs.
+
+SAFE STOP CONFIRMED after owner reconnected the unlocked phone: project camera app and installed
+project library test app force-stopped. No host runner/countdown/logcat/collector/trace processor
+and no device project app/logcat/screenrecord/task-owned trace process remains. Original
+accelerometer_rotation=0 and user_rotation=0 restored and read back. Device instrumentation
+subcommand is unsupported on this Android build; absence of project test/app processes, rather
+than that failed command, is the shutdown evidence. Shared ADB/server/system services untouched.
+Connectivity was not changed. No evidence deleted or uploaded.
+
+LOCAL HANDOFF: `device-evidence/phase2/physical/resume-20261007/` contains evidence, shutdown
+state, hashes/inventory and a post-commit `checkpoint-ref.json` with exact checkpoint commit SHA.
+Evidence is ignored, not on GitHub: preserve this workspace when resuming. Resolve the tracked
+checkpoint with `git log -1 --format=%H -- docs/phase-2-physical-verification.md`.
+FIRST NEXT SETUP: rear camera landscape, lens raised clear of table edge, slight downward tilt,
+roughly 3-4 m, whole head/hands/feet visible. Recheck branch/remote/device and review retained
+valid evidence first; verify framing before a fresh 15-second countdown after owner confirmation.
+Never repeat completed valid portrait collections merely to complete the report.
