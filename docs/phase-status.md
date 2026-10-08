@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-07** by **Codex Local** (solo physical session checkpoint; owner stopped for the night).
+Last updated: **2026-10-08** by **Codex Local** (owner STOP; critical thermal incident; safe checkpoint).
 
 ---
 
@@ -26,6 +26,7 @@ Historical Phase 1/2 measurements and known limitations remain unchanged.
 
 Latest resumable state: see the safe checkpoint at the end of this document.
 Current solo session: [phase-2-physical-verification.md](phase-2-physical-verification.md).
+**PHYSICAL TESTING STOPPED BY OWNER: do not relaunch camera or resume. Landscape attempt INCOMPLETE.**
 
 ---
 
@@ -1599,3 +1600,120 @@ FIRST NEXT SETUP: rear camera landscape, lens raised clear of table edge, slight
 roughly 3-4 m, whole head/hands/feet visible. Recheck branch/remote/device and review retained
 valid evidence first; verify framing before a fresh 15-second countdown after owner confirmation.
 Never repeat completed valid portrait collections merely to complete the report.
+
+### Phase 2 camera relaunch / awaiting Ready — 2026-10-08
+
+STATUS: partial; setup only, no test collection or countdown started.
+DEVICES TESTED: Samsung SM-S918B, Android 16, existing diagnostic app via ADB.
+Restored foreground MainActivity; camera service reports active camera ID 0 for the app.
+Display restored to landscape (accelerometer_rotation=0, user_rotation=1); pre-action values
+were 1 and 0. This display setting is not evidence of physical landscape placement.
+Two local setup screenshots show an active scene with changing preview capture FPS
+29.49 then 28.00 (UI snapshots, not a measured test-window/display FPS claim).
+Framing is NOT ready: preview shows sideways desk/computer equipment, no full-body subject.
+Owner must physically position the phone in landscape facing the test space, lens clear of
+support/table edge, head/hands/feet visible. Recheck framing before pending rear-landscape
+collection; use explicit --countdown 15 only after owner confirms Ready.
+Preserved all previous evidence/checkpoint data; no completed tests restarted, no reinstall,
+app-data clear, log clear, connectivity change, photo capture or test runner execution.
+New setup evidence only: device-evidence/phase2/physical/relaunch-20261008-1818/.
+BLOCKERS: physical framing and owner Ready confirmation. No new acceptance/PASS claimed.
+NEXT PROPOSED: recheck physically corrected rear-landscape framing, await Ready, then resume
+only missing/invalid landscape checks in a fresh evidence directory.
+
+Ready confirmation received on 2026-10-08; pre-countdown framing snapshot retained at
+`device-evidence/phase2/physical/ready-20261008/framing.png`. Scene is now upright in landscape
+and live pose/face overlays are visible. However, the visible subject's lower legs/feet are
+cropped by the preview bottom. Full-body framing gate remains unmet. Countdown/collector
+not started; no completed tests repeated. Next: move subject farther back or adjust camera
+aim/distance to include whole head, hands and feet, then recheck before the authorized
+15-second countdown. Previous Ready authorization is retained for this pending collection.
+
+### Adjusted framing / rear-landscape thermal stop — 2026-10-08
+
+STATUS: partial. Owner Ready retained; owner requested another framing check after adjustment.
+Local `framing-20261008-181905/preview.png` shows full head/hands/feet within preview.
+Started only pending rear-landscape matrix using explicit --countdown 15, --trace, --lifecycle,
+fresh evidence `device-evidence/phase2/physical/rear-landscape-resume-20261008-1820/`.
+No prior valid portrait tests repeated or prior evidence/checkpoint files overwritten.
+DEVICE: Samsung SM-S918B / Android 16 / API 36, existing debug diagnostic APK.
+THERMAL: all first-window samples report status 4 (critical); sample SKIN 48.9 C, BAT 44.7 C.
+Stopped app on observing critical thermal state. Collector had already finished its first
+60-second window before stop took effect: summary is COMPLETE, 58 metric records,
+60.802126383-second counter window, pose detections 339, face detections 16, errors 0,
+pose completion 6.4635897357346535 Hz, face completion 1.5459985627456934 Hz.
+These are diagnostic completion rates under critical thermal conditions, not performance PASS.
+CORRECTION to live commentary: first collection finished; overall matrix is INCOMPLETE,
+not an interrupted first counter window. Retain first window for evidence review; do not
+repeat it unless review demonstrates an invalid check. No other matrix windows/lifecycle ran.
+Runner exited on missing aspect control after deliberate app stop; not a diagnosed UI defect.
+Owned trace STOPPED_CAPTURE_RETRIEVED. Follow-up device process check shows no app,
+logcat, screenrecord or perfetto process. Host runner exited code 1. Thermal remains 4,
+SKIN 48.8 C on follow-up. Camera remains stopped for cooling; landscape settings retained.
+BLOCKERS: critical thermal state; remaining 16:9/720p-request/lifecycle checks pending.
+NEXT: cool phone, verify thermal recovery and retained first-window framing/tracking, then
+resume only missing valid checks with fresh evidence and 15-second countdowns.
+No owner acceptance, whole-window preview stability or numerical alignment PASS claimed.
+
+
+## Owner stop / critical thermal incident ? 2026-10-08
+
+All Phase 2 physical testing is STOPPED by explicit owner instruction. Do not relaunch the
+camera or resume testing. No production code, APK, architecture or thermal policy changed.
+Samsung SM-S918B / Android 16 / API 36, existing debug diagnostic build only.
+
+THERMAL INCIDENT: rear-landscape attempt is INCOMPLETE. All seven retained first-window
+thermal samples report CRITICAL (4); initial SKIN 48.7 C, later SKIN 48.9 C, follow-up
+48.8 C. App was force-stopped; host runner exited and device process audit found no project
+app, logcat, screenrecord or perfetto. Trace metadata confirms STOPPED_CAPTURE_RETRIEVED.
+The raw first 480p 4:3 collector completed its 60-second window before the stop took effect;
+retain its COMPLETE summary unchanged as diagnostic evidence, not a physical gate PASS.
+Matrix session.json is INCOMPLETE. No later aspect/resolution/lifecycle window ran.
+
+EVIDENCE PRESERVED: all earlier portrait/partial-landscape/checkpoint files unchanged.
+Rehashed all 325 entries of the previous checkpoint inventory: 0 mismatches. New 384-file
+inventory, incident metadata, prior-inventory verification, retained failed-control UI and
+process audit are local under device-evidence/phase2/physical/thermal-stop-20261008/.
+Raw evidence remains ignored and must not be committed/uploaded. New run remains at
+rear-landscape-resume-20261008-1820/; setup screenshots retained separately.
+
+LOG-ONLY INVESTIGATION: critical state already existed at the first collector sample, so
+these logs cannot attribute onset to this 60-second window. App remained open during setup;
+pre-collection thermal history, ambient conditions and other workload attribution are absent.
+Perception logs report degradationLevel=6 throughout but continue pose/face callbacks,
+configured GPU labels (actual native placement NOT proven), preview capture near 29.7 FPS
+(not display FPS), analysis delivery near 26.8 FPS and delivered 640x480. Last rolling
+RGB conversion p50/p95 is 56.65/69.45 ms; pose 69.19/97.78 ms, face 46.68/86.93 ms,
+batch 128.57/181.64 ms. These are rolling snapshots, not window-only percentiles.
+Continued camera/conversion/inference load despite degradation, warm start, and diagnostic
+trace/screenshot overhead are possible contributors, not established root causes. Preview
+screenshots show charging indicator and floating overlays; their power/CPU contributions
+are unmeasured. PSS ranges 416827?447304 KiB, RSS 499664?528272 KiB with nonmonotonic
+variation: no leak established by this short window. Same PID/session and zero inference
+errors; no AndroidRuntime exception found in retained app log. No duplicate pipeline or
+resource leak proven. Collector did not abort automatically on thermalStatus=4; the manual
+stop occurred after the first collector window finished. Preflight/abort thermal handling
+is a tooling follow-up requiring a documented policy before any future physical testing.
+No new device experiment was run to investigate causes.
+
+MISSING CONTROL: runner traceback occurred while selecting the second aspect after deliberate
+app force-stop. Retained /data/local/tmp/phase2-solo.xml was copied locally; its packages are
+com.sec.android.app.launcher and com.google.android.googlequicksearchbox, with no test app.
+Thus the failed aspect lookup is consistent with the stopped app/launcher foreground, not
+evidence of an independent app UI defect. Do not classify as an independent bug without
+contradicting evidence; no reproduction or camera relaunch performed.
+
+REMAINING: review retained first-window human motion/framing (a lateral sample places the
+subject partly beyond the left edge); no full-body landscape acceptance yet. Other landscape
+aspects/requested resolutions/lifecycle, front portrait/landscape, manual capture/offline
+physical gates, optimized baselines and soak remain pending. Preserve valid portrait checks;
+repeat only demonstrated invalid/missing checks if the owner later authorizes testing.
+All physical work remains stopped, regardless of thermal recovery. Owner acceptance pending.
+
+SAFE CHECKPOINT: same codex/phase-2-pose-face-detection branch and Draft PR #3; documentation
+checkpoint only. Exact SHA and verified remote head recorded after push in ignored local
+thermal-stop-20261008/checkpoint-ref.json. No raw images/logs/traces added to Git.
+
+Checkpoint validation: git diff --check passed. Spec cross-reference validator: 0 errors,
+1 warning (jsonschema/referencing unavailable; structural schema checks skipped). No specs,
+rule/message references, production code or APK changed. Full schema validation not claimed.
