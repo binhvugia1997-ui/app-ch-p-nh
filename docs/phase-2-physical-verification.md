@@ -1,7 +1,9 @@
 # Phase 2 — consolidated solo physical verification
 
-Status: **STOPPED / INCOMPLETE LANDSCAPE / SAFE CHECKPOINT**, owner stopped all physical testing on 2026-10-08 after a critical thermal incident.
-**Do not relaunch the camera or resume physical testing.** Earlier resume instructions below are historical and overridden by this stop.
+Status: **THERMAL RECOVERY PREPARATION / PHYSICAL GATES PENDING**, 2026-10-08.
+Owner conditionally authorized resume after normal preflight; await Ready per setup.
+**Use the thermal recovery workflow at the end of this file.** Earlier batching/soak
+commands and unconditional STOP are historical; fresh thermal checks required before launch.
 Remaining gates are PENDING_PHYSICAL_VERIFICATION. No owner acceptance.
 Reference device: Samsung SM-S918B / Android 16 / API 36 only. Do not generalize its results.
 This is the single current physical session plan; historical measurements remain in phase-status.md.
@@ -251,3 +253,50 @@ All physical work remains stopped, regardless of thermal recovery. Owner accepta
 SAFE CHECKPOINT: same codex/phase-2-pose-face-detection branch and Draft PR #3; documentation
 checkpoint only. Exact SHA and verified remote head recorded after push in ignored local
 thermal-stop-20261008/checkpoint-ref.json. No raw images/logs/traces added to Git.
+
+
+## Thermal recovery preparation - 2026-10-08
+
+Owner authorized conditional resume from 532426bec5d8eff82316040339ee17ab64369583;
+this supersedes the earlier unconditional STOP only for the new safe workflow.
+Physical collection still requires Ready per setup and fresh normal-status checks.
+Verified branch codex/phase-2-pose-face-detection, origin and exact remote/local checkpoint;
+initial working tree clean. Rehashed all 384 previous inventoried evidence files: unchanged.
+Local-only preflight: device-evidence/phase2/physical/thermal-recovery-20261008/.
+Samsung SM-S918B / Android 16: initial thermal 0, SKIN 36.2 C, BAT 34.7 C, AP 38.3 C;
+no camera process. USB charging active; no OS thermal/connectivity override. This initial
+normal reading does not replace the next launch preflight.
+
+LOG ANALYSIS: first previous sample already critical; onset/root cause unknown. Continued
+camera/inference/conversion workload despite degradation 6 and diagnostic overhead are
+possible contributors. No excessive concurrent inference batches established. Reusable
+RGB/direct task buffers and existing backpressure remain unchanged. Nonmonotonic PSS/RSS
+and stable PID do not establish allocation leak or duplicate pipeline. Native allocations,
+actual GPU placement, charging/other-app contribution and allocation rates remain unmeasured.
+Missing aspect error remains consistent with launcher foreground after app stop, not an
+independently established UI bug.
+
+FIXES: shared host thermal guard, bounded single-window runner and cooldown (ADR-020).
+Single --aspect selection resumes missing conditions; matrix/lifecycle batching rejected.
+Abort force-stops app and marks session incomplete, without automatic retry. RGB conversion
+hoists row/destination indexing outside pixel loop; output compared against reference for
+odd crops, nonneutral chroma, strides, positions and four rotations. Device improvement is
+unmeasured; no thermal-fix claim. Production inference schedule unchanged. Keep traces optional
+and screenshot/memory cadence ~10 s while thermal polling runs independently at ~2 s.
+
+NEXT PHYSICAL SETUP after Ready: rear landscape 480p 4:3, targeted 30-second full-body/lateral
+framing and motion check. Prior window has lateral clipping, warranting only targeted invalid/
+missing coverage, not repeating valid portrait tests. Guarded framing review and 15 s countdown
+required. Stop/cool down and review before other landscape conditions or front setups.
+If framing is wrong, stop and correct. Capture/offline/lifecycle, optimized baselines and soak
+remain pending; long soak deferred until short-window thermal behavior is understood.
+Awaiting new Ready; no camera relaunched. No interrupted PASS, Phase 3, Premium UI, merge
+or owner acceptance.
+
+Validation: camera debug unit tests (including new conversion equivalence), perception API
+tests, debug/profile/release builds and app lintDebug PASSED. Python evidence/thermal suite:
+8 tests PASSED. Full spec validation using cached jsonschema/referencing: 0 errors, 0 warnings.
+No new device behavior/performance test or acceptance claimed. Prepared debug APK hash: 915b900a923e8a5e95583f983fbca9b1eb6bab48bf98b4f00912fe0772cb5e11.
+Guarded --framing-only saves a setup screenshot then stops app without collecting test metrics;
+use after Ready to review framing before the separately bounded test invocation.
+Camera remains stopped and new APK device verification remains pending Ready.

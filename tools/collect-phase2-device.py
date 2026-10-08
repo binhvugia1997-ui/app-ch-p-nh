@@ -12,6 +12,7 @@ import subprocess
 import signal
 import time
 import uuid
+from phase2_thermal import ThermalGuard
 
 
 COUNTERS = ('offered', 'accepted', 'busySkipped', 'cadenceSkipped', 'poseCompleted',
@@ -76,7 +77,7 @@ def main():
     evidence = Path(__file__).resolve().parents[1] / 'device-evidence'
     output = args.output.resolve()
     if not output.is_relative_to(evidence) or not 1 <= args.seconds <= 600:
-        parser.error('Use ignored device-evidence and a duration of 1–600 seconds.')
+        parser.error('Use ignored device-evidence and a duration of 1â€“600 seconds.')
     if output.exists():
         parser.error('Choose a new output directory; existing evidence is never overwritten.')
     output.mkdir(parents=True)
@@ -85,11 +86,13 @@ def main():
     command = [args.adb, '-s', args.serial]
 
     def adb(*parts):
-        result = subprocess.run(command + list(parts), capture_output=True, timeout=45)
+        result = subprocess.run(command + list(parts), capture_output=True, timeout=5 if parts == ('shell','dumpsys','thermalservice') else 45)
         if result.returncode:
             raise RuntimeError(result.stderr.decode(errors='replace'))
         return result.stdout.decode(errors='replace')
 
+    guard = ThermalGuard(lambda: adb('shell','dumpsys','thermalservice'),
+                         lambda: adb('shell','am','force-stop','com.aiphotographer.app'), output/'thermal-guard.json')
     trace_pid = None
     trace_id = uuid.uuid4().hex
     trace_output = f'/data/misc/perfetto-traces/phase2-{trace_id}.pftrace'
@@ -103,6 +106,7 @@ def main():
             stdout=log_file, stderr=subprocess.STDOUT)
         started = time.monotonic()
         try:
+            guard.start()
             if args.trace_config:
                 adb('push', str(args.trace_config), trace_config)
                 trace_pid = adb('shell', 'perfetto', '--background-wait', '--txt', '-c', trace_config,
@@ -114,6 +118,7 @@ def main():
                     'pid': trace_pid, 'captureId': trace_id, 'deviceOutput': trace_output,
                     'status': 'RUNNING'}), encoding='utf-8')
             while True:
+                guard.check()
                 elapsed = time.monotonic() - started
                 sample = {'elapsedSeconds': elapsed}
                 if args.preview_samples:
@@ -145,6 +150,7 @@ def main():
                 (output / 'samples.json').write_text(json.dumps(samples, indent=2), encoding='utf-8')
                 print(json.dumps(sample), flush=True)
                 remaining = args.seconds - (time.monotonic() - started)
+                guard.check()
                 if remaining <= 0:
                     complete = True
                     break
@@ -152,6 +158,11 @@ def main():
         except BaseException as error:
             failure = error
         finally:
+            try:
+                guard.close(final_sample=True)
+            except Exception as error:
+                complete = False
+                failure = failure or error
             log.terminate()
             try:
                 log.wait(timeout=10)

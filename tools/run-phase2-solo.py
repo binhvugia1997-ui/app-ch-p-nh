@@ -12,6 +12,7 @@ import signal
 import sys
 import time
 import xml.etree.ElementTree as ET
+from phase2_thermal import ThermalGuard
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = 'com.aiphotographer.app'
@@ -24,21 +25,25 @@ def main():
     parser.add_argument('--serial')
     parser.add_argument('--output', type=Path)
     parser.add_argument('--configuration', choices=['rear-portrait','rear-landscape','front-portrait','front-landscape'])
-    parser.add_argument('--debug-matrix', action='store_true', help='Both aspects at both requested resolutions; debug APK required.')
+    parser.add_argument('--debug-matrix', action='store_true', help='Disabled during thermal recovery; use one window per invocation.')
     parser.add_argument('--analysis720p', action='store_true', help='Single profile baseline at requested 720p, otherwise 480p.')
     parser.add_argument('--seconds', type=int, default=60)
-    parser.add_argument('--countdown', type=int, default=20)
+    parser.add_argument('--countdown', type=int, default=15)
+    parser.add_argument('--framing-only', action='store_true', help='Save one guarded setup screenshot and stop; no countdown or test collection.')
     parser.add_argument('--trace', action='store_true')
+    parser.add_argument('--aspect', choices=['4:3','16:9'], default='4:3')
     parser.add_argument('--lifecycle', action='store_true',
-                        help='After collections, automate home/resume and camera switch/return with local snapshots.')
+                        help='Disabled during thermal recovery; lifecycle checks need separately bounded sessions.')
     args = parser.parse_args()
+    if not args.plan and (args.debug_matrix or args.lifecycle or not 30 <= args.seconds <= 60):
+        parser.error('Thermal recovery: one 30-60 s window per invocation; matrix/lifecycle batching disabled.')
     if args.plan:
         print('Four physical setups: rear/front x portrait/landscape. Secure phone at 3-4 m in good light; '
               'keep head, hands, feet visible. Each countdown lets you walk into frame. Repeat a 60-second '
               'sequence: still 0-10; arms 10-20; side steps 20-30; head turns 30-40; closer face 40-50; '
-              'still/leave view 50-60. Debug matrix batches two aspects and two requested resolutions. '
+              'still/leave view 50-60. Thermal recovery uses one 30-60 s window, then camera stops. '
               'Review screenshots and actual delivered resolution; adaptation may request 480p. '
-              'Then two optimized-profile baselines and one 300-second soak. See docs/phase-2-physical-verification.md.')
+              'Cooldown and a new normal-status preflight precede every invocation; countdown defaults to 15 s. See docs/phase-2-physical-verification.md.')
         return
     if not all([args.adb,args.serial,args.output,args.configuration]):
         parser.error('ADB, serial, new output directory and physical configuration are required.')
@@ -52,7 +57,7 @@ def main():
                     (ROOT/'app/src/main/res/values/strings.xml',ROOT/'app/src/main/res/values-vi/strings.xml')}
 
     def adb(*parts):
-        return subprocess.run(command+list(parts),capture_output=True,text=True,encoding='utf-8',timeout=45,check=True).stdout
+        return subprocess.run(command+list(parts),capture_output=True,text=True,encoding='utf-8',timeout=5 if parts == ('shell','dumpsys','thermalservice') else 45,check=True).stdout
 
     def hierarchy():
         adb('shell','uiautomator','dump','/data/local/tmp/phase2-solo.xml')
@@ -97,7 +102,18 @@ def main():
                 'api':adb('shell','getprop','ro.build.version.sdk').strip(),
                 'warning':'Requested settings are not verified delivered geometry or tracking accuracy.'}
     (output/'session.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
+    guard = ThermalGuard(lambda: adb('shell','dumpsys','thermalservice'),
+                         lambda: adb('shell','am','force-stop',APP), output/'thermal-guard.json')
     try:
+        guard.start()
+        print('Camera remains stopped: 30-second normal-status cooldown preflight.', flush=True)
+        adb('shell','am','force-stop',APP)
+        for _ in range(15):
+            time.sleep(2)
+            guard.check()
+            if any(sample['status'] != 0 for sample in guard.samples):
+                raise RuntimeError('Cooldown requires normal thermal status throughout.')
+        guard.check()
         # Fresh task resets diagnostic controls to known defaults; no app data or evidence is deleted.
         adb('shell','am','start','-S','-f','0x10008000','-n',APP+'/.MainActivity',
             '--ez','analysis720p',str(args.analysis720p).lower())
@@ -111,8 +127,22 @@ def main():
             raise RuntimeError('Displayed orientation does not match physical setup; no capture started.')
         if args.configuration.startswith('front'):
             tap(switch_texts)
-        configurations = [(480,'4:3'),(480,'16:9'),(720,'16:9'),(720,'4:3')] if args.debug_matrix else [
-            (720 if args.analysis720p else 480,'4:3')]
+        configurations = [(720 if args.analysis720p else 480, args.aspect)]
+        if args.aspect == '16:9':
+            tap({'4:3 / 16:9'})
+        if args.analysis720p:
+            selected = {n.get('text') for n in hierarchy().iter('node')} & {'R480P','R720P'}
+            if selected == {'R480P'}:
+                tap(selected)
+        guard.check()
+        if args.framing_only:
+            data = subprocess.run(command+['exec-out','screencap','-p'],capture_output=True,timeout=20,check=True).stdout
+            if not data.startswith(b'\x89PNG\r\n\x1a\n'):
+                raise RuntimeError('Invalid framing screenshot.')
+            (output/'framing.png').write_bytes(data)
+            guard.check()
+            metadata['collectionStatus'] = 'FRAMING_ONLY_NO_TEST_COLLECTION'
+            return
         previous = configurations[0]
         for index,(resolution,aspect) in enumerate(configurations):
             if index and aspect != previous[1]:
@@ -128,6 +158,7 @@ def main():
                 if left % 5 == 0 or left <= 3:
                     print(f'Start in {left} s',flush=True)
                 time.sleep(1)
+                guard.check()
             run = output/f'{index+1:02}-{resolution}p-{aspect.replace(":","x")}'
             capture = [sys.executable,str(ROOT/'tools/collect-phase2-device.py'),'--adb',args.adb,
                        '--serial',args.serial,'--output',str(run),'--seconds',str(args.seconds),'--preview-samples']
@@ -136,25 +167,10 @@ def main():
                 template = (ROOT/'tools/phase2-perfetto.pbtxt').read_text()
                 config.write_text(re.sub(r'duration_ms: \d+',f'duration_ms: {args.seconds*1000}',template))
                 capture += ['--trace-config',str(config)]
+            guard.check()
             collect(capture)
+            guard.check()
             previous = (resolution,aspect)
-        if args.lifecycle:
-            def screenshot(name):
-                data = subprocess.run(command+['exec-out','screencap','-p'],capture_output=True,
-                                      timeout=20,check=True).stdout
-                if not data.startswith(b'\x89PNG\r\n\x1a\n'):
-                    raise RuntimeError('Lifecycle snapshot is not PNG.')
-                (output/(name+'.png')).write_bytes(data)
-            screenshot('lifecycle-before')
-            adb('shell','input','keyevent','KEYCODE_HOME');time.sleep(3)
-            adb('shell','am','start','-n',APP+'/.MainActivity');time.sleep(6)
-            screenshot('lifecycle-resumed')
-            tap(switch_texts);screenshot('camera-switched')
-            tap(switch_texts);screenshot('camera-returned')
-            collect([sys.executable,str(ROOT/'tools/collect-phase2-device.py'),'--adb',args.adb,
-                '--serial',args.serial,'--output',str(output/'lifecycle-return'),
-                '--seconds','15','--preview-samples'])
-            (output/'exit-info.txt').write_text(adb('shell','dumpsys','activity','exit-info',APP),encoding='utf-8')
         metadata['collectionStatus'] = 'COMPLETE_REQUIRES_EVIDENCE_REVIEW'
     except BaseException:
         metadata['collectionStatus'] = 'INCOMPLETE'
@@ -162,6 +178,13 @@ def main():
     finally:
         (output/'session.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
         adb('shell','am','force-stop',APP)
+        try:
+            guard.close(final_sample=True)
+        finally:
+            if guard.failure:
+                metadata['collectionStatus'] = 'INCOMPLETE'
+                metadata['thermalStop'] = guard.failure
+                (output/'session.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
 
 
 if __name__ == '__main__':

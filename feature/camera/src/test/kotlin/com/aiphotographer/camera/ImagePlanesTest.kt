@@ -51,4 +51,35 @@ class ImagePlanesTest {
         }
         assertEquals(2, yBuffer.position()); assertEquals(1, chroma.position())
     }
+    @Test fun optimizedRgbMatchesReferenceAcrossOddCropsStridesAndRotations() {
+        val random = java.util.Random(123)
+        for (pixelStride in 1..2) for (left in 0..2) for (top in 0..2) {
+            fun plane(stride: Int): Plane {
+                val bytes = ByteArray(256).also(random::nextBytes)
+                return Plane(ByteBuffer.wrap(bytes).apply { position(3) }, stride, pixelStride)
+            }
+            val y = plane(24); val u = plane(16); val v = plane(16)
+            val crop = Crop(left, top, 5, 3)
+            for (rotation in listOf(0,90,180,270)) {
+                val width = if (rotation == 90 || rotation == 270) 3 else 5
+                val expected = IntArray(15)
+                for (sy in 0..2) for (sx in 0..4) {
+                    val yy = (y.at(left+sx,top+sy)-16).coerceAtLeast(0)
+                    val uu = u.at((left+sx)/2,(top+sy)/2)-128
+                    val vv = v.at((left+sx)/2,(top+sy)/2)-128
+                    val r = ((298*yy+409*vv+128) shr 8).coerceIn(0,255)
+                    val g = ((298*yy-100*uu-208*vv+128) shr 8).coerceIn(0,255)
+                    val b = ((298*yy+516*uu+128) shr 8).coerceIn(0,255)
+                    val dx = when(rotation) { 90 -> 2-sy; 180 -> 4-sx; 270 -> sy; else -> sx }
+                    val dy = when(rotation) { 90 -> sx; 180 -> 2-sy; 270 -> 4-sx; else -> sy }
+                    expected[dy*width+dx] = (255 shl 24) or (r shl 16) or (g shl 8) or b
+                }
+                val actual = IntArray(15)
+                ImagePlanes.rgb(y,u,v,crop,rotation,actual)
+                assertArrayEquals(expected,actual)
+                assertEquals(3,y.buffer.position())
+            }
+        }
+    }
+
 }

@@ -526,6 +526,28 @@ This trades a small APK compression saving for immutable model ownership and req
 profile/lifecycle regression and subsequent physical measurements. Do not infer physical stability
 from emulator tests or reinterpret earlier measurements.
 
+
+**ADR-020 - Phase 2 thermal recovery tooling and conversion hot path (2026-10-08).**
+Owner authorized conditional resume with normal preflight, short windows, cooldown and
+severe/critical/rapid-rise abort. Host runner allows one 30-60 s window per invocation,
+rejects matrix/lifecycle batching, defaults to 15 s countdown and holds camera off for
+30 s of normal-status cooldown. Shared host guard polls thermalservice every 2 s with
+5 s ADB read timeout, requires readable Android status and SKIN sensor, refuses nonzero
+preflight and stops app on status >=3, missing telemetry or read failure. It records
+pre/during/post samples locally and aborts on SKIN rise >=2 C in a sampled interval of up to 30 s.
+Rapid-rise and minimum cooldown values are conservative CALIBRATION_REQUIRED engineering
+seeds, not validated human safety limits. Android protections remain untouched; host abort
+is best effort due to polling/ADB latency. Discomfort requires stop regardless of telemetry.
+No automatic restart after abort; new Ready per setup. Traces optional, screenshots/memory
+remain ~10 s apart independently of ~2 s thermal polling. No unattended multi-setup loop.
+
+Retained debug evidence shows substantial RGB conversion cost. Hoist source-row and rotated
+destination indexing outside the pixel loop; preserve exact color arithmetic, rotation,
+crop, stride, buffer-position and reusable-output contracts. No new module/dependency,
+network, model, inference cadence, production thermal policy or product-flow change.
+Pixel-equivalence regression covers odd crops, nonneutral chroma, strides and four rotations.
+Device speed/thermal gain remains unmeasured; no resource leak established by short logs.
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |
