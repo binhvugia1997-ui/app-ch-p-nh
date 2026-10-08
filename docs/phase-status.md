@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-08** by **Codex Local** (thermal recovery preparation; awaiting Ready; safe checkpoint).
+Last updated: **2026-10-08** by **Codex Local** (physical testing paused; source-only thermal review; safe checkpoint).
 
 ---
 
@@ -26,7 +26,7 @@ Historical Phase 1/2 measurements and known limitations remain unchanged.
 
 Latest resumable state: see the safe checkpoint at the end of this document.
 Current solo session: [phase-2-physical-verification.md](phase-2-physical-verification.md).
-**THERMAL RECOVERY PREPARATION: conditional resume authorized; fresh normal thermal checks and Ready per setup required. Previous landscape attempt INCOMPLETE.**
+**PHYSICAL TESTING PAUSED BY OWNER: no camera launch or inference. Source review and host validation only. Previous landscape attempt INCOMPLETE.**
 
 ---
 
@@ -1798,3 +1798,27 @@ agent will reopen only after fresh normal checks. Framing remains unverified, no
 Prior evidence unchanged. Physical testing stopped on elevated preflight as instructed.
 Next: cool phone with app closed; fresh thermal preflight and guarded head/feet review,
 then 15-second countdown only if framing passes and thermal remains acceptable.
+
+
+### Physical pause / source-only thermal review - 2026-10-08
+
+Owner paused ALL physical testing and camera/inference launches. Prior Ready is not permission
+to resume during this pause. Reviewed retained logs/trace/source only; no ADB or device activity.
+Findings and next safe test: [phase-2-thermal-review.md](phase-2-thermal-review.md), ADR-021.
+Genuine defect fixed: framing-only host path previously initialized full AI/analysis. New debug
+preview-only path creates no MediaPipe pipeline and binds no analyzer/capture, omits sensor/
+diagnostic overlay work, selects camera/aspect at launch, and closes within a best-effort 12 s
+monotonic deadline. Host rejects missing preview-only label. Full countdown moves before camera
+launch, eliminating 15 s of idle inference. LIGHT launch policy reviewed but kept conservative;
+SEVERE/CRITICAL/rapid-rise abort and Android protections unchanged. Root thermal cause unresolved.
+Trace query retained locally at device-evidence/phase2/physical/framing-source-review-20261008/;
+no source evidence modified. Device gains/unattended shutdown behavior UNVERIFIED.
+All physical gates pending and tests paused; no acceptance/merge/Phase 3/Premium UI.
+
+
+Host validation for paused investigation: debug/profile/release builds, camera unit tests,
+perception API tests and app lintDebug PASSED. Host collection/thermal/framing integration suite:
+11 tests PASSED (mocked ADB only, no device). Full spec validator: 0 errors, 0 warnings.
+Diff whitespace check passed. Reverified previous 384-file evidence inventory: no mismatches.
+No new APK installed or device check run; preview-only behavior and thermal gain pending physical
+verification after explicit resume. Local trace-derived review/inventory retained, never uploaded.

@@ -548,6 +548,20 @@ network, model, inference cadence, production thermal policy or product-flow cha
 Pixel-equivalence regression covers odd crops, nonneutral chroma, strides and four rotations.
 Device speed/thermal gain remains unmeasured; no resource leak established by short logs.
 
+
+**ADR-021 - debug preview-only framing and camera-off countdown (2026-10-08).**
+Owner paused physical testing and requested lower-overhead framing. Host framing-only previously
+still launched normal perception. New debug-only framingOnly extra skips MediaPipe creation;
+CameraSession PREVIEW_ONLY binds Preview alone and skips analyzer/capture binding and sensor/metrics
+work. No new module/dependency or production decision logic. Perception/developer overlays omitted,
+camera/aspect supplied at launch, capture disabled. The activity finishes at a 12-second monotonic
+deadline retained across recreation; 12 s is CALIBRATION_REQUIRED, best effort, not a safety guarantee.
+Host requires the localized preview-only label and retains finally force-stop. Release/profile ignore
+the debug flag. Full-session 15-second countdown moves before camera launch to remove idle AI work.
+Normal-only launch policy and severe/critical/rapid-rise/fail-closed abort unchanged. No device thermal
+improvement claimed; physical validation paused. Evidence, policy rationale and uncertainties:
+[Phase 2 thermal review](phase-2-thermal-review.md).
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |

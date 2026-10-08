@@ -114,23 +114,40 @@ def main():
             if any(sample['status'] != 0 for sample in guard.samples):
                 raise RuntimeError('Cooldown requires normal thermal status throughout.')
         guard.check()
+        if not args.framing_only:
+            print('Walk into frame during countdown; camera remains stopped until it ends.', flush=True)
+            for left in range(args.countdown,0,-1):
+                if left % 5 == 0 or left <= 3:
+                    print(f'Camera starts in {left} s',flush=True)
+                time.sleep(1)
+                guard.check()
+        guard.check()
         # Fresh task resets diagnostic controls to known defaults; no app data or evidence is deleted.
         adb('shell','am','start','-S','-f','0x10008000','-n',APP+'/.MainActivity',
-            '--ez','analysis720p',str(args.analysis720p).lower())
+            '--ez','analysis720p',str(args.analysis720p).lower(),
+            '--ez','framingOnly',str(args.framing_only).lower(),
+            '--ez','framingFront',str(args.configuration.startswith('front')).lower(),
+            '--ez','framingWide',str(args.aspect == '16:9').lower())
         time.sleep(6)
-        bounds = list(map(int,re.findall(r'\d+',next(hierarchy().iter('node')).get('bounds',''))))
+        ui = hierarchy()
+        if args.framing_only:
+            labels = {ET.parse(p).find("string[@name='framing_preview']").text for p in
+                      (ROOT/'app/src/main/res/values/strings.xml', ROOT/'app/src/main/res/values-vi/strings.xml')}
+            if not any(n.get('text') in labels for n in ui.iter('node')):
+                raise RuntimeError('Preview-only mode not confirmed; refusing framing screenshot.')
+        bounds = list(map(int,re.findall(r'\d+',next(ui.iter('node')).get('bounds',''))))
         if len(bounds) != 4:
             raise RuntimeError('Cannot verify displayed orientation.')
         displayed = 'landscape' if bounds[2]-bounds[0] > bounds[3]-bounds[1] else 'portrait'
         metadata['displayedOrientation'] = displayed
         if not args.configuration.endswith(displayed):
             raise RuntimeError('Displayed orientation does not match physical setup; no capture started.')
-        if args.configuration.startswith('front'):
+        if args.configuration.startswith('front') and not args.framing_only:
             tap(switch_texts)
         configurations = [(720 if args.analysis720p else 480, args.aspect)]
-        if args.aspect == '16:9':
+        if args.aspect == '16:9' and not args.framing_only:
             tap({'4:3 / 16:9'})
-        if args.analysis720p:
+        if args.analysis720p and not args.framing_only:
             selected = {n.get('text') for n in hierarchy().iter('node')} & {'R480P','R720P'}
             if selected == {'R480P'}:
                 tap(selected)
@@ -153,12 +170,7 @@ def main():
                     raise RuntimeError('Cannot establish current requested analysis resolution.')
                 if selected != {f'R{resolution}P'}:
                     tap(selected)
-            print(f'Run {index+1}: requested {resolution}p {aspect}. Walk into frame after countdown.',flush=True)
-            for left in range(args.countdown,0,-1):
-                if left % 5 == 0 or left <= 3:
-                    print(f'Start in {left} s',flush=True)
-                time.sleep(1)
-                guard.check()
+            print(f'Run {index+1}: requested {resolution}p {aspect}. Collection starts now.',flush=True)
             run = output/f'{index+1:02}-{resolution}p-{aspect.replace(":","x")}'
             capture = [sys.executable,str(ROOT/'tools/collect-phase2-device.py'),'--adb',args.adb,
                        '--serial',args.serial,'--output',str(run),'--seconds',str(args.seconds),'--preview-samples']

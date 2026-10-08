@@ -20,4 +20,5 @@
     <string name="save_error">Could not save the photo. Try again.</string>
     <string name="licences">Licences</string>
     <string name="close">Close</string>
+    <string name="framing_preview">Framing preview (analysis off)</string>
 </resources>

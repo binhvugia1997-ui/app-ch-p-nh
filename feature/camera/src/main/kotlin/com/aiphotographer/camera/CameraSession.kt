@@ -37,7 +37,7 @@ import com.aiphotographer.perception.PerceptionPipeline
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 
-enum class SessionMode { STARTING, FULL, ANALYSIS_ONLY, CAPTURE_ONLY, ERROR }
+enum class SessionMode { STARTING, FULL, ANALYSIS_ONLY, CAPTURE_ONLY, PREVIEW_ONLY, ERROR }
 enum class CaptureStatus { IDLE, SAVING, SAVED, ERROR }
 data class SessionState(
     val mode: SessionMode = SessionMode.STARTING, val capability: CapabilityReport,
@@ -56,6 +56,7 @@ class CameraSession(
     benchmarkRgb: Boolean,
     private val launchNs: Long,
     val perception: PerceptionPipeline? = null,
+    private val previewOnly: Boolean = false,
 ) {
     val router = FrameRouter(facing, resolution, monitor::state, benchmarkRgb, perception)
     private val perceptionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -64,9 +65,10 @@ class CameraSession(
         if (event == Lifecycle.Event.ON_STOP) perception?.setActive(false)
     }
     init {
+        require(!previewOnly || perception == null)
         owner.lifecycle.addObserver(perceptionLifecycle)
         perception?.setActive(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
-        perceptionScope.launch { perception?.state?.collect { router.perceptionResult(it.snapshot) } }
+        if (perception != null) perceptionScope.launch { perception.state.collect { router.perceptionResult(it.snapshot) } }
     }
     private val executor = Executors.newSingleThreadExecutor { Thread(it, "Phase1FrameRouter") }
     private val mainExecutor = ContextCompat.getMainExecutor(context)
@@ -84,7 +86,7 @@ class CameraSession(
 
     fun start() {
         if (closed) return
-        monitor.start()
+        if (!previewOnly) monitor.start()
         val future = ProcessCameraProvider.getInstance(context)
         future.addListener({
             if (closed) return@addListener
@@ -104,7 +106,7 @@ class CameraSession(
         boundSession?.let(provider::unbind)
         val rotation = previewView.display?.rotation ?: android.view.Surface.ROTATION_0
         val previewBuilder = Preview.Builder().setTargetRotation(rotation)
-        Camera2Interop.Extender(previewBuilder).setSessionCaptureCallback(object : CameraCaptureSession.CaptureCallback() {
+        if (!previewOnly) Camera2Interop.Extender(previewBuilder).setSessionCaptureCallback(object : CameraCaptureSession.CaptureCallback() {
             override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
                 router.onPreviewCapture()
             }
@@ -123,6 +125,7 @@ class CameraSession(
             val uses = when (mode) {
                 SessionMode.FULL -> listOf(preview, imageAnalysis!!, imageCapture)
                 SessionMode.ANALYSIS_ONLY -> listOf(preview, imageAnalysis!!)
+                SessionMode.PREVIEW_ONLY -> listOf(preview)
                 else -> listOf(preview, imageCapture)
             }
             val config = SessionConfig(useCases = uses, viewPort = previewView.getViewPort(rotation))
@@ -134,7 +137,7 @@ class CameraSession(
                 camera = provider.bindToLifecycle(owner, selector, config)
                 boundSession = config
                 analysis = imageAnalysis
-                capture = if (mode == SessionMode.ANALYSIS_ONLY) null else imageCapture
+                capture = if (mode in listOf(SessionMode.ANALYSIS_ONLY, SessionMode.PREVIEW_ONLY)) null else imageCapture
                 if (camera!!.cameraInfo.hasFlashUnit()) camera!!.cameraControl.enableTorch(false)
                 mutableState.value = SessionState(mode, report, attempts.toList())
                 cameraStateObserver = Observer<CameraState> { cameraState ->
@@ -150,6 +153,10 @@ class CameraSession(
             } catch (error: IllegalArgumentException) {
                 Log.w("Phase1Capability", "Combination rejected", error); false
             }
+        }
+        if (previewOnly) {
+            if (!tryBind(SessionMode.PREVIEW_ONLY, null)) fail(IllegalStateException("Preview-only binding rejected"))
+            return
         }
         for (size in sizes) {
             val analyzer = ImageAnalysis.Builder().setTargetRotation(rotation)
@@ -174,7 +181,7 @@ class CameraSession(
     }
     /** Serial capture in analysis-only fallback, then restore the analysis binding. */
     fun takePhoto() {
-        if (closed || mutableState.value.capture == CaptureStatus.SAVING) return
+        if (closed || previewOnly || mutableState.value.capture == CaptureStatus.SAVING) return
         if (mutableState.value.mode == SessionMode.ANALYSIS_ONLY) {
             analysis?.clearAnalyzer()
             boundSession?.let { provider?.unbind(it) }

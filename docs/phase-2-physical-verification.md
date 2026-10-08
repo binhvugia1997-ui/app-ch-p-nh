@@ -1,9 +1,8 @@
 # Phase 2 — consolidated solo physical verification
 
-Status: **THERMAL RECOVERY PREPARATION / PHYSICAL GATES PENDING**, 2026-10-08.
-Owner conditionally authorized resume after normal preflight; await Ready per setup.
-**Use the thermal recovery workflow at the end of this file.** Earlier batching/soak
-commands and unconditional STOP are historical; fresh thermal checks required before launch.
+Status: **PHYSICAL TESTING PAUSED BY OWNER**, 2026-10-08.
+No camera launch or sustained inference; only retained-evidence/source review and host tests.
+Prior Ready/resume instructions below are historical and overridden by this pause.
 Remaining gates are PENDING_PHYSICAL_VERIFICATION. No owner acceptance.
 Reference device: Samsung SM-S918B / Android 16 / API 36 only. Do not generalize its results.
 This is the single current physical session plan; historical measurements remain in phase-status.md.
@@ -334,3 +333,27 @@ agent will reopen only after fresh normal checks. Framing remains unverified, no
 Prior evidence unchanged. Physical testing stopped on elevated preflight as instructed.
 Next: cool phone with app closed; fresh thermal preflight and guarded head/feet review,
 then 15-second countdown only if framing passes and thermal remains acceptable.
+
+
+### Physical pause / source-only thermal review - 2026-10-08
+
+Owner paused ALL physical testing and camera/inference launches. Prior Ready is not permission
+to resume during this pause. Reviewed retained logs/trace/source only; no ADB or device activity.
+Findings and next safe test: [phase-2-thermal-review.md](phase-2-thermal-review.md), ADR-021.
+Genuine defect fixed: framing-only host path previously initialized full AI/analysis. New debug
+preview-only path creates no MediaPipe pipeline and binds no analyzer/capture, omits sensor/
+diagnostic overlay work, selects camera/aspect at launch, and closes within a best-effort 12 s
+monotonic deadline. Host rejects missing preview-only label. Full countdown moves before camera
+launch, eliminating 15 s of idle inference. LIGHT launch policy reviewed but kept conservative;
+SEVERE/CRITICAL/rapid-rise abort and Android protections unchanged. Root thermal cause unresolved.
+Trace query retained locally at device-evidence/phase2/physical/framing-source-review-20261008/;
+no source evidence modified. Device gains/unattended shutdown behavior UNVERIFIED.
+All physical gates pending and tests paused; no acceptance/merge/Phase 3/Premium UI.
+
+
+Host validation for paused investigation: debug/profile/release builds, camera unit tests,
+perception API tests and app lintDebug PASSED. Host collection/thermal/framing integration suite:
+11 tests PASSED (mocked ADB only, no device). Full spec validator: 0 errors, 0 warnings.
+Diff whitespace check passed. Reverified previous 384-file evidence inventory: no mismatches.
+No new APK installed or device check run; preview-only behavior and thermal gain pending physical
+verification after explicit resume. Local trace-derived review/inventory retained, never uploaded.

@@ -20,4 +20,5 @@
     <string name="save_error">Không thể lưu ảnh. Hãy thử lại.</string>
     <string name="licences">Giấy phép</string>
     <string name="close">Đóng</string>
+    <string name="framing_preview">Xem khung hình (đã tắt phân tích)</string>
 </resources>
