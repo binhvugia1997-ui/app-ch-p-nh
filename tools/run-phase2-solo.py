@@ -13,9 +13,11 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 from phase2_thermal import ThermalGuard
+from phase2_camera_idle import CameraIdle
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = 'com.aiphotographer.app'
+PROJECT_PACKAGES = (APP, APP+'.test', 'com.aiphotographer.perception.mediapipe.test')
 
 
 def main():
@@ -29,6 +31,7 @@ def main():
     parser.add_argument('--analysis720p', action='store_true', help='Single profile baseline at requested 720p, otherwise 480p.')
     parser.add_argument('--seconds', type=int, default=60)
     parser.add_argument('--countdown', type=int, default=15)
+    parser.add_argument('--idle-only', action='store_true', help='Stop project and verify camera-off cooldown only; never launch camera.')
     parser.add_argument('--framing-only', action='store_true', help='Save one guarded setup screenshot and stop; no countdown or test collection.')
     parser.add_argument('--trace', action='store_true')
     parser.add_argument('--aspect', choices=['4:3','16:9'], default='4:3')
@@ -57,7 +60,9 @@ def main():
                     (ROOT/'app/src/main/res/values/strings.xml',ROOT/'app/src/main/res/values-vi/strings.xml')}
 
     def adb(*parts):
-        return subprocess.run(command+list(parts),capture_output=True,text=True,encoding='utf-8',timeout=5 if parts == ('shell','dumpsys','thermalservice') else 45,check=True).stdout
+        with (output/'commands.jsonl').open('a',encoding='utf-8') as audit:
+            audit.write(json.dumps({'time':time.time(),'args':list(parts)})+'\n')
+        return subprocess.run(command+list(parts),capture_output=True,text=True,encoding='utf-8',timeout=5 if parts in (('shell','dumpsys','thermalservice'),('shell','dumpsys','media.camera')) else 45,check=True).stdout
 
     def hierarchy():
         adb('shell','uiautomator','dump','/data/local/tmp/phase2-solo.xml')
@@ -90,38 +95,61 @@ def main():
                     process.terminate();process.wait(timeout=10)
             raise
 
+    output.mkdir(parents=True)
     if adb('get-state').strip() != 'device':
         raise RuntimeError('Device not authorized.')
-    if not re.search(r'android.permission.CAMERA:\s*granted=true',adb('shell','dumpsys','package',APP)):
+    if not args.idle_only and not re.search(r'android.permission.CAMERA:\s*granted=true',adb('shell','dumpsys','package',APP)):
         raise RuntimeError('Camera permission is not granted; no capture started.')
     if args.debug_matrix and args.analysis720p:
         parser.error('Debug matrix starts at default 480p; use analysis720p only for a single baseline.')
-    output.mkdir(parents=True)
     metadata = {'requestedConfiguration':args.configuration,'humanGate':'PENDING_PHYSICAL_VERIFICATION',
                 'model':adb('shell','getprop','ro.product.model').strip(),
                 'api':adb('shell','getprop','ro.build.version.sdk').strip(),
                 'warning':'Requested settings are not verified delivered geometry or tracking accuracy.'}
     (output/'session.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
+    def project_pid():
+        result = subprocess.run(command+['shell','pidof',*PROJECT_PACKAGES],capture_output=True,text=True,encoding='utf-8',timeout=5)
+        if result.returncode not in (0,1) or result.stderr.strip():
+            raise RuntimeError('Project process telemetry unavailable: '+result.stderr)
+        return result.stdout
+    def stop_project():
+        failures = []
+        for package in PROJECT_PACKAGES:
+            try:
+                adb('shell','am','force-stop',package)
+            except Exception as error:
+                failures.append(str(error))
+        if failures:
+            raise RuntimeError('Project package stop failed: '+'; '.join(failures))
+    idle = CameraIdle(lambda: adb('shell','dumpsys','media.camera'), project_pid,
+                      stop_project, output/'camera-idle.jsonl')
     guard = ThermalGuard(lambda: adb('shell','dumpsys','thermalservice'),
-                         lambda: adb('shell','am','force-stop',APP), output/'thermal-guard.json')
+                         stop_project, output/'thermal-guard.json')
     try:
+        idle.stop_and_verify()
         guard.start()
         print('Camera remains stopped: 30-second normal-status cooldown preflight.', flush=True)
-        adb('shell','am','force-stop',APP)
         for _ in range(15):
             time.sleep(2)
+            idle.require_idle()
             guard.check()
             if any(sample['status'] != 0 for sample in guard.samples):
                 raise RuntimeError('Cooldown requires normal thermal status throughout.')
         guard.check()
+        if args.idle_only:
+            idle.require_idle()
+            metadata['collectionStatus'] = 'IDLE_VERIFIED_NO_CAMERA_LAUNCH'
+            return
         if not args.framing_only:
             print('Walk into frame during countdown; camera remains stopped until it ends.', flush=True)
             for left in range(args.countdown,0,-1):
                 if left % 5 == 0 or left <= 3:
                     print(f'Camera starts in {left} s',flush=True)
                 time.sleep(1)
+                idle.require_idle()
                 guard.check()
         guard.check()
+        idle.require_idle()
         # Fresh task resets diagnostic controls to known defaults; no app data or evidence is deleted.
         adb('shell','am','start','-S','-f','0x10008000','-n',APP+'/.MainActivity',
             '--ez','analysis720p',str(args.analysis720p).lower(),
@@ -188,15 +216,29 @@ def main():
         metadata['collectionStatus'] = 'INCOMPLETE'
         raise
     finally:
-        (output/'session.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
-        adb('shell','am','force-stop',APP)
+        cleanup_errors = []
+        try:
+            idle.stop_and_verify()
+        except Exception as error:
+            cleanup_errors.append('camera cleanup: '+str(error))
         try:
             guard.close(final_sample=True)
-        finally:
-            if guard.failure:
-                metadata['collectionStatus'] = 'INCOMPLETE'
-                metadata['thermalStop'] = guard.failure
-                (output/'session.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
+        except Exception as error:
+            cleanup_errors.append('thermal guard: '+str(error))
+        # Guard shutdown or another launcher may race force-stop: verify again afterward.
+        try:
+            idle.require_idle()
+        except Exception as error:
+            cleanup_errors.append('final idle verification: '+str(error))
+        if guard.failure:
+            metadata['thermalStop'] = guard.failure
+        if cleanup_errors:
+            metadata['collectionStatus'] = 'INCOMPLETE'
+            metadata['cleanupErrors'] = cleanup_errors
+        (output/'session.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
+        if cleanup_errors:
+            raise RuntimeError('; '.join(cleanup_errors))
+
 
 
 if __name__ == '__main__':

@@ -21,30 +21,51 @@ class FramingTests(unittest.TestCase):
     def test_countdown_finishes_before_camera_launch(self):
         self.run_framing(True, framing=False)
 
-    def run_framing(self, supported, framing=True):
+    def test_reactivation_during_cooldown_aborts_before_any_launch(self):
+        self.run_framing(True, unexpected=True)
+
+    def test_idle_only_never_launches_camera(self):
+        self.run_framing(True, idle_only=True)
+
+    def test_stop_failure_does_not_skip_guard_shutdown(self):
+        self.run_framing(True, stop_failure=True)
+
+    def run_framing(self, supported, framing=True, unexpected=False, idle_only=False, stop_failure=False):
         calls = []
         xml = '<hierarchy><node bounds="[0,0][1544,720]"><node text="Framing preview (analysis off)" /></node></hierarchy>'
         if not supported:
             xml = '<hierarchy><node bounds="[0,0][1544,720]" /></hierarchy>'
+        camera_reads = 0
         def run(args, **kwargs):
+            nonlocal camera_reads
             calls.append(args)
+            if stop_failure and 'force-stop' in args:
+                raise TimeoutError('stop failed')
             if 'get-state' in args: value = 'device'
             elif 'package' in args: value = 'android.permission.CAMERA: granted=true'
+            elif 'media.camera' in args:
+                camera_reads += 1
+                value = 'Active Camera Clients:\n[]\nAllowed user IDs: 0'
+                if unexpected and camera_reads == 2:
+                    value = 'Active Camera Clients: [(Camera ID: 0, PID: 6692, Client Package Name: com.aiphotographer.app,)]'
+
             elif 'cat' in args: value = xml
             elif 'screencap' in args: value = b'\x89PNG\r\n\x1a\nmock'
             else: value = ''
-            return SimpleNamespace(stdout=value)
+            return SimpleNamespace(stdout=value,stderr='',returncode=0)
         class Guard:
             failure = None
             samples = [{'status':0}]
             def __init__(self,*args): pass
             def start(self): pass
             def check(self): pass
-            def close(self, **kwargs): pass
+            def close(self, **kwargs): calls.append(['GUARD_CLOSE'])
         with tempfile.TemporaryDirectory(dir=solo.ROOT/'device-evidence') as parent:
             output = Path(parent)/'new-framing'
             argv = ['solo','--adb','fake-adb','--serial','fake','--configuration','front-landscape',
                     '--framing-only','--aspect','16:9','--seconds','30','--output',str(output)]
+            if idle_only:
+                argv.append('--idle-only')
             if not framing:
                 argv.remove('--framing-only')
                 argv[argv.index('front-landscape')] = 'rear-landscape'
@@ -53,11 +74,32 @@ class FramingTests(unittest.TestCase):
                  patch.object(solo,'ThermalGuard',Guard), patch.object(solo.time,'sleep',side_effect=lambda seconds: calls.append(['SLEEP',seconds])), \
                  patch.object(solo.subprocess,'Popen') as popen:
                 popen.return_value.wait.return_value = 0
-                if supported:
+                if stop_failure:
+                    with self.assertRaisesRegex(RuntimeError,'camera cleanup'):
+                        solo.main()
+                elif unexpected:
+                    with self.assertRaisesRegex(RuntimeError,'invariant violated'):
+                        solo.main()
+                elif supported:
                     solo.main()
                 else:
                     with self.assertRaisesRegex(RuntimeError, 'Preview-only mode not confirmed'):
                         solo.main()
+            if stop_failure or idle_only:
+                self.assertFalse(any('start' in c for c in calls))
+                self.assertIn(['GUARD_CLOSE'],calls)
+                if stop_failure:
+                    self.assertIn('cleanupErrors',(output/'session.json').read_text())
+                else:
+                    self.assertIn('IDLE_VERIFIED_NO_CAMERA_LAUNCH',(output/'session.json').read_text())
+                popen.assert_not_called()
+                return
+            if unexpected:
+                self.assertFalse(any('start' in c for c in calls))
+                self.assertIn('INCOMPLETE',(output/'session.json').read_text())
+                self.assertIn('6692',(output/'camera-idle.jsonl').read_text())
+                popen.assert_not_called()
+                return
             if not framing:
                 popen.assert_called_once()
                 self.assertFalse((output/'framing.png').exists())

@@ -1840,3 +1840,27 @@ Local evidence: device-evidence/phase2/physical/preview-only-once-20261008-19194
 previous evidence/checkpoints unchanged. No retry; owner advised to keep app closed.
 Errors: cooldown normal-status requirement failed; unexpected external app reactivation
 unresolved. Testing remains stopped with elevated thermal state; prior unfinished gates pending.
+
+
+### Camera reactivation investigation / camera-idle invariant - 2026-10-08
+PHASE: 2; STATUS: partial, physical camera/inference testing PAUSED.
+Checkpoint 400a688 verified; same branch/Draft PR #3. No new camera/inference/installation or
+instrumentation launch. See [camera idle review](phase-2-camera-idle-review.md), ADR-022.
+Retained active client was actual rear camera 0 owned by app PID 6692. Root trigger unknown;
+zero harness launches did not imply idle. Confirmed harness defect fixed: missing camera/PID
+verification during cooldown and after stop. Added fail-closed ownership invariant, exact
+project/test-package stop/verification, idle-only mode, command journal and resilient cleanup.
+Normal user startup and all thermal protections unchanged. No product lifecycle bug claimed.
+Device currently disconnected; no current device cleanup/thermal state certified. Latest
+retained cleanup had empty PID and clients []; current host capture-process inventory empty.
+Next: reconnect for cleanup/idle-only diagnostics, no launch. NOT SAFE TO RESUME physical tests.
+Evidence preserved; no interrupted PASS, merge, owner acceptance, Phase 3 or Premium UI.
+
+
+Validation: 20 host collection/thermal/ownership/framing regression tests PASSED, including
+idle-only no-launch, reactivation-before-launch abort and guard shutdown despite stop failure.
+Camera unit/perception API tests, debug/profile/release builds and lintDebug PASSED (host only).
+Full spec validation: 0 errors, 0 warnings. Diff check passed. Rehashed previous 384-file
+inventory: 0 mismatches. No physical test, camera launch, inference or instrumentation run.
+Current device unavailable; final live cleanup remains UNVERIFIED, not PASS. Local-only
+review evidence: device-evidence/phase2/physical/camera-idle-review-20261008/.

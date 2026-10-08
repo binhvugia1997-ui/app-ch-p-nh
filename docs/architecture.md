@@ -562,6 +562,18 @@ Normal-only launch policy and severe/critical/rapid-rise/fail-closed abort uncha
 improvement claimed; physical validation paused. Evidence, policy rationale and uncertainties:
 [Phase 2 thermal review](phase-2-thermal-review.md).
 
+
+**ADR-022 - verified camera-off invariant and cleanup journaling (2026-10-08).**
+Retained active-client snapshot proves project camera 0/PID 6692 despite zero runner launches.
+Fix host harness assumption, not unproven product lifecycle defect. CameraIdle requires readable
+active-client section, zero active camera clients and no known project/test PID. Stop only exact
+project/test packages; other owners cause abort. Sample before/during cooldown and countdown,
+immediately before authorized launch and after cleanup/monitor stop. Fail closed, bounded release
+settling, local ownership/control-command journal and idle-only mode; cleanup attempts guard
+shutdown even if stop fails. No permanent disable, normal startup change, module or thermal override.
+Sampled idle does not prevent a later external launch. Evidence/root-trigger limits:
+[Camera idle review](phase-2-camera-idle-review.md).
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |
