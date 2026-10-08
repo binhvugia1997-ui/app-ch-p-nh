@@ -1864,3 +1864,23 @@ Full spec validation: 0 errors, 0 warnings. Diff check passed. Rehashed previous
 inventory: 0 mismatches. No physical test, camera launch, inference or instrumentation run.
 Current device unavailable; final live cleanup remains UNVERIFIED, not PASS. Local-only
 review evidence: device-evidence/phase2/physical/camera-idle-review-20261008/.
+
+
+### Device cleanup and idle verification ONLY - 2026-10-08
+Owner authorized cleanup-only from e041702ea84b91b0575cfa7285e3e9458bba1c1d.
+Checkpoint/clean tree verified; Samsung SM-S918B serial R5CW40EE9QK connected/authorized.
+No camera launch, MediaPipe, inference, installation, physical test or thermal override.
+Initial, post-cleanup, ~3-second interval and final samples: no com.aiphotographer process,
+no active camera client. 30.746-second idle observation; no reactivation observed. No device
+logcat/perfetto/screenrecord candidates; no host task-owned collectors in inventory.
+No package/process needed stopping. Device cleanup/idle VERIFIED for sampled window only.
+Thermal status NORMAL (0) throughout. Battery 34.6 -> 34.9 C, USB charging unchanged.
+Skin initially 35.7 C, minimum 35.6 C, final/max 38.3 C. Rise of 2.7 C within a sampled
+interval under 30 seconds meets existing rapid-rise abort seed, despite no observed project
+camera/inference. Root heat contribution remains unresolved; no new attribution claim.
+SAFE FOR NEXT SHORT TEST: NO; require cooling/stable thermal trend and fresh idle check,
+then explicit authorization/Ready. No automatic retry or physical gate PASS.
+Local evidence: device-evidence/phase2/physical/cleanup-idle-20261008-193104/ includes raw
+process/camera/thermal snapshots, battery reports, device/host times, collector inventory,
+report and safety review. Previous 384 inventoried files remain unchanged. Prior checkpoint
+preserved; physical tests remain paused. No merge, acceptance, Phase 3 or Premium UI.
