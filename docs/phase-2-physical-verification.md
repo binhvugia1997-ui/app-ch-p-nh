@@ -455,3 +455,49 @@ inventory unchanged. Framing-only success is not full-inference tracking, perfor
 or landscape-matrix PASS. No repeated completed tests, merge, acceptance or Phase 3.
 Safest next: keep camera stopped, cool/rest, review this result; only a separately authorized
 short inference test with new Ready, fresh idle/thermal checks and camera-off countdown may follow.
+
+
+### One authorized rear-landscape inference window - 2026-10-08
+Continued from e1a511aa2797ddb440a2f76d1b73ad8b1e9fd82b on the existing Phase 2 branch.
+Owner accepted prior preview-only framing and confirmed Ready. Exactly one launch, no retry.
+Samsung SM-S918B / Android 16 API 36, installed validated debug APK
+8899dbbd861d4a320cb163d5a72722a58947e75f295f74a289f24e34352645e4.
+Camera-off idle preflight: NORMAL (0), stable SKIN 35.8-35.9 C, no project PID/camera client.
+Runner repeated guarded cooldown and 15-second camera-off countdown before rear-landscape
+4:3 inference. Delivered analysis 640x480/crop 640x480. Local MediaPipe logs report pose=GPU,
+face=GPU; hardware execution placement was not independently profiled.
+
+Collection completed: 30.000 s requested sampling window, 30.679 s collector wall time;
+29.787 s counter interval. Launch-command to force-stop was 40.024 s including startup/UI
+verification and collection teardown, so this was not a 30-second total camera-on limit.
+Counter deltas: pose completed/detected 230/230 (7.721 Hz), face completed/detected 56/1
+(1.880 Hz), errors 0; offered 894, accepted 230, busy skipped 17, cadence skipped 647.
+Face coverage is insufficient for PASS. Saved preview shows pose landmarks; diagnostic overlay
+obscures the upper body/head area, limiting visual alignment assessment. Prior full-body framing
+remains accepted, but numerical overlay alignment and motion/face coverage remain unverified.
+Last rolling task-to-callback latency p50/p95 ms: pose 37.664/41.864, face 24.405/49.330,
+batch 76.804/94.933. These are rolling snapshots, not exact window-only percentiles.
+Last RGB conversion/rotation rolling p50/p95 35.920/49.567 ms. App-reported preview capture
+~30 Hz does not measure display FPS or CameraX internal drops. Adaptation degradation level
+4 -> 6 is app policy, not Android thermal status. Optimized-build performance, CPU/power,
+allocation rate, display FPS and thermal endurance are unmeasured in this run.
+Sampled PSS 459420-495563 KiB; RSS 540388-577760 KiB; peak between samples unknown.
+
+Android thermal status NORMAL (0) throughout both guards, no rapid-rise guard trigger.
+Runner preflight SKIN 35.3 C, near-launch 35.4 C; end/max 37.2 C. Post-stop three snapshots
+across ~10 seconds: NORMAL (0), SKIN 37.2 -> 37.0 -> 37.0 C, no project/test PID and no
+active camera clients. Runner cleanup also verified zero clients/PIDs; host collector/logcat
+process inventory empty. No test errors, automatic retry, thermal override or further launch.
+Evidence retained locally under device-evidence/phase2/physical/guarded-inference-one-20261008/
+and inference-one-preflight-20261008/. Earlier 384-file preserved inventory hashes unchanged.
+No source changes. Collection completion is not landscape matrix PASS or owner acceptance.
+Remaining: sufficient face coverage, front/mirroring, capture/offline/lifecycle outstanding items,
+overlay alignment and optimized/performance gates per the existing matrix; completed evidence
+is preserved and not repeated. Safest next: camera-off cooldown and evidence review; only a
+separately authorized bounded setup with fresh Ready/normal-status idle preflight may follow.
+Prefer a strict total camera-on deadline for future short runs to bound startup overhead too.
+No merge, Phase 3 or Premium UI.
+
+Session validation: 20 host-only Python regression tests passed; cached full spec validation
+0 errors/0 warnings; git diff --check passed. No source/APK changes, so prior validated
+build/lint results remain applicable; builds were not rerun for this evidence-only update.
