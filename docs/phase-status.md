@@ -1898,3 +1898,25 @@ No >=2 C/30 s rapid rise observed. Cleanup/idle verified for sampled window; no 
 Eligible for a next short guarded preview-only check ONLY after explicit Ready and fresh
 preflight; this result does not authorize automatic launch or inference/collection. Earlier
 rapid-rise observation remains preserved. No Phase 2 acceptance, merge or Phase 3.
+
+
+### ONE guarded rear-landscape preview-only framing check - 2026-10-08
+Owner explicitly requested one check and confirmed Ready via input. Checkpoint f02d096,
+branch and clean tree verified. SM-S918B R5CW40EE9QK connected; idle-only preflight verified
+NORMAL (0), no rapid rise, no project PID/camera client; no launch during preflight.
+Ran exactly one guarded --framing-only rear-landscape 4:3 launch on installed validated
+8899dbbd861d4a320cb163d5a72722a58947e75f295f74a289f24e34352645e4 debug APK.
+UI label confirms analysis disabled; developer/perception overlays absent. Local screenshot
+shows full head, both hands and both feet inside frame (current pose only; motion coverage
+not tested). New path skips MediaPipe factory and ImageAnalysis; no inference/collection run.
+Host launch-command to automatic cleanup 9.375 s, before 12-second activity deadline. The
+12-second timer is configured but was not independently exercised because host stopped earlier.
+Cleanup verified zero project/test PID and zero active camera clients. No retry/errors/guard
+trigger. Guard thermal status 0 throughout; before 36.0 C, after/max 36.3 C SKIN. Additional
+~12-second post-shutdown observations remained status 0 / 36.3 C, zero PID/client, no reactivation.
+Evidence preserved locally at guarded-preview-only-20261008/ and prior idle-only preflight at
+preview-ready-preflight-20261008/ under device-evidence/phase2/physical/. Previous 384-file
+inventory unchanged. Framing-only success is not full-inference tracking, performance, alignment
+or landscape-matrix PASS. No repeated completed tests, merge, acceptance or Phase 3.
+Safest next: keep camera stopped, cool/rest, review this result; only a separately authorized
+short inference test with new Ready, fresh idle/thermal checks and camera-off countdown may follow.
