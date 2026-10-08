@@ -419,3 +419,17 @@ Local evidence: device-evidence/phase2/physical/cleanup-idle-20261008-193104/ in
 process/camera/thermal snapshots, battery reports, device/host times, collector inventory,
 report and safety review. Previous 384 inventoried files remain unchanged. Prior checkpoint
 preserved; physical tests remain paused. No merge, acceptance, Phase 3 or Premium UI.
+
+
+### Fresh cleanup-only idle observation - 2026-10-08 19:39-19:40
+Owner repeated cleanup-only request from e041702. Preserved newer descendant fe3a599 and clean
+tree; no checkout/reset or evidence overwrite. Samsung SM-S918B R5CW40EE9QK connected.
+No camera/MediaPipe/inference/physical test launched. Fresh local evidence:
+device-evidence/phase2/physical/cleanup-idle-20261008-193941/.
+31.693-second idle observation plus initial/final snapshots: no project processes, no active
+camera clients, no unexpected reactivation, no device/host task-owned collectors. No stop needed.
+Thermal NORMAL (0) throughout; SKIN initial/max 36.7 C, final 36.5 C; battery 34.9 -> 34.8 C.
+No >=2 C/30 s rapid rise observed. Cleanup/idle verified for sampled window; no errors.
+Eligible for a next short guarded preview-only check ONLY after explicit Ready and fresh
+preflight; this result does not authorize automatic launch or inference/collection. Earlier
+rapid-rise observation remains preserved. No Phase 2 acceptance, merge or Phase 3.
