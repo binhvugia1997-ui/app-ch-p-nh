@@ -1783,3 +1783,18 @@ Camera stays stopped meanwhile; fresh cooldown/thermal checks required on next l
 Post-check process audit found an app process present after runner exit (cause unestablished).
 Explicitly force-stopped again; pidof empty and camera service Active Camera Clients [] verified.
 No capture/logcat/perfetto processes observed. Keep app closed pending framing correction.
+
+
+### Adjusted framing refused by thermal preflight - 2026-10-08
+Owner requested full-body recheck with no collection if head/feet cropped. Guard refused
+before camera launch: Android status 1 (LIGHT), SKIN 39.3 C; required status is 0.
+Fresh local evidence recovery-framing-adjusted-20261008/ retained, session INCOMPLETE.
+No framing image, countdown or 30-second collection ran. No automatic retry.
+Read-only follow-up showed status 1, SKIN 40.1 C, BAT 36.4 C and app PID 24691 owning
+rear camera 0 despite runner refusal/force-stop. Cause of reactivation unestablished;
+not evidence that guarded runner launched it. Explicitly force-stopped again and verified
+pidof empty / Active Camera Clients []. Owner advised to keep app closed during cooldown;
+agent will reopen only after fresh normal checks. Framing remains unverified, no PASS.
+Prior evidence unchanged. Physical testing stopped on elevated preflight as instructed.
+Next: cool phone with app closed; fresh thermal preflight and guarded head/feet review,
+then 15-second countdown only if framing passes and thermal remains acceptable.
