@@ -357,3 +357,21 @@ perception API tests and app lintDebug PASSED. Host collection/thermal/framing i
 Diff whitespace check passed. Reverified previous 384-file evidence inventory: no mismatches.
 No new APK installed or device check run; preview-only behavior and thermal gain pending physical
 verification after explicit resume. Local trace-derived review/inventory retained, never uploaded.
+
+
+### One preview-only request blocked before launch - 2026-10-08
+Owner Ready authorized one bounded rear-landscape preview-only check, no AI/analysis/collection.
+Checkpoint 9d57e8d6851d60c8257939f4b38dae83e99ea5c9 / clean tree verified. Initial read status 0,
+SKIN 38.3 C; later pre-install read status 0 / SKIN 39.8 C. Installed validated debug APK
+8899dbbd861d4a320cb163d5a72722a58947e75f295f74a289f24e34352645e4 without launching.
+During camera-off cooldown guard observed status 1 / SKIN 40.3 C and refused launch.
+Runner cameraLaunches=0, INCOMPLETE, no framing screenshot or countdown/collection/inference
+requested. Preview-only mode and 12-second automatic shutdown NOT EXERCISED; no PASS.
+Subsequent audit unexpectedly found app PID 6692 owning rear camera 0 despite runner refusal
+and cleanup. Reactivation source UNKNOWN; explicitly force-stopped again, pidof empty and
+Active Camera Clients [] verified. Final post-stop status 1 / SKIN 40.1 C; maximum across
+recorded samples 40.3 C. Full head/hands/feet visibility UNKNOWN (no new framing image).
+Local evidence: device-evidence/phase2/physical/preview-only-once-20261008-191941/;
+previous evidence/checkpoints unchanged. No retry; owner advised to keep app closed.
+Errors: cooldown normal-status requirement failed; unexpected external app reactivation
+unresolved. Testing remains stopped with elevated thermal state; prior unfinished gates pending.
