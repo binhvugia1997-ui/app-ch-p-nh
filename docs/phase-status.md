@@ -1764,3 +1764,22 @@ No new device behavior/performance test or acceptance claimed. Prepared debug AP
 Guarded --framing-only saves a setup screenshot then stops app without collecting test metrics;
 use after Ready to review framing before the separately bounded test invocation.
 Camera remains stopped and new APK device verification remains pending Ready.
+
+
+### Guarded rear-landscape framing check - 2026-10-08
+Owner confirmed new Ready. Clean checkpoint ab02d7bf5c37186d0782448366d630541116b5e2
+verified; fresh initial device check status 0, SKIN 37.8 C, BAT 35.9 C, app stopped.
+Installed prepared debug APK 915b900a923e8a5e95583f983fbca9b1eb6bab48bf98b4f00912fe0772cb5e11.
+Ran only --framing-only after guarded 30-second camera-off normal-status cooldown.
+Local evidence: device-evidence/phase2/physical/recovery-framing-20261008/.
+Guard samples all status 0; final SKIN 39.7 C. Camera auto-stopped after setup snapshot;
+runner exited 0, session FRAMING_ONLY_NO_TEST_COLLECTION. Pose overlay visibly present,
+but subject lower legs/feet clipped at preview bottom: full-body framing NOT ready.
+No countdown, physical test collection, performance PASS or repeated completed tests.
+Next: reposition subject/phone to include whole head/hands/feet with margin; owner Ready
+retained for this setup, but request adjustment notification and recheck before collection.
+Camera stays stopped meanwhile; fresh cooldown/thermal checks required on next launch.
+
+Post-check process audit found an app process present after runner exit (cause unestablished).
+Explicitly force-stopped again; pidof empty and camera service Active Camera Clients [] verified.
+No capture/logcat/perfetto processes observed. Keep app closed pending framing correction.
