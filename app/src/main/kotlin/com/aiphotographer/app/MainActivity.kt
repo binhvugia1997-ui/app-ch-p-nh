@@ -52,7 +52,8 @@ class MainActivity : ComponentActivity() {
         setContent { MaterialTheme { CameraApp(launchNs, intent.getBooleanExtra("benchmarkRgb", false),
             intent.getBooleanExtra("analysis720p", false), framingOnly,
             framingOnly && intent.getBooleanExtra("framingFront", false),
-            framingOnly && intent.getBooleanExtra("framingWide", false)) } }
+            framingOnly && intent.getBooleanExtra("framingWide", false),
+            BuildConfig.DEBUG && !framingOnly && intent.getBooleanExtra("faceOnly", false)) } }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -61,7 +62,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun CameraApp(launchNs: Long, benchmarkRgbAtLaunch: Boolean, analysis720p: Boolean, framingOnly: Boolean, framingFront: Boolean, framingWide: Boolean) {
+@Composable private fun CameraApp(launchNs: Long, benchmarkRgbAtLaunch: Boolean, analysis720p: Boolean, framingOnly: Boolean, framingFront: Boolean, framingWide: Boolean, faceOnly: Boolean) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     fun granted() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
@@ -110,7 +111,7 @@ class MainActivity : ComponentActivity() {
                 } }
                 val monitor = remember { DeviceMonitor(context) }
                 val camera = remember { CameraSession(context, owner, preview, monitor, facing, resolution, rgbBenchmark, launchNs,
-                    if (framingOnly) null else MediaPipePipelineFactory.create(context, monitor.capability), previewOnly = framingOnly) }
+                    if (framingOnly) null else MediaPipePipelineFactory.create(context, monitor.capability, faceOnly = faceOnly), previewOnly = framingOnly) }
                 DisposableEffect(camera) {
                     session = camera
                     val observer = androidx.lifecycle.Observer<PreviewView.StreamState> { if (it == PreviewView.StreamState.STREAMING) camera.previewStreaming() }

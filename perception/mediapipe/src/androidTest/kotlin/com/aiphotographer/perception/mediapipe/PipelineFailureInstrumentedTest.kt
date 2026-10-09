@@ -44,6 +44,26 @@ class PipelineFailureInstrumentedTest {
     private suspend fun ready(pipeline: PerceptionPipeline) = withTimeout(10000) {
         pipeline.state.first { it.pose.status==SourceStatus.READY && it.face.status==SourceStatus.READY }
     }
+    @Test fun faceOnlyDoesNotConstructPoseAndRunsWithoutSubject() = runBlocking {
+        val poseCreations = AtomicInteger()
+        MediaPipePipeline(context, cap, { _, _ -> poseCreations.incrementAndGet(); Pose() },
+            { Face() }, faceOnly = true).use { pipeline ->
+            withTimeout(10000) { pipeline.state.first { it.face.status == SourceStatus.READY } }
+            assertEquals(SourceStatus.STOPPED, pipeline.state.value.pose.status)
+            val lease = pipeline.acquire(1000, geometry, DeviceState(DeviceTier.MEDIUM))!!
+            pipeline.submit(lease)
+            withTimeout(10000) { pipeline.state.first { it.metrics.faceCompleted == 1L } }
+            assertEquals(0L, pipeline.state.value.metrics.poseCompleted)
+            assertEquals(0, poseCreations.get())
+            assertTrue(pipeline.state.value.snapshot!!.subjects.isEmpty())
+            assertNull(pipeline.acquire(1001, geometry, DeviceState(DeviceTier.MEDIUM)))
+            pipeline.setActive(false)
+            assertNull(pipeline.acquire(2000, geometry, DeviceState(DeviceTier.MEDIUM)))
+            pipeline.setActive(true)
+            withTimeout(10000) { pipeline.state.first { it.face.status == SourceStatus.READY } }
+            assertEquals(0, poseCreations.get())
+        }
+    }
     @Test fun initializationRecoveryBudgetStopsAndLifecycleAllowsRetry() = runBlocking {
         val attempts=AtomicInteger()
         MediaPipePipeline(context,cap,{ _,_ -> attempts.incrementAndGet();error("Injected initialization failure") },{ Face() },{ 10 }).use { pipeline ->

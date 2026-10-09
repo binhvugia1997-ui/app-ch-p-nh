@@ -114,6 +114,7 @@ internal class MediaPipeFaceSource(context: Context, delegate: DelegateKind) : O
                     require(result.timestampMs() == submittedTimestamp && result.faceLandmarks().size <= 1)
                     require(result.faceLandmarks().all { it.size == 478 })
                     val points = result.faceLandmarks().firstOrNull()?.mapIndexed { i, l -> l.domain("face_$i") }
+                    require(points == null || FaceLandmarkValidity.valid(points))
                     val valid = points?.filter { it.x.isFinite() && it.y.isFinite() }
                     val face = if (points == null || valid.isNullOrEmpty()) null else FaceObservation(points,
                         BoundingBox(valid.minOf { it.x }, valid.minOf { it.y }, valid.maxOf { it.x }, valid.maxOf { it.y }),

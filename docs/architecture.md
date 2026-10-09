@@ -574,6 +574,21 @@ shutdown even if stop fails. No permanent disable, normal startup change, module
 Sampled idle does not prevent a later external launch. Evidence/root-trigger limits:
 [Camera idle review](phase-2-camera-idle-review.md).
 
+**ADR-023 - isolated debug face verification (2026-10-10).**
+Owner requested face-only physical verification without full-body pose dependency. Debug-only
+MainActivity `faceOnly` intent chooses the existing pipeline's isolated face mode. It constructs
+no pose source, requires face readiness, uses existing face cadence and single-frame ownership,
+and publishes face diagnostics without subjects. Pose model adaptation does not rebuild the face
+source in this mode. Release/profile launcher ignores this flag; normal pose/face behavior stays
+unchanged. Runner requires current-PID FACE_ONLY/disabled-pose configuration evidence before
+collection, otherwise stops and fails closed. Existing thermal and idle protections remain intact.
+Pure face validity helper exposes the native-result contract (478 finite XYZ landmarks, reported
+confidence channels valid or absent); aggregate faceValid478 counter records results satisfying
+it, without logging coordinates or inventing confidence. Legacy evidence parsing remains valid.
+This is diagnostic isolation, not a new product mode or model/threshold change. Physical validation
+is pending Ready, connected device and normal/stable thermal preflight. See
+[face verification review](phase-2-face-review.md).
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |

@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 object MediaPipePipelineFactory {
-    fun create(context: Context, capability: CapabilityReport): PerceptionPipeline = MediaPipePipeline(context.applicationContext, capability)
+    fun create(context: Context, capability: CapabilityReport, faceOnly: Boolean = false): PerceptionPipeline = MediaPipePipeline(context.applicationContext, capability, faceOnly = faceOnly)
 }
 
 internal class MediaPipePipeline(
@@ -24,6 +24,7 @@ internal class MediaPipePipeline(
     private val makePose: (DelegateKind, String) -> OwnedPoseSource = { delegate, model -> MediaPipePoseSource(context, delegate, model) },
     private val makeFace: (DelegateKind) -> OwnedFaceSource = { delegate -> MediaPipeFaceSource(context, delegate) },
     private val retryDelay: (Long) -> Long = { it },
+    private val faceOnly: Boolean = false,
 ) : PerceptionPipeline {
     private companion object { val sessions = java.util.concurrent.atomic.AtomicLong() }
     private val worker = java.util.concurrent.ScheduledThreadPoolExecutor(1) { Thread(it, "Phase2Perception") }
@@ -85,7 +86,7 @@ internal class MediaPipePipeline(
         if (!eligible(epoch)) return
         val model = if (schedule.useLite) "pose_landmarker_lite" else "pose_landmarker_full"
         val delegates = if (!cpuOnly && capability.gpuEligible && !capability.emulator) listOf(DelegateKind.GPU, DelegateKind.CPU) else listOf(DelegateKind.CPU)
-        if (pose == null) for (delegate in delegates) {
+        if (!faceOnly && pose == null) for (delegate in delegates) {
             try { pose = makePose(delegate, model); break }
             catch (error: Throwable) { logNonfatal("pose_init_failure delegate=$delegate", error) }
         }
@@ -97,14 +98,14 @@ internal class MediaPipePipeline(
         val published = synchronized(this) {
             if (!eligible(epoch)) false else {
                 mutableState.value = mutableState.value.copy(
-                pose = pose?.diagnostic ?: SourceDiagnostic(SourceStatus.UNAVAILABLE, model = model, errorCode = "POSE_INIT_FAILED"),
+                pose = if (faceOnly) SourceDiagnostic(SourceStatus.STOPPED, model = "disabled_face_only") else pose?.diagnostic ?: SourceDiagnostic(SourceStatus.UNAVAILABLE, model = model, errorCode = "POSE_INIT_FAILED"),
                 face = face?.diagnostic ?: SourceDiagnostic(SourceStatus.UNAVAILABLE, model = "face_landmarker", errorCode = "FACE_INIT_FAILED"))
                 true
             }
         }
         if (!published) { closeSources(); return }
-        Log.i("Phase2Perception", "configured pose=${mutableState.value.pose} face=${mutableState.value.face}; runtime_delegate_evidence=NOT_MEASURED")
-        if (pose == null || face == null) scheduleRecovery(epoch)
+        Log.i("Phase2Perception", "mode=${if (faceOnly) "FACE_ONLY" else "POSE_FACE"}; configured pose=${mutableState.value.pose} face=${mutableState.value.face}; runtime_delegate_evidence=NOT_MEASURED")
+        if ((!faceOnly && pose == null) || face == null) scheduleRecovery(epoch)
     }
     private fun logNonfatal(message: String, error: Throwable) {
         if (error is VirtualMachineError || error is ThreadDeath) throw error
@@ -116,11 +117,11 @@ internal class MediaPipePipeline(
         retry = worker.schedule({ retry = null; if (eligible(epoch)) initialize(epoch) }, retryDelay(delay), TimeUnit.MILLISECONDS)
     }
     @Synchronized override fun acquire(timestampMs: Long, geometry: FrameGeometry, device: DeviceState): RgbFrame? {
-        if (closed.get() || !active.get() || mutableState.value.pose.status != SourceStatus.READY) return null
+        if (closed.get() || !active.get() || (if (faceOnly) mutableState.value.face.status else mutableState.value.pose.status) != SourceStatus.READY) return null
         require(timestampMs >= 0 && geometry.width > 0 && geometry.height > 0)
         metrics = metrics.copy(offered = metrics.offered + 1)
         if (startedNs == 0L) startedNs = SystemClock.elapsedRealtimeNanos()
-        if (timestampMs <= lastTimestampMs || (lastPoseMs >= 0 && timestampMs - lastPoseMs < schedule.posePeriodMs)) {
+        if (timestampMs <= lastTimestampMs || (lastPoseMs >= 0 && timestampMs - lastPoseMs < (if (faceOnly) schedule.facePeriodMs.toDouble() else schedule.posePeriodMs))) {
             metrics = metrics.copy(cadenceSkipped = metrics.cadenceSkipped + 1); return null
         }
         val size = Math.multiplyExact(geometry.width, geometry.height)
@@ -148,23 +149,27 @@ internal class MediaPipePipeline(
             closeSources(); clearResults(); schedule.resetObservations(); initialize(current.epoch)
         }
         geometry = frame.geometry
-        val poseSource = pose ?: run { release(current); return }
+        val poseSource = pose
+        if (!faceOnly && poseSource == null) { release(current); return }
         val faceSource = face
-        val runFace = faceSource != null && mutableState.value.snapshot?.subjects?.isNotEmpty() == true &&
+        val runFace = faceSource != null && (faceOnly || mutableState.value.snapshot?.subjects?.isNotEmpty() == true) &&
             (lastFaceMs < 0 || frame.timestampMs - lastFaceMs >= schedule.facePeriodMs)
-        current.outstanding = if (runFace) 2 else 1
-        val poseStart = SystemClock.elapsedRealtimeNanos()
-        trace(current, "pose", true)
-        poseSource.submit(frame, { result -> enqueue {
-            trace(current, "pose", false)
-            if (!valid(current)) return@enqueue
-            poseSource.releaseImage()
-            if (result.timestampMs != frame.timestampMs) { failed(current, "POSE_TIMESTAMP_INVALID"); return@enqueue }
-            windows.getValue("pose").record(SystemClock.elapsedRealtimeNanos() - poseStart)
-            current.poseResult = result
-            synchronized(this) { metrics = metrics.copy(poseCompleted = metrics.poseCompleted + 1, poseDetected = metrics.poseDetected + if (result.landmarks.isEmpty()) 0 else 1) }
-            completed(current)
-        } }, { code -> enqueue { trace(current, "pose", false); if (valid(current)) { poseSource.releaseImage(); failed(current, code) } } })
+        current.outstanding = (if (faceOnly) 0 else 1) + (if (runFace) 1 else 0)
+        if (current.outstanding == 0) { release(current); return }
+        if (!faceOnly) {
+            val poseStart = SystemClock.elapsedRealtimeNanos()
+            trace(current, "pose", true)
+            poseSource!!.submit(frame, { result -> enqueue {
+                trace(current, "pose", false)
+                if (!valid(current)) return@enqueue
+                poseSource.releaseImage()
+                if (result.timestampMs != frame.timestampMs) { failed(current, "POSE_TIMESTAMP_INVALID"); return@enqueue }
+                windows.getValue("pose").record(SystemClock.elapsedRealtimeNanos() - poseStart)
+                current.poseResult = result
+                synchronized(this) { metrics = metrics.copy(poseCompleted = metrics.poseCompleted + 1, poseDetected = metrics.poseDetected + if (result.landmarks.isEmpty()) 0 else 1) }
+                completed(current)
+            } }, { code -> enqueue { trace(current, "pose", false); if (valid(current)) { poseSource.releaseImage(); failed(current, code) } } })
+        }
         if (runFace) {
             lastFaceMs = frame.timestampMs
             val faceStart = SystemClock.elapsedRealtimeNanos()
@@ -176,7 +181,8 @@ internal class MediaPipePipeline(
                 if (result.timestampMs != frame.timestampMs) { failed(current, "FACE_TIMESTAMP_INVALID"); return@enqueue }
                 windows.getValue("face").record(SystemClock.elapsedRealtimeNanos() - faceStart)
                 lastFace = result
-                synchronized(this) { metrics = metrics.copy(faceCompleted = metrics.faceCompleted + 1, faceDetected = metrics.faceDetected + if (result.face == null) 0 else 1) }
+                synchronized(this) { metrics = metrics.copy(faceCompleted = metrics.faceCompleted + 1, faceDetected = metrics.faceDetected + (if (result.face == null) 0 else 1),
+                    faceValid478 = metrics.faceValid478 + (if (result.face?.landmarks?.let(FaceLandmarkValidity::valid) == true) 1 else 0)) }
                 completed(current)
             } }, { code -> enqueue { trace(current, "face", false); if (valid(current)) { faceSource.releaseImage(); failed(current, code) } } })
         }
@@ -244,8 +250,8 @@ internal class MediaPipePipeline(
                 scheduleOffered = metrics.offered; scheduleBusy = metrics.busySkipped; scheduleWindowMs = current.frame.timestampMs
             }
             schedule.observe(current.frame.timestampMs, current.frame.device.thermalStatus,
-                recentBusyRatio, summaries["pose"]?.p95Ms, result?.landmarks)
-            modelChanged = oldLite != schedule.useLite
+                recentBusyRatio, if (faceOnly) null else summaries["pose"]?.p95Ms, result?.landmarks)
+            modelChanged = !faceOnly && oldLite != schedule.useLite
         }
         if (modelChanged && eligible(current.epoch)) { closeSources(); clearResults(); initialize(current.epoch) }
         release(current)

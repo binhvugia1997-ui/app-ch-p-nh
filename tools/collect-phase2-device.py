@@ -53,6 +53,11 @@ def metric_report(text, samples, complete):
                      all(b[k] >= a[k] for k in COUNTERS) for a, b in zip(records, records[1:])))
         if valid:
             deltas = {k: last[k] - first[k] for k in COUNTERS}
+            if all('faceValid478' in r for r in records):
+                if any(b['faceValid478'] < a['faceValid478'] for a,b in zip(records,records[1:])):
+                    report['counterWindowInvalid'] = True
+                    return report
+                deltas['faceValid478'] = last['faceValid478'] - first['faceValid478']
             report.update(counterWindowSeconds=seconds, counterDeltas=deltas,
                           ratesHz={k: deltas[k] / seconds for k in ('poseCompleted', 'faceCompleted')})
     if not valid:

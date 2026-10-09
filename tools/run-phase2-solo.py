@@ -34,12 +34,22 @@ def main():
     parser.add_argument('--idle-only', action='store_true', help='Stop project and verify camera-off cooldown only; never launch camera.')
     parser.add_argument('--framing-only', action='store_true', help='Save one guarded setup screenshot and stop; no countdown or test collection.')
     parser.add_argument('--trace', action='store_true')
+    parser.add_argument('--face-only', action='store_true', help='Debug face-only pipeline; no pose model or inference.')
     parser.add_argument('--aspect', choices=['4:3','16:9'], default='4:3')
     parser.add_argument('--lifecycle', action='store_true',
                         help='Disabled during thermal recovery; lifecycle checks need separately bounded sessions.')
     args = parser.parse_args()
     if not args.plan and (args.debug_matrix or args.lifecycle or not 30 <= args.seconds <= 60):
         parser.error('Thermal recovery: one 30-60 s window per invocation; matrix/lifecycle batching disabled.')
+    if args.face_only and (args.framing_only or args.idle_only or args.seconds != 30):
+        parser.error('Face-only verification requires exactly one 30-second inference collection.')
+    if args.plan and args.face_only:
+        print('One face-only 30-second collection: one visible face 50-100 cm away, even light, '
+              'face forward then gentle left/right turns; no full-body requirement. Wait for Ready, '
+              'fresh NORMAL/stable camera-off preflight and 15-second camera-off countdown. '
+              'Debug face-only configuration must be confirmed; thermal guards stop the app; no retry. '
+              'Startup/cleanup add camera-on overhead beyond the collection window.')
+        return
     if args.plan:
         print('Four physical setups: rear/front x portrait/landscape. Secure phone at 3-4 m in good light; '
               'keep head, hands, feet visible. Each countdown lets you walk into frame. Repeat a 60-second '
@@ -105,6 +115,7 @@ def main():
     metadata = {'requestedConfiguration':args.configuration,'humanGate':'PENDING_PHYSICAL_VERIFICATION',
                 'model':adb('shell','getprop','ro.product.model').strip(),
                 'api':adb('shell','getprop','ro.build.version.sdk').strip(),
+                'faceOnly':args.face_only,
                 'warning':'Requested settings are not verified delivered geometry or tracking accuracy.'}
     (output/'session.json').write_text(json.dumps(metadata,indent=2),encoding='utf-8')
     def project_pid():
@@ -154,6 +165,7 @@ def main():
         adb('shell','am','start','-S','-f','0x10008000','-n',APP+'/.MainActivity',
             '--ez','analysis720p',str(args.analysis720p).lower(),
             '--ez','framingOnly',str(args.framing_only).lower(),
+            '--ez','faceOnly',str(args.face_only).lower(),
             '--ez','framingFront',str(args.configuration.startswith('front')).lower(),
             '--ez','framingWide',str(args.aspect == '16:9').lower())
         time.sleep(6)
@@ -188,6 +200,14 @@ def main():
             guard.check()
             metadata['collectionStatus'] = 'FRAMING_ONLY_NO_TEST_COLLECTION'
             return
+        if args.face_only:
+            pid = project_pid().strip()
+            if not pid.isdigit():
+                raise RuntimeError('Face-only app PID not established.')
+            mode_log = adb('logcat','-d','--pid='+pid,'-s','Phase2Perception:I','*:S')
+            (output/'face-mode-confirmation.txt').write_text(mode_log,encoding='utf-8')
+            if 'mode=FACE_ONLY;' not in mode_log or 'model=disabled_face_only' not in mode_log:
+                raise RuntimeError('Face-only mode not confirmed; refusing collection.')
         previous = configurations[0]
         for index,(resolution,aspect) in enumerate(configurations):
             if index and aspect != previous[1]:

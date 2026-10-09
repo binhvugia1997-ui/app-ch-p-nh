@@ -30,6 +30,17 @@ class CollectionTests(unittest.TestCase):
             self.assertTrue(r['counterWindowInvalid'])
             self.assertNotIn('ratesHz',r)
 
+    def test_valid_face478_counter_is_optional_for_older_evidence(self):
+        a=line(1,1)+', faceValid478=2'
+        b=line(3,5)+', faceValid478=6'
+        r=collector.metric_report(a+'\n'+b,[{'pid':'123'}],True)
+        self.assertEqual(4,r['counterDeltas']['faceValid478'])
+        old=collector.metric_report(line(1,1)+'\n'+line(3,5),[{'pid':'123'}],True)
+        self.assertNotIn('faceValid478',old['counterDeltas'])
+        bad=collector.metric_report(a+'\n'+b.replace('faceValid478=6','faceValid478=1'),[{'pid':'123'}],True)
+        self.assertTrue(bad['counterWindowInvalid'])
+        self.assertNotIn('ratesHz',bad)
+
     def test_latency_percentiles_are_retained_not_averaged(self):
         text=line(1,1)+', pose=LatencySummary(count=3, p50Ms=10.0, p95Ms=12.0)'
         r=collector.metric_report(text,[{'pid':'123'}],True)

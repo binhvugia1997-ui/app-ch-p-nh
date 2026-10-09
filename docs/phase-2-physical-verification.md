@@ -501,3 +501,36 @@ No merge, Phase 3 or Premium UI.
 Session validation: 20 host-only Python regression tests passed; cached full spec validation
 0 errors/0 warnings; git diff --check passed. No source/APK changes, so prior validated
 build/lint results remain applicable; builds were not rerun for this evidence-only update.
+
+
+### Face-only verification preparation - 2026-10-10 (physical pending)
+Continued from 768634306b90811004bc6b20de5c2a27211ebf52; branch/clean baseline verified.
+Reviewed existing face evidence and source: 1/56 detected in prior 29.787-second window,
+zero errors, 1.880 Hz, rolling face p50/p95 24.405/49.330 ms. Small face at full-body distance
+and pose-dependent scheduling are plausible limits, not a proven crop/rotation/confidence bug.
+Bundled MediaPipe 0.10.32 defaults checked locally: detection/presence/tracking 0.5 unchanged.
+No confirmed product defect or threshold change. See docs/phase-2-face-review.md and ADR-023.
+Added debug-only isolated face mode: no pose construction/inference or subject prerequisite,
+existing face cadence/backpressure and safety retained, no pose-model rebuild in isolated mode.
+Runner --face-only requires a single 30-second collection and current-PID mode confirmation.
+Added pure 478 finite XYZ/optional confidence validity helper/tests and faceValid478 aggregate
+counter; old logs remain readable. Count/finite validity is not a visual accuracy claim.
+
+ADB device list empty; idle-only attempt failed get-state before thermal access/camera launch.
+Evidence: device-evidence/phase2/physical/face-only-idle-20261010/ and face-only-review-20261010/.
+No APK installed, inference or physical test run; current device thermal/idle/cleanup unverified.
+Prior 384-file evidence inventory unchanged, pose evidence preserved. No completed tests repeated.
+Pending exactly one close-face setup: rear-landscape, one face 50-100 cm, even lighting; initial
+forward face then gentle left/right turns; no full-body requirement. Reconnect device and wait
+for owner Ready before any launch. Fresh NORMAL/stable idle checks and 15-second camera-off
+countdown mandatory; thermal monitoring, partial evidence preservation and no automatic retry.
+Report face completed/detected/valid478, rates/rolling latency, sampled memory/thermal trend,
+actual launch-to-stop time including startup, and verified post-stop camera/process/collector release.
+No acceptance, merge, Phase 3 or Premium UI. Physical face-only behavior remains unverified.
+
+Validation: final debug/profile/release builds, app lintDebug, 11 perception API unit tests and
+6 camera unit tests passed. Host-only Python harness suite 23 tests passed; full cached spec
+validation 0 errors/0 warnings; diff whitespace check passed. New isolated-pipeline instrumentation
+regression compiled successfully but was NOT run on-device. Raw host build log retained locally
+in face-only-review-20261010/final-host-validation.txt. Prepared debug APK SHA-256:
+433055806bdda915289c0580ddf7cdd97165ba71a752ff56f527d01f5e34e989 (not installed).

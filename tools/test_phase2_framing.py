@@ -30,7 +30,13 @@ class FramingTests(unittest.TestCase):
     def test_stop_failure_does_not_skip_guard_shutdown(self):
         self.run_framing(True, stop_failure=True)
 
-    def run_framing(self, supported, framing=True, unexpected=False, idle_only=False, stop_failure=False):
+    def test_face_only_confirmed_before_single_collection(self):
+        self.run_framing(True, framing=False, face_only=True)
+
+    def test_face_only_unconfirmed_aborts_and_cleans_up(self):
+        self.run_framing(False, framing=False, face_only=True)
+
+    def run_framing(self, supported, framing=True, unexpected=False, idle_only=False, stop_failure=False, face_only=False):
         calls = []
         xml = '<hierarchy><node bounds="[0,0][1544,720]"><node text="Framing preview (analysis off)" /></node></hierarchy>'
         if not supported:
@@ -49,6 +55,8 @@ class FramingTests(unittest.TestCase):
                 if unexpected and camera_reads == 2:
                     value = 'Active Camera Clients: [(Camera ID: 0, PID: 6692, Client Package Name: com.aiphotographer.app,)]'
 
+            elif 'pidof' in args: value = '123' if face_only and any('start' in c for c in calls) and not any('force-stop' in c for c in calls[next(i for i,c in enumerate(calls) if 'start' in c)+1:]) else ''
+            elif 'logcat' in args: value = 'mode=FACE_ONLY; model=disabled_face_only' if supported else ''
             elif 'cat' in args: value = xml
             elif 'screencap' in args: value = b'\x89PNG\r\n\x1a\nmock'
             else: value = ''
@@ -70,6 +78,8 @@ class FramingTests(unittest.TestCase):
                 argv.remove('--framing-only')
                 argv[argv.index('front-landscape')] = 'rear-landscape'
                 argv[argv.index('16:9')] = '4:3'
+            if face_only:
+                argv.append('--face-only')
             with patch.object(solo.sys,'argv',argv), patch.object(solo.subprocess,'run',side_effect=run), \
                  patch.object(solo,'ThermalGuard',Guard), patch.object(solo.time,'sleep',side_effect=lambda seconds: calls.append(['SLEEP',seconds])), \
                  patch.object(solo.subprocess,'Popen') as popen:
@@ -79,6 +89,9 @@ class FramingTests(unittest.TestCase):
                         solo.main()
                 elif unexpected:
                     with self.assertRaisesRegex(RuntimeError,'invariant violated'):
+                        solo.main()
+                elif face_only and not supported:
+                    with self.assertRaisesRegex(RuntimeError,'Face-only mode not confirmed'):
                         solo.main()
                 elif supported:
                     solo.main()
@@ -100,7 +113,15 @@ class FramingTests(unittest.TestCase):
                 self.assertIn('6692',(output/'camera-idle.jsonl').read_text())
                 popen.assert_not_called()
                 return
+            if face_only and not supported:
+                popen.assert_not_called()
+                self.assertIn('INCOMPLETE',(output/'session.json').read_text())
+                self.assertIn(['GUARD_CLOSE'],calls)
+                return
             if not framing:
+                if face_only:
+                    launch = next(c for c in calls if 'start' in c)
+                    self.assertEqual('true',launch[launch.index('faceOnly')+1])
                 popen.assert_called_once()
                 self.assertFalse((output/'framing.png').exists())
                 launch_index = next(i for i,c in enumerate(calls) if 'start' in c)
