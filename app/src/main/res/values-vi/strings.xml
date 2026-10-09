@@ -1,4 +1,7 @@
 <resources>
+    <string name="perception_starting">Đang khởi động nhận diện trên thiết bị…</string>
+    <string name="perception_unavailable">Không thể nhận diện tư thế. Bạn vẫn có thể chụp ảnh.</string>
+    <string name="face_unavailable">Không có điểm mốc khuôn mặt. Nhận diện tư thế vẫn có thể tiếp tục.</string>
     <string name="app_name">AI Photographer</string>
     <string name="permission_title">Quyền truy cập máy ảnh</string>
     <string name="permission_explanation">Cho phép dùng máy ảnh để xem trước và chụp ảnh. Khung hình được xử lý trên điện thoại này. Bạn vẫn có thể dùng màn hình này khi chưa cấp quyền.</string>
@@ -17,4 +20,5 @@
     <string name="save_error">Không thể lưu ảnh. Hãy thử lại.</string>
     <string name="licences">Giấy phép</string>
     <string name="close">Đóng</string>
+    <string name="framing_preview">Xem khung hình (đã tắt phân tích)</string>
 </resources>

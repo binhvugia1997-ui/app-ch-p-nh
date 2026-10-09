@@ -7,6 +7,15 @@ be verified are marked **`UNKNOWN`** — they are never invented.
 Licensing is summarised here for engineering decisions but the normative document is
 `model-licenses.md`.
 
+**Phase 2 adoption checkpoint (2026-10-06):** exact version-1 pose lite/full and face bundle URLs,
+SHA256 hashes and model-card licensing are recorded in `model-licenses.md` §8. Models are packaged
+as local assets; no runtime download. Stock Tasks SDK adoption fails privacy/runtime checks; the
+official unmodified Core source build with default dummy logging and unchanged Vision artifact is
+integrated after emulator SDK/adapter tests (`phase-2-sdk-audit.md`). Physical gates remain pending.
+Actual model asset total is 18,934,540 bytes (both lite and full plus face). This exceeds the earlier
+approximate <15 MB asset hypothesis; both pose variants support tier selection/degradation. No
+validated storage/performance requirement is inferred from that estimate. No future-phase assets ship.
+
 
 > **Tier policy (owner decision 2026-10-03):** MEDIUM is the primary MVP target; LOW must degrade
 > gracefully (`performance-strategy.md` §5) and HIGH may enable the additional analysis listed here

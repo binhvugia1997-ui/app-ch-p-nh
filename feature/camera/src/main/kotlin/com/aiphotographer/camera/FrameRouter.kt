@@ -10,6 +10,7 @@ import com.aiphotographer.model.*
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.aiphotographer.perception.*
 
 data class PipelineMetrics(
     val delivered: Long = 0, val cadenceSkipped: Long = 0, val processed: Long = 0,
@@ -24,6 +25,7 @@ class FrameRouter(
     private val resolution: AnalysisResolution,
     private val device: () -> DeviceState,
     benchmarkRgb: Boolean,
+    private val perception: PerceptionPipeline? = null,
 ) : ImageAnalysis.Analyzer {
     private val scheduler = StageScheduler(buildMap {
         put(Stage.LUMA, 500_000_000L)
@@ -43,6 +45,29 @@ class FrameRouter(
     private var errors = 0L
     private var rgb = IntArray(0)
     private var lastLuma: LumaGrid? = null
+    private var lastPerception: PerceptionSnapshot? = null
+    private var currentGeometry: FrameGeometry? = null
+    private var firstFrameMs = -1L
+    private var latestFrameMs = -1L
+    private var publishedPerceptionMs = -1L
+    @Synchronized fun perceptionResult(result: PerceptionSnapshot?) {
+        if (result != null && (currentGeometry == null || !PerceptionFreshness.sameGeometry(result.frame, currentGeometry!!) ||
+            result.timestampMs < firstFrameMs || result.timestampMs <= publishedPerceptionMs ||
+            !PerceptionFreshness.fresh(result.timestampMs, latestFrameMs))) return
+        lastPerception = result
+        if (result == null) {
+            mutableSnapshot.value = mutableSnapshot.value?.let { it.copy(analysis = it.analysis.copy(subjects = emptyList(),
+                quality = it.analysis.quality.copy(sources = it.analysis.quality.sources.mapValues { (key, value) ->
+                    if (key == "luma") value else value.copy(stale = true) }))) }
+            return
+        }
+        publishedPerceptionMs = result.timestampMs
+        val age = latestFrameMs - result.timestampMs
+        val sources = result.quality.sources.mapValues { (_, value) -> PerceptionFreshness.advance(value, age) } +
+            (mutableSnapshot.value?.analysis?.quality?.sources?.filterKeys { it == "luma" }.orEmpty())
+        mutableSnapshot.value = ImageSnapshot(FrameAnalysis(latestFrameMs, result.frame, result.device, result.subjects,
+            result.quality.copy(sources = sources)), lastLuma)
+    }
     fun onPreviewCapture() { previewFrames.incrementAndGet() }
     @Synchronized fun resetSessionWindow() {
         startNs = 0L
@@ -53,6 +78,9 @@ class FrameRouter(
         errors = 0
         scheduler.reset()
         lastLuma = null
+        lastPerception = null
+        currentGeometry = null
+        firstFrameMs = -1; latestFrameMs = -1; publishedPerceptionMs = -1
         mutableSnapshot.value = null
         mutableMetrics.value = PipelineMetrics()
         previewFrames.set(0)
@@ -79,27 +107,49 @@ class FrameRouter(
                 val crop = Crop(rect.left, rect.top, rect.width(), rect.height())
                 val rotation = image.imageInfo.rotationDegrees
                 val (w, h) = Coordinates.uprightSize(crop.width, crop.height, rotation)
-                val planes = image.planes.map { Plane(it.buffer, it.rowStride, it.pixelStride) }
+                var planes: List<Plane>? = null
+                val timestamp = image.imageInfo.timestamp / 1_000_000
+                val geometry = FrameGeometry(w, h, rotation, facing == CameraFacing.FRONT, facing, resolution)
+                if (currentGeometry != null && !PerceptionFreshness.sameGeometry(currentGeometry!!, geometry)) {
+                    lastPerception = null; lastLuma = null; mutableSnapshot.value = null; scheduler.reset()
+                    firstFrameMs = timestamp; publishedPerceptionMs = -1
+                }
+                currentGeometry = geometry
+                if (firstFrameMs < 0) firstFrameMs = timestamp
+                latestFrameMs = timestamp
+                if (lastPerception != null && !PerceptionFreshness.fresh(lastPerception!!.timestampMs, timestamp)) perceptionResult(null)
+                val lease = perception?.acquire(timestamp, geometry, device())
+                if (lease != null) {
+                    try {
+                        val rgbPlanes = image.planes.map { Plane(it.buffer, it.rowStride, it.pixelStride) }.also { planes = it }
+                        measured("yuv_rgb_rotation") { ImagePlanes.rgb(rgbPlanes[0], rgbPlanes[1], rgbPlanes[2], crop, rotation, lease.pixels) }
+                        perception?.submit(lease)
+                    } catch (error: Exception) { perception?.cancel(lease); throw error }
+                }
                 if (scheduler.tryStart(Stage.LUMA, now)) {
                     try {
-                        lastLuma = LumaGrid(64, 64, measured("luma") { ImagePlanes.luma(planes[0], crop, rotation) }, image.imageInfo.timestamp / 1_000_000)
+                        val y = planes?.firstOrNull() ?: image.planes[0].let { Plane(it.buffer, it.rowStride, it.pixelStride) }
+                        lastLuma = LumaGrid(64, 64, measured("luma") { ImagePlanes.luma(y, crop, rotation) }, timestamp)
                         processed++
                     } finally { scheduler.finish(Stage.LUMA) }
                 } else skipped++
-                if (scheduler.tryStart(Stage.RGB, now)) {
+                if (lease == null && scheduler.tryStart(Stage.RGB, now)) {
                     try {
                         if (rgb.size != w * h) rgb = IntArray(w * h)
-                        measured("yuv_rgb_rotation") { ImagePlanes.rgb(planes[0], planes[1], planes[2], crop, rotation, rgb) }
+                        val rgbPlanes = image.planes.map { Plane(it.buffer, it.rowStride, it.pixelStride) }
+                        measured("yuv_rgb_rotation") { ImagePlanes.rgb(rgbPlanes[0], rgbPlanes[1], rgbPlanes[2], crop, rotation, rgb) }
                     } finally { scheduler.finish(Stage.RGB) }
                 }
                 // UI snapshots are emitted at the luma cadence, not on every camera frame.
                 if (now - publishedNs >= 500_000_000L) {
-                    val timestamp = image.imageInfo.timestamp / 1_000_000
                     val age = lastLuma?.let { (timestamp - it.timestampMs).coerceAtLeast(0) } ?: 0L
+                    val result = lastPerception?.takeIf { PerceptionFreshness.sameGeometry(it.frame, geometry) && PerceptionFreshness.fresh(it.timestampMs, timestamp) }
+                    val sourceQuality = result?.quality?.sources?.mapValues { (_, source) ->
+                        PerceptionFreshness.advance(source, timestamp - result.timestampMs) }.orEmpty()
                     mutableSnapshot.value = ImageSnapshot(FrameAnalysis(timestamp,
-                        FrameGeometry(w, h, rotation, facing == CameraFacing.FRONT, facing, resolution),
-                        device(), quality = AnalysisQuality(mapOf("luma" to SourceQuality(age, windows.getValue("luma").summary().p50Ms, age > 500)),
-                            skipped.toDouble() / delivered)), lastLuma)
+                        geometry, device(), subjects = result?.subjects.orEmpty(), quality = AnalysisQuality(sourceQuality +
+                            mapOf("luma" to SourceQuality(age, windows.getValue("luma").summary().p50Ms, age > 500)),
+                            result?.quality?.droppedFrameRatio ?: (skipped.toDouble() / delivered), result?.quality?.degradationLevel ?: 0)), lastLuma)
                     val seconds = (now - startNs) / 1e9
                     val metrics = PipelineMetrics(delivered, skipped, processed, errors, seconds,
                         if (seconds > 0) previewFrames.get() / seconds else 0.0,
@@ -113,6 +163,7 @@ class FrameRouter(
             }
         } catch (error: Exception) {
             errors++
+            perceptionResult(null)
             Log.e("Phase1Baseline", "Analyzer failed", error)
         } finally { image.close() }
     }

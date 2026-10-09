@@ -1,6 +1,6 @@
 # Architecture — AI Photographer
 
-Status: **Phase 0 accepted; Phase 1 implementation underway** (owner authorization 2026-10-03).
+Status: **Phases 0 and 1 accepted; Phase 2 authorized** (owner authorization 2026-10-06).
 Audience: Codex Local (implementer), future reviewers.
 
 ---
@@ -131,7 +131,7 @@ Consequence for Phase 1: the brief's module list is the table above, not the ful
         │                        ▼
         │                 :core:light  → LightReport        (2 Hz)
         │
-        ├──────────────► RgbaFrame producer (packed bitmap, rotated)  → MediaPipe
+        ├──────────────► RgbFrame producer (packed ARGB, rotated) → owned RGB byte buffer → MediaPipe
         │                        │
         │                        ├── PoseLandmarker  (LIVE_STREAM, numPoses=1)  → 15-30 Hz
         │                        ├── FaceLandmarker  (LIVE_STREAM, numFaces=1)  → 5-15 Hz adaptive
@@ -237,7 +237,7 @@ Rules:
 | CameraX ImageAnalysis | CameraX analyzer executor (single) | camera FPS (can be capped, see below) | `STRATEGY_KEEP_ONLY_LATEST` |
 | FrameRouter | dedicated single thread | per frame | Decides what to compute this frame (cadence scheduler) |
 | LumaBuffer | same as router (cheap) | 2 Hz | Y plane only, no RGB conversion |
-| RGBA conversion | dedicated thread | per inference | Reused bitmap buffer; rotation done once |
+| RGB conversion | dedicated thread | per inference | Reused packed ARGB array and task-owned direct RGB byte buffer; rotation done once |
 | MediaPipe Pose | MediaPipe's own LIVE_STREAM thread | 15–30 Hz (target) | Result callback → filter → assembler |
 | MediaPipe Face | MediaPipe's own LIVE_STREAM thread, may share pose results | 5–15 Hz adaptive | Only while a subject is tracked |
 | Engines (`core:*`) | engine executor (single) | per new snapshot | Pure, allocation-light (reuse buffers) |
@@ -467,6 +467,128 @@ captures is excluded by platform-specific rules.
 
 ---
 
+**ADR-016 — Phase 2 perception ownership and conservative diagnostics (2026-10-06).**
+
+Only the three Phase 2 modules in §2.1 are added. The pure perception API accepts a leased upright
+unmirrored ARGB frame; CameraX only knows this API, not MediaPipe. The app wires the Android factory.
+One batch at a time owns the reusable pixels/image until all accepted callbacks complete; cadence
+and busy skips are separate counters. GPU task initialization/submission/closure share one worker.
+Callbacks enter a bounded channel and immutable flow; lifecycle epochs discard old results. Task
+creation attempts GPU only after the Phase 1 eligibility check, then CPU on failure. Diagnostics
+distinguish successfully configured delegate from runtime evidence; no unobserved acceleration claim.
+Face meshes associate conservatively to the pose nose and expire; no identity inference or multi-person
+tracking. Frame schema fields only are used; facial matrix remains diagnostic alongside derived head
+angles, with no gaze or pose-correction product behaviour. Confidence lives in core:model once, linked
+to pose-system §4.1.1; filters live in geometry. core:photography only estimates visible body extent,
+with confidence zero pending local capture calibration and UNKNOWN for unestablished close portraits.
+All tuning seeds remain CALIBRATION_REQUIRED. No guidance engine/rules/templates are implemented.
+Immutable publication and model result mapping allocate; allocation-free performance is not claimed.
+Phase 1 measurement/coordinate limitations remain unchanged. Physical Phase 2 gates are required.
+Status: Phase 2 implementation decision, not owner acceptance. Pure boundaries and Android adapters
+are integrated. Synthetic emulator tests cover the production adapter, including rapid lifecycle
+restart and geometry changes; physical perception gates remain pending.
+
+**ADR-017 — Official upstream Core build with unchanged Vision SDK (2026-10-06).**
+
+Stock Maven Core initializes mandatory DataTransport telemetry; exclusions fail at runtime. Use the
+official v0.10.32 Core AAR target's default generated dummy logger, with no Java/C++ modification,
+and the unchanged official tasks-vision 0.10.32 artifact. Exclude only its stock tasks-core edge.
+Pin both binaries and local models by hash; retain Core in a restricted local Maven repository for
+reproducible app builds. The build script records the upstream commit and Android environment
+configuration. No fork, fake logger, new model architecture or network fallback. Version updates
+require renewed graph/manifest, bytecode and runtime verification. Evidence and remaining limits:
+`docs/phase-2-sdk-audit.md`. Native notices/source availability are packaged. Emulator and final
+shrunk-runtime checks are reported in the session handoff. No physical-device or owner-acceptance claim.
+
+**ADR-018 — Phase 2 automated robustness review (2026-10-07).**
+
+Keep the same modules, single-person Tasks architecture and official telemetry-free Core. Validate
+SDK landmark counts and callback timestamps before mapping, coalesce lifecycle requests, and reject
+out-of-order/expired results before publication. A task error marks diagnostics unavailable and clears
+affected results; bounded worker-owned recovery retries at most three times per active lifecycle
+epoch (1/2/4-second engineering delays, CALIBRATION_REQUIRED), falling back to CPU after a GPU runtime
+failure. Preview/capture remain independent. Input storage remains owned until completion or native
+closure; cancellation after submission cannot release it early. Percentile sorting/logging runs at
+most once per second rather than every result; counters and immutable result publication continue.
+These are implementation safeguards, not new product behavior or measured device thresholds.
+Automated fault injection belongs to adapter tests; no human tracking or physical acceptance follows
+from synthetic tests. Physical tests remain PENDING_PHYSICAL_VERIFICATION.
+
+**ADR-019 — immutable model input across overlapping recreation (2026-10-07).**
+
+R8 profile recreation with camera permission exposed reproducible native SIGBUS. Exact upstream
+`AssetManager::CachedFileFromAsset` unconditionally overwrites the relative-path cache; new task
+initialization can truncate a file still mapped by an older pipeline closing asynchronously.
+Use official `BaseOptions.setModelAssetBuffer` with a read-only mapped packaged asset. Package `.task`
+uncompressed so Android exposes its file descriptor; keep the mapping reachable throughout task life.
+There is no shared mutable cache file, SDK source patch, model modification or network operation.
+This trades a small APK compression saving for immutable model ownership and requires renewed
+profile/lifecycle regression and subsequent physical measurements. Do not infer physical stability
+from emulator tests or reinterpret earlier measurements.
+
+
+**ADR-020 - Phase 2 thermal recovery tooling and conversion hot path (2026-10-08).**
+Owner authorized conditional resume with normal preflight, short windows, cooldown and
+severe/critical/rapid-rise abort. Host runner allows one 30-60 s window per invocation,
+rejects matrix/lifecycle batching, defaults to 15 s countdown and holds camera off for
+30 s of normal-status cooldown. Shared host guard polls thermalservice every 2 s with
+5 s ADB read timeout, requires readable Android status and SKIN sensor, refuses nonzero
+preflight and stops app on status >=3, missing telemetry or read failure. It records
+pre/during/post samples locally and aborts on SKIN rise >=2 C in a sampled interval of up to 30 s.
+Rapid-rise and minimum cooldown values are conservative CALIBRATION_REQUIRED engineering
+seeds, not validated human safety limits. Android protections remain untouched; host abort
+is best effort due to polling/ADB latency. Discomfort requires stop regardless of telemetry.
+No automatic restart after abort; new Ready per setup. Traces optional, screenshots/memory
+remain ~10 s apart independently of ~2 s thermal polling. No unattended multi-setup loop.
+
+Retained debug evidence shows substantial RGB conversion cost. Hoist source-row and rotated
+destination indexing outside the pixel loop; preserve exact color arithmetic, rotation,
+crop, stride, buffer-position and reusable-output contracts. No new module/dependency,
+network, model, inference cadence, production thermal policy or product-flow change.
+Pixel-equivalence regression covers odd crops, nonneutral chroma, strides and four rotations.
+Device speed/thermal gain remains unmeasured; no resource leak established by short logs.
+
+
+**ADR-021 - debug preview-only framing and camera-off countdown (2026-10-08).**
+Owner paused physical testing and requested lower-overhead framing. Host framing-only previously
+still launched normal perception. New debug-only framingOnly extra skips MediaPipe creation;
+CameraSession PREVIEW_ONLY binds Preview alone and skips analyzer/capture binding and sensor/metrics
+work. No new module/dependency or production decision logic. Perception/developer overlays omitted,
+camera/aspect supplied at launch, capture disabled. The activity finishes at a 12-second monotonic
+deadline retained across recreation; 12 s is CALIBRATION_REQUIRED, best effort, not a safety guarantee.
+Host requires the localized preview-only label and retains finally force-stop. Release/profile ignore
+the debug flag. Full-session 15-second countdown moves before camera launch to remove idle AI work.
+Normal-only launch policy and severe/critical/rapid-rise/fail-closed abort unchanged. No device thermal
+improvement claimed; physical validation paused. Evidence, policy rationale and uncertainties:
+[Phase 2 thermal review](phase-2-thermal-review.md).
+
+
+**ADR-022 - verified camera-off invariant and cleanup journaling (2026-10-08).**
+Retained active-client snapshot proves project camera 0/PID 6692 despite zero runner launches.
+Fix host harness assumption, not unproven product lifecycle defect. CameraIdle requires readable
+active-client section, zero active camera clients and no known project/test PID. Stop only exact
+project/test packages; other owners cause abort. Sample before/during cooldown and countdown,
+immediately before authorized launch and after cleanup/monitor stop. Fail closed, bounded release
+settling, local ownership/control-command journal and idle-only mode; cleanup attempts guard
+shutdown even if stop fails. No permanent disable, normal startup change, module or thermal override.
+Sampled idle does not prevent a later external launch. Evidence/root-trigger limits:
+[Camera idle review](phase-2-camera-idle-review.md).
+
+**ADR-023 - isolated debug face verification (2026-10-10).**
+Owner requested face-only physical verification without full-body pose dependency. Debug-only
+MainActivity `faceOnly` intent chooses the existing pipeline's isolated face mode. It constructs
+no pose source, requires face readiness, uses existing face cadence and single-frame ownership,
+and publishes face diagnostics without subjects. Pose model adaptation does not rebuild the face
+source in this mode. Release/profile launcher ignores this flag; normal pose/face behavior stays
+unchanged. Runner requires current-PID FACE_ONLY/disabled-pose configuration evidence before
+collection, otherwise stops and fails closed. Existing thermal and idle protections remain intact.
+Pure face validity helper exposes the native-result contract (478 finite XYZ landmarks, reported
+confidence channels valid or absent); aggregate faceValid478 counter records results satisfying
+it, without logging coordinates or inventing confidence. Legacy evidence parsing remains valid.
+This is diagnostic isolation, not a new product mode or model/threshold change. Physical validation
+is pending Ready, connected device and normal/stable thermal preflight. See
+[face verification review](phase-2-face-review.md).
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |
@@ -491,12 +613,13 @@ activity orientation unspecified and uses normal Android recreation; no configCh
 verification intent override or orientation preference is used. Compose observes LocalConfiguration,
 retains camera/aspect/resolution controls with rememberSaveable and fits a 4:3 or 16:9 viewport in
 the actual orientation. Camera objects are recreated after layout with the current display rotation;
-the previous lifecycle-bound session is disposed. The locale override changes language only rather
-than freezing a copied orientation/size configuration. This follows Android's
+the previous lifecycle-bound session is disposed. The forced locale override was removed in the final
+Phase 1 review; Android/app resource locale selection now applies normally. This follows Android's
 [configuration handling guidance](https://developer.android.com/guide/topics/resources/runtime-changes).
 No core coordinate transform or module boundary changes. Physical rotation must be owner-verified.
 
 ## 14. Open architectural questions (for the human owner / later phases)
+
 
 1. **Who holds the phone?** Two product modes exist and they need different guidance:
    `PHOTOGRAPHER_MODE` (a second person holds the phone → camera-movement instructions are actionable)

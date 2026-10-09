@@ -1,0 +1,7 @@
+<resources>
+    <string name="perception_delegate_diagnostic">Cấu hình tư thế=%1$s; khuôn mặt=%2$s; tăng tốc thực tế NOT_MEASURED</string>
+    <string name="perception_metrics_diagnostic">Số liệu nhận diện=%1$s</string>
+    <string name="perception_subject_diagnostic">Số người=%1$d; loại khung hình=%2$s</string>
+    <string name="phase2_diagnostics">Chẩn đoán Giai đoạn 2</string>
+    <string name="single_person_diagnostic">Chỉ nhận diện một người; độ chính xác và hiệu chuẩn thiết bị đang chờ kiểm chứng.</string>
+</resources>

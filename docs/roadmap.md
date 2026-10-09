@@ -7,7 +7,7 @@ Rules of the roadmap (from `AGENTS.md`):
 * Every phase must be verified on a real device before it is called done.
 * No phase may silently pull work forward from a later phase.
 
-Current status: **Phase 0 complete, awaiting review. Phase 1 NOT started.**
+Current status: **Phases 0 and 1 accepted and merged. Phase 2 authorized on 2026-10-06; in progress.**
 
 ---
 

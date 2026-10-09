@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -35,12 +37,23 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aiphotographer.camera.*
 import com.aiphotographer.model.*
+import com.aiphotographer.perception.mediapipe.MediaPipePipelineFactory
 
 class MainActivity : ComponentActivity() {
     private val launchNs = SystemClock.elapsedRealtimeNanos()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MaterialTheme { CameraApp(launchNs, intent.getBooleanExtra("benchmarkRgb", false), intent.getBooleanExtra("analysis720p", false)) } }
+        val framingOnly = BuildConfig.DEBUG && intent.getBooleanExtra("framingOnly", false)
+        if (framingOnly) {
+            val deadline = intent.getLongExtra("framingDeadlineMs", 0L).takeIf { it > 0 }
+                ?: (SystemClock.elapsedRealtime() + 12_000L).also { intent.putExtra("framingDeadlineMs", it) }
+            Handler(Looper.getMainLooper()).postDelayed({ finish() }, (deadline - SystemClock.elapsedRealtime()).coerceAtLeast(0L))
+        }
+        setContent { MaterialTheme { CameraApp(launchNs, intent.getBooleanExtra("benchmarkRgb", false),
+            intent.getBooleanExtra("analysis720p", false), framingOnly,
+            framingOnly && intent.getBooleanExtra("framingFront", false),
+            framingOnly && intent.getBooleanExtra("framingWide", false),
+            BuildConfig.DEBUG && !framingOnly && intent.getBooleanExtra("faceOnly", false)) } }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -49,7 +62,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun CameraApp(launchNs: Long, benchmarkRgbAtLaunch: Boolean, analysis720p: Boolean) {
+@Composable private fun CameraApp(launchNs: Long, benchmarkRgbAtLaunch: Boolean, analysis720p: Boolean, framingOnly: Boolean, framingFront: Boolean, framingWide: Boolean, faceOnly: Boolean) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     fun granted() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
@@ -80,9 +93,9 @@ class MainActivity : ComponentActivity() {
     }
     val configuration = LocalConfiguration.current
     val landscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    var facing by rememberSaveable { mutableStateOf(CameraFacing.BACK) }
+    var facing by rememberSaveable { mutableStateOf(if (framingFront) CameraFacing.FRONT else CameraFacing.BACK) }
     var resolution by rememberSaveable { mutableStateOf(if (analysis720p) AnalysisResolution.R720P else AnalysisResolution.R480P) }
-    var aspect by rememberSaveable { mutableFloatStateOf(3f / 4f) }
+    var aspect by rememberSaveable { mutableFloatStateOf(if (framingWide) 9f / 16f else 3f / 4f) }
     var generation by remember { mutableIntStateOf(0) }
     var rgbBenchmark by rememberSaveable { mutableStateOf(benchmarkRgbAtLaunch) }
     var session by remember { mutableStateOf<CameraSession?>(null) }
@@ -97,14 +110,15 @@ class MainActivity : ComponentActivity() {
                     scaleType = PreviewView.ScaleType.FILL_CENTER
                 } }
                 val monitor = remember { DeviceMonitor(context) }
-                val camera = remember { CameraSession(context, owner, preview, monitor, facing, resolution, rgbBenchmark, launchNs) }
+                val camera = remember { CameraSession(context, owner, preview, monitor, facing, resolution, rgbBenchmark, launchNs,
+                    if (framingOnly) null else MediaPipePipelineFactory.create(context, monitor.capability, faceOnly = faceOnly), previewOnly = framingOnly) }
                 DisposableEffect(camera) {
                     session = camera
                     val observer = androidx.lifecycle.Observer<PreviewView.StreamState> { if (it == PreviewView.StreamState.STREAMING) camera.previewStreaming() }
                     preview.previewStreamState.observe(owner, observer)
                     val lifecycleObserver = LifecycleEventObserver { _, event ->
                         if (event == Lifecycle.Event.ON_STOP) monitor.stop()
-                        if (event == Lifecycle.Event.ON_START) { monitor.start(); camera.router.resetSessionWindow() }
+                        if (event == Lifecycle.Event.ON_START && !framingOnly) { monitor.start(); camera.router.resetSessionWindow() }
                     }
                     owner.lifecycle.addObserver(lifecycleObserver)
                     onDispose {
@@ -115,17 +129,27 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 AndroidView(factory = { preview.apply { doOnLayout { camera.start() } } }, modifier = Modifier.fillMaxSize())
-                DeveloperOverlay(camera)
+                if (!framingOnly) {
+                    DeveloperOverlay(camera)
+                    PerceptionStatus(camera)
+                }
             }
           }
         }
         session?.let { camera ->
             val state by camera.state.collectAsStateWithLifecycle()
+            val perception = camera.perception?.state?.collectAsStateWithLifecycle()?.value
+            LaunchedEffect(perception?.metrics?.degradationLevel, state.capture) {
+                if ((perception?.metrics?.degradationLevel ?: 0) >= 6 && resolution != AnalysisResolution.R480P && state.capture != CaptureStatus.SAVING) {
+                    resolution = AnalysisResolution.R480P
+                }
+            }
             val message = when (state.mode) {
                 SessionMode.STARTING -> R.string.starting
                 SessionMode.FULL -> R.string.full_mode
                 SessionMode.ANALYSIS_ONLY -> R.string.analysis_only
                 SessionMode.CAPTURE_ONLY -> R.string.capture_only
+                SessionMode.PREVIEW_ONLY -> R.string.framing_preview
                 SessionMode.ERROR -> R.string.camera_error
             }
             Text(stringResource(message), Modifier.padding(horizontal = 16.dp))
@@ -135,16 +159,16 @@ class MainActivity : ComponentActivity() {
                 else -> Unit
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                TextButton(onClick = { facing = if (facing == CameraFacing.BACK) CameraFacing.FRONT else CameraFacing.BACK }, enabled = state.capture != CaptureStatus.SAVING) {
+                TextButton(onClick = { facing = if (facing == CameraFacing.BACK) CameraFacing.FRONT else CameraFacing.BACK }, enabled = !framingOnly && state.capture != CaptureStatus.SAVING) {
                     Text(stringResource(R.string.switch_camera))
                 }
-                Button(onClick = camera::takePhoto, enabled = state.mode !in listOf(SessionMode.STARTING, SessionMode.ERROR) && state.capture != CaptureStatus.SAVING) {
+                Button(onClick = camera::takePhoto, enabled = state.mode !in listOf(SessionMode.STARTING, SessionMode.ERROR, SessionMode.PREVIEW_ONLY) && state.capture != CaptureStatus.SAVING) {
                     Text(stringResource(if (state.capture == CaptureStatus.SAVING) R.string.saving else R.string.capture))
                 }
                 if (state.mode == SessionMode.ERROR) TextButton(onClick = { generation++ }) { Text(stringResource(R.string.retry)) }
             }
         }
-        DeveloperControls(resolution, { resolution = it }, aspect, { aspect = it; generation++ }, rgbBenchmark, { rgbBenchmark = it })
+        if (!framingOnly) DeveloperControls(resolution, { resolution = it }, aspect, { aspect = it; generation++ }, rgbBenchmark, { rgbBenchmark = it })
         TextButton(onClick = { licencesVisible = true }) { Text(stringResource(R.string.licences)) }
     }
 }

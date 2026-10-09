@@ -1,4 +1,7 @@
 <resources>
+    <string name="perception_starting">Starting on-device perception…</string>
+    <string name="perception_unavailable">Pose perception unavailable. You can still take photos.</string>
+    <string name="face_unavailable">Face landmarks unavailable. Pose perception can continue.</string>
     <string name="app_name">AI Photographer</string>
     <string name="permission_title">Camera access</string>
     <string name="permission_explanation">Allow camera access to preview and take photos. Frames are processed on this phone. You can continue using this screen without granting access.</string>
@@ -17,4 +20,5 @@
     <string name="save_error">Could not save the photo. Try again.</string>
     <string name="licences">Licences</string>
     <string name="close">Close</string>
+    <string name="framing_preview">Framing preview (analysis off)</string>
 </resources>

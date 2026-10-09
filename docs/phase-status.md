@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-06** by **Codex Local** (explicit human owner acceptance of Phase 1 recorded).
+Last updated: **2026-10-08** by **Codex Local** (physical testing paused; source-only thermal review; safe checkpoint).
 
 ---
 
@@ -13,7 +13,20 @@ Last updated: **2026-10-06** by **Codex Local** (explicit human owner acceptance
 "START PHASE 1" on 2026-10-03.
 
 **PHASE 1 — ACCEPTED by the human owner on 2026-10-06.**
-Phase 2 has not started. PR #2 remains unmerged pending final merge review.
+PR #2 was merged by the human owner; local main synchronized to `81df0022fce4935a067ec1b47cbfa786a8bcbe42`.
+
+**PHASE 2 — IN PROGRESS: START AUTHORIZED by the human owner on 2026-10-06.**
+Approved Phase 2 implementation is complete. The official unmodified Core source build with
+upstream default dummy logging and unchanged Vision artifact preserves the privacy/offline contract.
+ADR-018/019 document automated robustness fixes and immutable model ownership. Automated
+non-physical validation is complete; manual human-subject gates remain PENDING_PHYSICAL_VERIFICATION.
+Overall status is partial; deferred physical checks are not implementation failure.
+OWNER_ACCEPTANCE_PENDING. Draft PR #3 remains open. No Premium UI or Phase 3 implementation.
+Historical Phase 1/2 measurements and known limitations remain unchanged.
+
+Latest resumable state: see the safe checkpoint at the end of this document.
+Current solo session: [phase-2-physical-verification.md](phase-2-physical-verification.md).
+**PHYSICAL TESTING PAUSED BY OWNER: no camera launch or inference. Source review and host validation only. Previous landscape attempt INCOMPLETE.**
 
 ---
 
@@ -204,20 +217,15 @@ without a new explicit owner decision.
 
 ## TASKS FOR CODEX LOCAL
 
-Implement and verify only `docs/tasks/phase-1-camerax-foundation.md`. Phase 0 owner approval is recorded above.
-
-Remaining Phase 1 work:
-
-1. Connect the MEDIUM reference phone, authorize ADB, and record exact model/Android build.
-2. Follow `docs/phase-1-verification.md` for physical camera/permission/capture/lifecycle and crosshair checks.
-3. Record the two resolution baselines, cold start, RSS/thermal and 10-minute session with Perfetto evidence.
-4. Ask GitHub Agent to review and the owner to accept Phase 1. Do not proceed to Phase 2 beforehand.
+Implement and verify only `docs/tasks/phase-2-pose-face-detection.md` on
+`codex/phase-2-pose-face-detection`. Phase 1 acceptance/merge and explicit Phase 2 start authorization
+are recorded above. Resolve the SDK privacy blocker before packaging a perception runtime, then
+complete Phase 2 physical verification/measurement. Do not start Phase 3 or claim Phase 2 acceptance.
 
 ---
 
 ## DO NOT IMPLEMENT YET
 
-* MediaPipe integration (Phase 2)
 * Dashed guide rendering (Phase 3)
 * Pose matching (Phase 4)
 * Composition rules / guidance / readiness (Phase 5)
@@ -231,7 +239,8 @@ Remaining Phase 1 work:
 
 The human owner approved Phase 0 and authorized Phase 1 on 2026-10-03, and explicitly accepted
 **Phase 1 on 2026-10-06**. This records the owner's decision, not acceptance by Codex Local.
-PR #2 remains unmerged pending final merge review. Phase 2 has not started.
+PR #2 was subsequently merged by the owner. Phase 2 start was explicitly authorized on 2026-10-06;
+this does not imply Phase 2 acceptance or Phase 3 authorization.
 Suggested review checklist (round 1 corrections are already applied; see the review notes in this file):
 
 - [x] Architecture and module boundaries (`docs/architecture.md`) — **reviewed in round 1**, module phasing
@@ -1140,3 +1149,896 @@ hardware-unverified. Results from Samsung SM-S918B must not be generalized to ot
 All other recorded limitations, measurements and measurement provenance remain unchanged.
 No production changes or new device measurements. Phase 2 has not started; PR #2 has not been merged.
 NEXT PROPOSED: final merge review of PR #2; no Phase 2 work authorized by this documentation update.
+
+### Phase 2 pure-contract checkpoint and SDK privacy blocker (2026-10-06)
+
+PHASE: 2
+STATUS: blocked — pure foundation validated; compliant runtime decision required.
+BRANCH: codex/phase-2-pose-face-detection, from synchronized main 81df002.
+FILES: core/model, core/geometry, core/photography, perception/api, settings.gradle.kts;
+docs/architecture.md, docs/roadmap.md, docs/ai-models.md, docs/model-licenses.md,
+docs/tasks/phase-2-pose-face-detection.md, docs/phase-2-sdk-audit.md, this handoff.
+IMPLEMENTED: schema-compatible optional subject/world/face types; one normative usability mapping;
+One Euro filter; pure source/pipeline interfaces, single-batch lifecycle epoch ownership guard;
+subject filtering/assembly with conservative face association and freshness; diagnostic head-matrix
+decoder, visible-body shot classification and schedulable degradation/recovery decisions.
+The new pure modules are not wired into the shipping camera app yet. No pose matcher or guidance.
+DEVICES TESTED: none connected (ADB checked at start and final verification); no Phase 2 device test.
+MEASURED: NOT_MEASURED — pose/face FPS and latency, preview impact, memory, thermal, actual delegate,
+full-body 480p/720p experiment and shot-type calibration all require the compliant runtime/device.
+VALIDATION: safe shipping checkpoint debug/release/profile APKs, all JVM tests, app lint for all three
+variants, camera debug lint and debug test APK assembly PASS (2m34s, 285 tasks). JVM XML reports
+21 tests, zero failures/errors (11 existing + 10 new). Connected instrumentation NOT_RUN: no device.
+Spec validation PASS, 0 errors/0 warnings. Diff/whitespace and packaging inspection PASS; no model
+assets or MediaPipe/transport dependencies in APK notice inventory, all merged manifests no INTERNET.
+No project license, cloud API, secrets, raw evidence or build outputs added to tracked files.
+DEVIATIONS FROM SPEC: Phase 2 runtime/module wiring deliberately held outside shipping build because
+stock SDK telemetry contradicts the privacy contract. Only two of the three planned modules included;
+mediapipe adapters/models and attempted wiring preserved under ignored
+device-evidence/phase2/blocked-integration/. API interface methods describe batch ownership explicitly.
+BLOCKERS: stock Tasks SDK remote telemetry; owner decision requested for an audited telemetry-free
+source-modified artifact or an approved alternative architecture. See docs/phase-2-sdk-audit.md.
+KNOWN LIMITATIONS: all Phase 1 limitations remain valid: numerical reprojection accuracy unmeasured,
+unsupported-device fallback hardware-unverified, SM-S918B results not generalizable. New tuning seeds,
+face association, head-angle conventions and shot classification remain uncalibrated/device-unverified.
+NEXT PROPOSED: resolve the SDK privacy decision, finish compliant adapters, then physical Phase 2
+verification and measurements. No Phase 2 acceptance, Phase 3+ work or merge performed.
+
+### Phase 2 deeper artifact/runtime investigation (2026-10-06)
+
+PHASE: 2
+STATUS: partial — investigation continuing under owner instruction; no fork permitted unless necessary.
+FILES: docs/phase-2-sdk-audit.md; docs/tasks/phase-2-pose-face-detection.md; this handoff;
+tools/audit-mediapipe-artifacts.py; tools/mediapipe-privacy-probe; tools/build-mediapipe-upstream.sh;
+.github/workflows/mediapipe-upstream-audit.yml.
+DEVICES TESTED: Medium_Phone_API_37.0 x86_64 emulator / Android 17, isolated synthetic-image SDK probe.
+No SM-S918B connected. This is not physical camera/landmark acceptance.
+MEASURED: local telemetry queue counts 2 after pose, 3 after face; no Phase 2 performance baseline.
+VALIDATION: isolated stock/excluded APKs and test APKs build; 4 stock + 4 exclusion instrumentation
+tests PASS. Stock Pose/Face initialize and process black images without INTERNET; excluded transport
+causes NoClassDefFoundError for both landmarkers, asserted by the exclusion tests. Complete runtime
+graphs exported for both flavors. All 39 published Core POM/AAR versions inspected.
+Loopback-only socket creation fails with EPERM in both apps. All four transport-free early Vision
+alphas inspected: none contains the required Pose/Face APIs. Shipping debug/release/profile build,
+lint and 3 existing app instrumentation tests PASS on the same emulator; 21 JVM tests remain green.
+DECISION: previous demand for a modified SDK was premature. Official unmodified upstream default
+dummy logger is a candidate; Linux audit build prepared using pinned v0.10.32 source and official
+AAR targets. No Java/C++ source changes or fork. Outputs remain audit evidence until validated.
+BLOCKERS: compliant runtime not yet demonstrated; ordinary upstream-build investigation continues.
+Shipping app/dependency graph unchanged. Phase 1 limitations remain exactly valid: numerical
+reprojection unmeasured, fallback hardware-unverified, SM-S918B evidence not generalizable.
+NEXT PROPOSED: build/audit official source artifacts, verify Pose/Face runtime and notices, then
+continue bounded camera integration. No Phase 2 acceptance, Phase 3+ work or merge.
+Prepared (not yet executed against source AARs): upstream dummy-factory, no local transport database,
+and Pose/Face LIVE_STREAM callback tests in the isolated probe. The artifact checker rejects known
+telemetry identifiers in stock Core; native identifier scan is bounded, not a universal privacy proof.
+
+---
+
+## Phase 2 local implementation handoff — 2026-10-07
+
+PHASE: 2
+STATUS: partial — implementation and available local validation complete; physical gates pending.
+BRANCH: codex/phase-2-pose-face-detection
+PR: Draft #3, https://github.com/binhvugia1997-ui/app-ch-p-nh/pull/3
+
+This entry supersedes the earlier SDK-blocker checkpoint, not its recorded observations. Owner
+authorized deeper investigation and options A/B/C; no privacy-policy exception was used.
+
+IMPLEMENTED: the three approved modules (`perception:api`, `perception:mediapipe`,
+`core:photography`), pure confidence/usability, smoothing, freshness/association and diagnostic
+shot estimation; single-person local Pose/Face adapters, bounded CameraX RGB ownership, lifecycle
+epochs, geometry resets, cadence/degradation, latency/drop counters and resource-backed diagnostic
+landmark visualization. Existing camera switching, capture and aspect/rotation contracts are reused.
+No pose matching, target guides, product guidance, recommendations, composition engine, auto-capture,
+scene models or multi-person production pipeline.
+
+SDK DECISION: option C. Unmodified official MediaPipe v0.10.32 source commit
+`8317ba78778738ba90a521e7e4580a2ba0129c81` builds Core with upstream's default dummy logger.
+Core AAR SHA256 `f05d8c4432613342fa15d93914d0d7079381b941f4e1cd069dee9f41aa5c365f` is
+vendored in the restricted local Maven repository; unchanged official `tasks-vision:0.10.32`
+supplies Vision/JNI. Only Vision's stock `tasks-core` edge is excluded. No fork, SDK source patch,
+fake logger or reflective telemetry bypass. Rebuild script, pinned CI and ADR-017 record provenance.
+Core-only build and native-source notice collection passed in upstream audit CI.
+
+PRIVACY: stock Core unconditionally initializes DataTransport and queues task metrics locally;
+absence of INTERNET prevents transmission but does not prevent that collection. Removing transport
+dependencies breaks both landmarkers. All 39 published Core artifacts were inspected; early
+transport-free Vision alphas lack the required APIs. The selected production graph has 107 unique
+components and no stock Core, DataTransport or Firebase encoder artifacts. Factory bytecode calls
+the real upstream dummy logger. Known telemetry identifiers are absent in the selected AAR payloads
+and production DEX; this bounded static scan is not proof of every native call path. Emulator runtime
+probes show no transport class/database; loopback socket fails with EPERM. Debug/release/profile
+merged manifests have neither INTERNET nor ACCESS_NETWORK_STATE. No cloud endpoint, API key,
+analytics configuration, model download or frame upload is introduced in production. Audit probes
+are isolated developer tools, not production dependencies.
+
+MODELS / LICENSE: unchanged official version-1 float16 pose lite/full and face bundles are local
+assets with verified hashes (model-licenses.md §8). All three APKs contain those exact assets and
+all 36 retained third-party notice texts. Models/code are Apache-2.0; other runtime/native terms and
+Eigen MPL source availability are recorded and packaged. No project-wide license was added.
+Combined model size is 18,934,540 bytes, exceeding the previous approximate <15 MB hypothesis;
+both pose variants are retained for tier/degradation selection. This is a documented target
+deviation, not a silently reinterpreted measurement or requirement.
+
+COORDINATES: crop-local upright unmirrored ANALYSIS inputs; rotation once, normalized landmarks,
+Phase 1 crop/preview projection and explicit preview-only front mirroring. Filter/face state resets
+on source geometry/lifecycle changes. World coordinates retain their nonmetric caveat. Deterministic
+tests cover all four YUV rotations with padded offset crops, preview combinations, usability floors,
+unknown channels and known facial-matrix axes. Numerical physical reprojection remains unmeasured.
+
+VALIDATION ACTUALLY EXECUTED:
+- Gradle `test assembleDebug assembleRelease assembleProfile`, app debug/release/profile lint,
+  camera/adapter debug lint and runtime export: PASS (final build 30 s; offline cached dependencies).
+- 23 JVM tests: PASS, zero failures/errors.
+- Production adapter debug instrumentation: 1 PASS (rapid stop/resume, one lease, cadence/busy
+  rejection and rear/front-like portrait/landscape geometry with synthetic frames).
+- App debug instrumentation: 4 PASS; profile instrumentation: 2 PASS, including packaged-model
+  production initialization/inference after R8 and launcher recreation. XML counts verified.
+- Isolated SDK probes: 4 stock + 4 exclusions + 8 upstream PASS. Exclusion tests assert the expected
+  initialization failure, not working detection. Upstream includes IMAGE, sequential LIVE_STREAM,
+  actual 33-pose/478-face fixture landmarks, matrix output and disabled blendshapes.
+- Spec validator: PASS, 0 errors, 0 warnings. Model/Core/Vision hashes, complete production graph,
+  merged manifests, APK models/notices, vi/en resource-key parity and git diff inspected: PASS.
+  Staged whitespace warnings are confined to verbatim upstream notice texts (trailing spaces/blank
+  EOF lines retained); source/documentation diff check is clean.
+
+FIXES / EVIDENCE CAUTIONS: source test folder corrected so all eight upstream tests actually execute.
+Zero-test runner successes are rejected. R8 JNI/reflection and protobuf field retention fixes a real
+shrunk-runtime initialization failure; only two unused classic-Graph missing proto types are narrowly
+suppressed. Profile test-facing ABI keeps differ from release and cannot establish exact release
+footprint. A final emulator package-manager Broken-pipe failure was recovered by cold-starting the
+same AVD; failed zero-test run is excluded, debug instrumentation rerun passed. No device data or
+raw fixture images/logs are committed; intentional model and vetted Core artifacts are tracked.
+
+DEVICES TESTED: Android 17 x86_64 Medium_Phone_API_37.0 emulator, CPU, debug/profile and isolated
+probe builds. No physical SM-S918B connected in this session. Synthetic tests do not establish real
+camera landmark tracking, mirror accuracy, GPU delegate execution, device robustness or acceptance.
+MEASURED: Phase 2 phone pose/face/conversion latency/rate, preview FrameTimeline, memory impact,
+thermal run, 480p/720p full-body quality at 3–4 m and physical reprojection: NOT_MEASURED. Emulator
+test durations are test evidence, not performance baselines. Watchdog, scheduling/filter/freshness
+seeds remain CALIBRATION_REQUIRED; no model-card confidence is converted with invented sigmoid math.
+
+KNOWN LIMITATIONS: numerical reprojection accuracy remains unmeasured; unsupported-device fallback
+remains hardware-unverified; results from Samsung SM-S918B must not be generalized to other devices.
+No previous Phase 1 result is claimed as Phase 2 evidence. Physical eight camera/orientation/aspect
+combinations, capture/lifecycle during inference, visible body/face tracking, thermal/performance and
+GPU/fallback verification remain pending. No human Phase 2 acceptance.
+BLOCKERS: no remaining local implementation/build/license blocker; physical verification only.
+HUMAN ACTION REQUIRED: connect/unlock authorized SM-S918B, approve USB if prompted, and arrange
+one consolidated full-body/face posing session for both cameras, orientations and aspects.
+NEXT PROPOSED: physical Phase 2 verification and factual measurements, then GitHub review and
+explicit owner acceptance. Phase 3 has not started. No merge performed.
+
+### Physical verification preparation — 2026-10-07
+
+Authorized ADB device confirmed as Samsung SM-S918B, Android 16 / API 36. Clean Phase 2 starting
+checkpoint `e6aa2a36c08261be89ad9e45789572f871a7a4a3` was preserved. Current debug APK installed
+successfully and launcher opened; APK SHA256
+`bc1fb1a65282eb94824d01e3a4e14b829f7e2c826198d9135fe739cabfc0bc89`.
+Camera permission was denied, so live inference did not begin. The app's Android camera permission
+prompt was opened for human confirmation; no permission was granted automatically. Consolidated
+rear-camera full-body/face setup requested. Initial thermal status 0; original auto-rotation setting
+0 and user rotation 0 recorded without changes. Profile manifest still has no INTERNET permission.
+Local collection helper prepared for app counters, latency summaries, memory/thermal samples and
+optional Perfetto; live collection has not run. Actual pose/face tracking, combinations, lifecycle,
+latency/rates, memory, soak and accuracy remain pending, not PASS. No Phase 3 or acceptance claim.
+
+### First physical inference repair checkpoint — 2026-10-07
+
+Owner confirmed rear setup. Initial live run failed after its first results: MPImage closed and
+recycled the reused bitmap, leading to repeated pose submission errors. Preview remained active, but
+that run is not PASS. Exact upstream ownership behavior verified; app adapters now use supported
+task-owned direct RGB buffers rather than bitmap-backed images. Same-geometry repeat coverage
+added; the regression instrumentation actually ran on SM-S918B and PASS (1 test, CPU synthetic
+input). No SDK source modification or privacy-policy change.
+
+Fixed debug rerun collected a 20.017143482-second counter window: 600 offered, 150 accepted/pose
+completed, 37 face completed, 0 busy skips, 450 intentional cadence skips, 0 errors; effective
+rates 7.493576700 pose / 1.848415586 face Hz. Pose detection counter rose 144, face detection 0.
+Last rolling windows (not window-only quantiles) had pose count 252, p50/p95 46.901719/56.335833 ms;
+face count 64, 26.606250/41.800729 ms. Delegates configured GPU; native calculator placement is not
+fully established by that configuration label. Degradation level 6. Sampled thermal status 1,
+PSS 440037–475262 KiB, RSS 533904–570096 KiB. These are debug diagnostic observations, not optimized
+baselines. CameraX internal drops remain UNKNOWN.
+
+Local screenshot showed a near-field arm/desk, with neither full body nor face visible. Landmark
+presence is not accurate full-body tracking evidence. Consolidated corrected rear framing requested;
+full-body/face, alignment, other combinations, lifecycle/offline and soak remain pending. No phone
+photographs/raw evidence are committed. Rebuilt debug/profile/release, JVM tests and app
+debug/release/profile plus adapter debug lint PASS. Phase 1 accuracy/fallback/device-generalization
+limitations remain unchanged. No Phase 3 or owner acceptance. Local collection helper's first real
+run completed and recorded counters/latency/memory/thermal; no unmeasured compositor claim.
+
+### Owner-requested safe pause — 2026-10-07
+
+STATUS: partial; physical verification paused by the owner because remaining human full-body/face
+tests cannot be completed now. This is a scheduling deferral, not a failed verification gate.
+Implementation/fix checkpoint: `c8d82899b74c19027bf08612d6b38bc18e719712`, pushed on
+`codex/phase-2-pose-face-detection`; Draft PR #3. No Phase 2 owner acceptance or merge.
+
+SAFE STOP: no active task-specific host collector/logcat/instrumentation/performance process found.
+No active phone Perfetto or instrumentation session found. Camera application and library test
+application force-stopped on SM-S918B; camera app PID absent afterward. No active measurement was
+interrupted. The completed short run and regression report are retained. Unrecorded camera uptime
+after that run is not a soak or valid measurement. No phone rotation/connectivity settings were
+changed in this session; original rotation settings remain recorded above. No production change
+made as part of the pause. No UI integration or Phase 3 work started as part of this request.
+
+COMPLETED PHYSICAL CHECKS:
+- Authorized USB ADB, model SM-S918B, Android 16 / API 36 confirmed; current debug build installed
+  and launched, camera permission confirmed through actual live preview/inference.
+- Rear preview observed with near-field arm/desk. Live submission failure reproduced, diagnosed
+  and fixed; corrected 20-second debug inference run completed without recorded inference errors.
+- Same-geometry repeat, single-frame ownership and stop/resume/geometry regression PASS on the
+  real phone with CPU synthetic input (1 instrumentation test). This does not verify real-camera
+  background/foreground behavior or human tracking.
+- Profile merged manifest reconfirmed without INTERNET permission. Existing complete dependency,
+  bytecode/native identifier, dummy logger, manifest/model/license and emulator privacy audit
+  results remain preserved; no new network/privacy exception or SDK source patch.
+
+PENDING PHYSICAL CHECKS (not PASS, not failed): full-body pose tracking during movement; actual
+visible-face landmark/head tracking; front preview; physical portrait/landscape transitions;
+rear/front × portrait/landscape × 4:3/16:9 combinations; camera switching, manual capture and
+real-camera background/foreground recovery during inference; qualitative overlay alignment and
+front mirroring; sustained backlog/preview stability; explicit offline run on the phone; optimized
+480p/720p full-body comparison around 3–4 m; GPU execution/fallback evidence; sustained crash/ANR
+audit. The brief repaired run is not sufficient to mark the final no-crash/ANR or soak gate PASS.
+
+COMPLETED MEASUREMENTS: limited debug counter window, rolling task-to-callback pose/face latency
+summaries, sampled process PSS/RSS and thermal state exactly as recorded in the preceding checkpoint.
+Face inference completed but no face was detected; pose detections on the observed partial scene
+are not verified anatomical accuracy. Do not relabel these numbers as full-body, optimized-profile,
+steady-state or acceptance measurements. No numerical reprojection measurement was collected.
+PENDING MEASUREMENTS: fresh optimized-profile 60-second 480p/720p baselines with a visible person,
+pose/face rates and latency, conversion cost, skipped work, compositor FrameTimeline, steady-state
+memory, five-minute thermal/soak interval and sustained crash/ANR review. CameraX internal drops
+remain UNKNOWN unless a supported measurement is obtained. No fabricated or substituted values.
+
+SOLO TEST PLAN FOR RESUME (no second person required):
+1. Confirm this pushed branch and clean tree, reconnect/unlock the authorized phone and recheck
+   model/API/permissions. Install the current debug diagnostic build. Verify ignored evidence
+   exists locally; retain old evidence separately from new run directories.
+2. Prepare automation before asking for positioning: delayed starts allow the tester to walk into
+   frame; automate aspect/resolution changes, local screenshot samples and counter/trace capture.
+   Use the computer's locally captured preview for framing and later qualitative review. Keep
+   photographs/screenshots/recordings ignored; do not upload or commit them.
+3. Ask for one consolidated setup per physical camera/orientation: prop the USB-connected phone
+   securely, include the tester's face/head, hands and feet at roughly 3–4 m in good light when
+   practical. The tester starts the delayed run, walks into view, raises/lowers both arms, steps
+   sideways and turns the head. No precise photographic pose or external helper is required.
+   If a full-body face is too small, include a closer face segment in the same setup and label it.
+4. Run both aspects and 480p/720p plus applicable switching/lifecycle checks automatically while
+   each setup remains valid. Request physical rotation/front-camera repositioning in consolidated
+   bundles; preserve/restore any temporary rotation/connectivity settings. Clearly distinguish
+   forced viewport rotation from a real physical transition. Compare front mirrored movement and
+   overlay alignment against the locally recorded preview, without claiming numerical accuracy.
+5. Collect optimized-profile baselines and a sustained thermal run only after tracking works;
+   rerun on the final APK after any bug fix. Label interrupted/poorly framed runs incomplete and
+   exclude them from valid baselines. Review actual crash/ANR and trace records, document measured
+   results and remaining limits, validate, commit/push and update the same Draft PR. No automatic
+   Phase 2 acceptance, merge, UI integration expansion or Phase 3 transition.
+
+EVIDENCE / RECOVERY: `device-evidence/phase2/physical/rear-debug-fixed/` contains completed raw
+log/samples/summary; `pipeline-regression.txt` contains the actual phone test result. Local preview
+screenshot retained only under ignored physical evidence. `pause-inventory.json` records 14 files,
+their sizes/hashes and evidence limitations. Existing MediaPipe audits/build provenance remain
+unchanged. Only factual handoff/task documentation is tracked for this stop; no raw evidence or
+build artifacts added to Git. Closing Codex is safe; reopening uses repository documentation and
+the retained local evidence rather than relying on chat. This pause does not delete device evidence.
+
+KNOWN LIMITATIONS remain unchanged: numerical reprojection accuracy remains unmeasured;
+unsupported-device fallback remains hardware-unverified; results from Samsung SM-S918B must not
+be generalized to other devices. Human full-body/face physical verification is the remaining
+dependency, now explicitly planned for a solo tester. Resume only when the owner is available.
+
+
+### Phase 2 autonomous non-physical review - 2026-10-07
+
+Overall STATUS: partial. IMPLEMENTATION_COMPLETE; AUTOMATED_VALIDATION_COMPLETE;
+PENDING_PHYSICAL_VERIFICATION; OWNER_ACCEPTANCE_PENDING. Manual deferral is not implementation
+failure. The owner authorized automated work while unavailable; no human positioning was requested.
+Branch remains codex/phase-2-pose-face-detection; existing Draft PR #3, no merge.
+
+IMPLEMENTATION REVIEW / REPAIRS:
+- Approved modules/interfaces and 33-landmark single-person contract retained. Raw visibility/presence
+  and unknown-channel semantics remain normative; no sigmoid or validated calibration claim.
+- ADR-018: bounded initialization/runtime recovery, unavailable error diagnostics, lifecycle job
+  coalescing, callback shape/timestamp checks, post-submit lease ownership and worker-owned closure.
+  Session IDs are process-unique diagnostic epochs; they are not identity recognition.
+- Router rejects future, old-session, wrong-geometry and expired snapshots; unavailable source ages
+  saturate rather than overflow. Unusable-person loss resets filtering/session; stale face diagnostics
+  are not drawn. Rotation/dimensions/crop/strides/plane bounds are validated before conversion.
+- Percentile sorting/logging is capped at 1 Hz; plane wrappers are allocated only for admitted work.
+  Latest-frame backpressure, one RGB lease, bounded callback channel and coalesced recovery remain.
+- Native SIGBUS reproduced during R8 profile recreation with camera permission. Exact upstream relative
+  asset loading overwrites shared cache files; overlapping pipelines can still map them. ADR-019 uses
+  official model-buffer input backed by per-task read-only mapped, uncompressed packaged assets.
+  No MediaPipe source/model modification, fork or privacy exception. Failed runs remain excluded.
+  Repair confirmed by three consecutive profile suites and a final suite on the final APK.
+
+ACTUAL AUTOMATED VALIDATION:
+- JVM: 29 tests PASS, including confidence/freshness, geometry/corners/rotation/crop/mirror, ownership,
+  scheduling, filter and shot-estimator contracts. Tool evidence-window regression: 3 Python tests PASS.
+- Android 17 / API 37 x86_64 emulator only: adapter 9 tests PASS (fault/lifecycle/timestamp ownership,
+  actual full/lite Tasks, repeated direct RGB storage and no-person/no-face outputs); debug app 5 PASS;
+  R8 profile app 2 PASS. Counts inspected; crashed/zero-test runs do not count as passes.
+- SDK audit rerun: stock control 4, excluded negative control 4, adopted upstream 8 tests PASS.
+  Exclusion control proves initialization fails; it is not an approved production solution.
+- Debug/release/profile builds PASS; strict app debug/release/profile, camera debug and adapter debug
+  lint PASS. Spec validator PASS: 0 errors, 0 warnings. Final diff/scope inspection performed.
+- Exported runtime: 110 artifacts / 107 unique components; pinned registry unchanged. DataTransport,
+  Firebase transport/analytics and known telemetry transport identifiers absent. Exact Core/Vision
+  bytecode/native identifier checker PASS, dummy factory true, four native ABIs retained.
+- Final merged manifests for all variants lack INTERNET. No cloud endpoint/API key/analytics config
+  added. Models are local, exact hashes unchanged, all required third-party notices packaged.
+  APK bytes: debug 81,379,811; release 66,403,157; profile 66,975,245. Models total 18,934,540 bytes.
+  APK sizes are build artifacts, not device memory measurements. No project-wide license added.
+
+AUTOMATION / RESUME:
+The single consolidated plan is [phase-2-physical-verification.md](phase-2-physical-verification.md).
+`tools/run-phase2-solo.py` batches diagnostic aspects/resolutions after countdowns, selects observed
+controls, checks permission/displayed orientation, collects local screenshots/counters/thermal/memory,
+and optionally home/resume plus switch/return. `tools/collect-phase2-device.py` refuses overwritten
+runs, rejects process/session/reset/interrupted counter windows and retains rolling percentiles honestly.
+Trace capture has a unique ID and only its matching PID is stopped; evidence remains ignored.
+Emulator smoke tests completed four debug configurations with four retrieved traces, then front
+selection/home/resume/switch-return with local snapshots and continued inference. This validates
+controls/capture machinery, not real-human tracking, physical rotation, numerical accuracy or phone
+performance. Actual Windows signal interruption tests also PASS with and without Perfetto: owned
+capture stopped, partial trace retained, INCOMPLETE recorded and valid rate claims rejected.
+Estimated later human actions: four physical setup confirmations plus one optimized baseline/soak
+setup, with countdowns allowing a solo tester to walk into frame. No second person is required.
+
+PENDING_PHYSICAL_VERIFICATION:
+Real full-body pose/arm/side movement, visible face/head tracking, still/loss/freshness, actual front/rear
+portrait/landscape and both aspect combinations, qualitative mirrored overlay alignment, real camera
+switch/lifecycle/manual capture/offline behavior, optimized 480p/720p baselines with delivered-resolution
+review, sustained preview/backlog/crash/ANR evidence, memory/thermal and five-minute soak. Final repaired
+APK must be used. No Samsung phone was connected during this automated review. Historical limited
+20-second debug observations remain exactly as recorded above; they are not new or optimized baselines.
+
+KNOWN LIMITATIONS: numerical reprojection accuracy remains unmeasured; unsupported-device fallback
+remains hardware-unverified; results from Samsung SM-S918B must not be generalized to other devices.
+Calibration-required constants remain unvalidated; CameraX internal drops remain UNKNOWN. Profile
+includes instrumentation ABI keep rules, so its footprint is not exact release footprint. No universal
+native-network proof or GPU calculator-placement claim is inferred from bounded audits/configuration.
+No unresolved non-physical engineering blocker or new human privacy/license/product decision identified.
+No Premium UI implementation, Phase 3 behavior, owner acceptance or merge. Remaining meaningful work
+requires the owner to return for the consolidated solo physical session.
+
+
+### Phase 2 resumed solo physical verification - 2026-10-07 (session record)
+
+Local/remote HEAD verified at `998444e3f7b05eea06a470a501599ef7c24828e6`; initial tree clean.
+Authorized USB Samsung SM-S918B, Android 16/API 36 confirmed. Final checkpoint debug APK installed
+(SHA-256 `93238a714c763fe961fa0c335b5da593211f38f4615db6513c84faec743a975d`),
+CameraX live preview and actual human pose/face detections observed. All final merged manifests lack INTERNET.
+
+Runner failure reproduced before collection: Windows cp1252 decoding of Vietnamese UI XML failed.
+ADB text decoding now explicitly UTF-8; same setup rerun completed all four 60-second windows and
+15-second lifecycle-return collection. Three evidence-window regressions PASS; no app/APK change.
+Raw screenshots/logs/video/traces remain ignored locally in
+`device-evidence/phase2/physical/resume-20261007/rear-portrait-utf8/`.
+Full-body pose and face overlay visible; arm/side changes and overlay clearing observed qualitatively.
+Motion alignment/head-turn and remaining physical configurations still require final evidence review.
+No numerical reprojection or overall physical PASS claimed. Four windows: pose detection deltas
+258/370/329/394; face detection deltas 3/9/9/25; inference errors 0 in each.
+Lifecycle return: pose detections 70, face detections 6, inference errors 0.
+Requested 720p conditions degraded to delivered 480p; these are not sustained 720p results.
+Diagnostic windows are not optimized baselines; fourth includes a local screen recording.
+Thermal samples reached MODERATE (2). First trace overwrote its ring and retained ~30 s;
+whole-window compositor/trace claims are invalid. Remaining optimized baselines/soak are pending.
+
+Temporary OS auto-rotation enabled for actual physical landscape transitions; original values
+accelerometer_rotation=0 and user_rotation=0 must be restored at session end.
+Session incomplete; OWNER_ACCEPTANCE_PENDING. No Phase 3, Premium UI or merge.
+
+Trace capture repair: Phase 2 now uses app-focused gfx/view/inference tracing with streaming
+file output every second, omitting system-wide scheduler event flood. Five-second no-person
+physical smoke collection completed; trace retrieved and parsed. This is instrumentation verification,
+not a human/performance baseline. Long-window retained bounds/overwrites still require inspection.
+
+Rear-landscape first 60-second window completed with 295 pose detections, 5 face detections,
+0 inference errors. Actual landscape confirmed, but table edge obscured lower legs/feet: full-body
+landscape gate remains pending. Second window interrupted for framing correction and excluded.
+Host collectors absent afterward; exact owned device trace stopped and partial trace retrieved.
+No product defect inferred from physical obstruction. Repositioning/retry required.
+Final streaming trace configuration adds periodic flush; second 5-second smoke parsed with no
+nonzero trace error/overwrite stats. Long-window verification still pending.
+
+
+### Owner-requested safe checkpoint - 2026-10-07
+
+STATUS: partial; verification stopped for the night at the owner's explicit request.
+Branch `codex/phase-2-pose-face-detection`; existing Draft PR #3. No owner acceptance,
+Phase 3, Premium UI, merge, or new physical test/soak during checkpoint creation.
+The authoritative remaining-work list and measurement table are in
+[phase-2-physical-verification.md](phase-2-physical-verification.md), checkpoint section.
+
+COMPLETED: Samsung SM-S918B / Android 16 / API 36 and checkpoint/remote verified; final
+unchanged diagnostic APK installed and live CameraX preview observed. Rear portrait four
+60-second diagnostic collections plus 15-second background/resume and camera-switch return
+completed. Human full-body pose, face overlay, arm/side changes, and clearing on loss were
+observed qualitatively. Callback validation enforces 33 pose / 478 face points; successful
+physical detections did not report validation/inference errors. No numerical alignment or
+complete movement/head-turn/freshness acceptance is inferred. Review existing evidence first.
+No INTERNET permission in final debug/profile/release merged manifests reconfirmed.
+
+PARTIAL: rear landscape 4:3 480p completed 60-second collection (295 pose / 5 face detections,
+0 inference errors), but lower legs/feet obscured by table: partial-body evidence only.
+Landscape 16:9 interrupted and excluded from valid rates/PASS; requested 720p landscape windows
+never ran. Portrait requested 720p windows adapted to 480p and do not establish sustained 720p.
+Diagnostic timing/memory/thermal exists; optimized baselines, final soak and final crash/ANR
+acceptance remain pending. Portrait traces with overwritten rings do not establish whole-window
+preview performance. Streaming capture repaired; two 5-second engineering smoke runs preserved,
+final flush-enabled smoke parsed with no nonzero trace error/overwrite stats. No new app defect
+proven; transient motion misalignment needs evidence review/reproduction before a product fix.
+
+FIXES: explicit UTF-8 ADB UI decoding; new app-focused Phase 2 Perfetto template with streamed
+file output and periodic flush, omitting system scheduler flood. No Android production code,
+SDK/model/dependency/privacy change, rebuild, or automatic-validation repeat required tonight.
+Python compile/plan checks, 3 previously run collection regression tests, actual runner rerun,
+trace parse checks, final spec validation and diff checks are the bounded verification evidence.
+Host interrupt terminated the landscape runner without its final cleanup; exact owned trace
+was stopped/retrieved manually, metadata marked INCOMPLETE. Do not assume host process termination
+runs Python finally; audit owned processes and trace metadata when interrupting future runs.
+
+SAFE STOP CONFIRMED after owner reconnected the unlocked phone: project camera app and installed
+project library test app force-stopped. No host runner/countdown/logcat/collector/trace processor
+and no device project app/logcat/screenrecord/task-owned trace process remains. Original
+accelerometer_rotation=0 and user_rotation=0 restored and read back. Device instrumentation
+subcommand is unsupported on this Android build; absence of project test/app processes, rather
+than that failed command, is the shutdown evidence. Shared ADB/server/system services untouched.
+Connectivity was not changed. No evidence deleted or uploaded.
+
+LOCAL HANDOFF: `device-evidence/phase2/physical/resume-20261007/` contains evidence, shutdown
+state, hashes/inventory and a post-commit `checkpoint-ref.json` with exact checkpoint commit SHA.
+Evidence is ignored, not on GitHub: preserve this workspace when resuming. Resolve the tracked
+checkpoint with `git log -1 --format=%H -- docs/phase-2-physical-verification.md`.
+FIRST NEXT SETUP: rear camera landscape, lens raised clear of table edge, slight downward tilt,
+roughly 3-4 m, whole head/hands/feet visible. Recheck branch/remote/device and review retained
+valid evidence first; verify framing before a fresh 15-second countdown after owner confirmation.
+Never repeat completed valid portrait collections merely to complete the report.
+
+### Phase 2 camera relaunch / awaiting Ready — 2026-10-08
+
+STATUS: partial; setup only, no test collection or countdown started.
+DEVICES TESTED: Samsung SM-S918B, Android 16, existing diagnostic app via ADB.
+Restored foreground MainActivity; camera service reports active camera ID 0 for the app.
+Display restored to landscape (accelerometer_rotation=0, user_rotation=1); pre-action values
+were 1 and 0. This display setting is not evidence of physical landscape placement.
+Two local setup screenshots show an active scene with changing preview capture FPS
+29.49 then 28.00 (UI snapshots, not a measured test-window/display FPS claim).
+Framing is NOT ready: preview shows sideways desk/computer equipment, no full-body subject.
+Owner must physically position the phone in landscape facing the test space, lens clear of
+support/table edge, head/hands/feet visible. Recheck framing before pending rear-landscape
+collection; use explicit --countdown 15 only after owner confirms Ready.
+Preserved all previous evidence/checkpoint data; no completed tests restarted, no reinstall,
+app-data clear, log clear, connectivity change, photo capture or test runner execution.
+New setup evidence only: device-evidence/phase2/physical/relaunch-20261008-1818/.
+BLOCKERS: physical framing and owner Ready confirmation. No new acceptance/PASS claimed.
+NEXT PROPOSED: recheck physically corrected rear-landscape framing, await Ready, then resume
+only missing/invalid landscape checks in a fresh evidence directory.
+
+Ready confirmation received on 2026-10-08; pre-countdown framing snapshot retained at
+`device-evidence/phase2/physical/ready-20261008/framing.png`. Scene is now upright in landscape
+and live pose/face overlays are visible. However, the visible subject's lower legs/feet are
+cropped by the preview bottom. Full-body framing gate remains unmet. Countdown/collector
+not started; no completed tests repeated. Next: move subject farther back or adjust camera
+aim/distance to include whole head, hands and feet, then recheck before the authorized
+15-second countdown. Previous Ready authorization is retained for this pending collection.
+
+### Adjusted framing / rear-landscape thermal stop — 2026-10-08
+
+STATUS: partial. Owner Ready retained; owner requested another framing check after adjustment.
+Local `framing-20261008-181905/preview.png` shows full head/hands/feet within preview.
+Started only pending rear-landscape matrix using explicit --countdown 15, --trace, --lifecycle,
+fresh evidence `device-evidence/phase2/physical/rear-landscape-resume-20261008-1820/`.
+No prior valid portrait tests repeated or prior evidence/checkpoint files overwritten.
+DEVICE: Samsung SM-S918B / Android 16 / API 36, existing debug diagnostic APK.
+THERMAL: all first-window samples report status 4 (critical); sample SKIN 48.9 C, BAT 44.7 C.
+Stopped app on observing critical thermal state. Collector had already finished its first
+60-second window before stop took effect: summary is COMPLETE, 58 metric records,
+60.802126383-second counter window, pose detections 339, face detections 16, errors 0,
+pose completion 6.4635897357346535 Hz, face completion 1.5459985627456934 Hz.
+These are diagnostic completion rates under critical thermal conditions, not performance PASS.
+CORRECTION to live commentary: first collection finished; overall matrix is INCOMPLETE,
+not an interrupted first counter window. Retain first window for evidence review; do not
+repeat it unless review demonstrates an invalid check. No other matrix windows/lifecycle ran.
+Runner exited on missing aspect control after deliberate app stop; not a diagnosed UI defect.
+Owned trace STOPPED_CAPTURE_RETRIEVED. Follow-up device process check shows no app,
+logcat, screenrecord or perfetto process. Host runner exited code 1. Thermal remains 4,
+SKIN 48.8 C on follow-up. Camera remains stopped for cooling; landscape settings retained.
+BLOCKERS: critical thermal state; remaining 16:9/720p-request/lifecycle checks pending.
+NEXT: cool phone, verify thermal recovery and retained first-window framing/tracking, then
+resume only missing valid checks with fresh evidence and 15-second countdowns.
+No owner acceptance, whole-window preview stability or numerical alignment PASS claimed.
+
+
+## Owner stop / critical thermal incident ? 2026-10-08
+
+All Phase 2 physical testing is STOPPED by explicit owner instruction. Do not relaunch the
+camera or resume testing. No production code, APK, architecture or thermal policy changed.
+Samsung SM-S918B / Android 16 / API 36, existing debug diagnostic build only.
+
+THERMAL INCIDENT: rear-landscape attempt is INCOMPLETE. All seven retained first-window
+thermal samples report CRITICAL (4); initial SKIN 48.7 C, later SKIN 48.9 C, follow-up
+48.8 C. App was force-stopped; host runner exited and device process audit found no project
+app, logcat, screenrecord or perfetto. Trace metadata confirms STOPPED_CAPTURE_RETRIEVED.
+The raw first 480p 4:3 collector completed its 60-second window before the stop took effect;
+retain its COMPLETE summary unchanged as diagnostic evidence, not a physical gate PASS.
+Matrix session.json is INCOMPLETE. No later aspect/resolution/lifecycle window ran.
+
+EVIDENCE PRESERVED: all earlier portrait/partial-landscape/checkpoint files unchanged.
+Rehashed all 325 entries of the previous checkpoint inventory: 0 mismatches. New 384-file
+inventory, incident metadata, prior-inventory verification, retained failed-control UI and
+process audit are local under device-evidence/phase2/physical/thermal-stop-20261008/.
+Raw evidence remains ignored and must not be committed/uploaded. New run remains at
+rear-landscape-resume-20261008-1820/; setup screenshots retained separately.
+
+LOG-ONLY INVESTIGATION: critical state already existed at the first collector sample, so
+these logs cannot attribute onset to this 60-second window. App remained open during setup;
+pre-collection thermal history, ambient conditions and other workload attribution are absent.
+Perception logs report degradationLevel=6 throughout but continue pose/face callbacks,
+configured GPU labels (actual native placement NOT proven), preview capture near 29.7 FPS
+(not display FPS), analysis delivery near 26.8 FPS and delivered 640x480. Last rolling
+RGB conversion p50/p95 is 56.65/69.45 ms; pose 69.19/97.78 ms, face 46.68/86.93 ms,
+batch 128.57/181.64 ms. These are rolling snapshots, not window-only percentiles.
+Continued camera/conversion/inference load despite degradation, warm start, and diagnostic
+trace/screenshot overhead are possible contributors, not established root causes. Preview
+screenshots show charging indicator and floating overlays; their power/CPU contributions
+are unmeasured. PSS ranges 416827?447304 KiB, RSS 499664?528272 KiB with nonmonotonic
+variation: no leak established by this short window. Same PID/session and zero inference
+errors; no AndroidRuntime exception found in retained app log. No duplicate pipeline or
+resource leak proven. Collector did not abort automatically on thermalStatus=4; the manual
+stop occurred after the first collector window finished. Preflight/abort thermal handling
+is a tooling follow-up requiring a documented policy before any future physical testing.
+No new device experiment was run to investigate causes.
+
+MISSING CONTROL: runner traceback occurred while selecting the second aspect after deliberate
+app force-stop. Retained /data/local/tmp/phase2-solo.xml was copied locally; its packages are
+com.sec.android.app.launcher and com.google.android.googlequicksearchbox, with no test app.
+Thus the failed aspect lookup is consistent with the stopped app/launcher foreground, not
+evidence of an independent app UI defect. Do not classify as an independent bug without
+contradicting evidence; no reproduction or camera relaunch performed.
+
+REMAINING: review retained first-window human motion/framing (a lateral sample places the
+subject partly beyond the left edge); no full-body landscape acceptance yet. Other landscape
+aspects/requested resolutions/lifecycle, front portrait/landscape, manual capture/offline
+physical gates, optimized baselines and soak remain pending. Preserve valid portrait checks;
+repeat only demonstrated invalid/missing checks if the owner later authorizes testing.
+All physical work remains stopped, regardless of thermal recovery. Owner acceptance pending.
+
+SAFE CHECKPOINT: same codex/phase-2-pose-face-detection branch and Draft PR #3; documentation
+checkpoint only. Exact SHA and verified remote head recorded after push in ignored local
+thermal-stop-20261008/checkpoint-ref.json. No raw images/logs/traces added to Git.
+
+Checkpoint validation: git diff --check passed. Spec cross-reference validator: 0 errors,
+1 warning (jsonschema/referencing unavailable; structural schema checks skipped). No specs,
+rule/message references, production code or APK changed. Full schema validation not claimed.
+
+
+## Thermal recovery preparation - 2026-10-08
+
+Owner authorized conditional resume from 532426bec5d8eff82316040339ee17ab64369583;
+this supersedes the earlier unconditional STOP only for the new safe workflow.
+Physical collection still requires Ready per setup and fresh normal-status checks.
+Verified branch codex/phase-2-pose-face-detection, origin and exact remote/local checkpoint;
+initial working tree clean. Rehashed all 384 previous inventoried evidence files: unchanged.
+Local-only preflight: device-evidence/phase2/physical/thermal-recovery-20261008/.
+Samsung SM-S918B / Android 16: initial thermal 0, SKIN 36.2 C, BAT 34.7 C, AP 38.3 C;
+no camera process. USB charging active; no OS thermal/connectivity override. This initial
+normal reading does not replace the next launch preflight.
+
+LOG ANALYSIS: first previous sample already critical; onset/root cause unknown. Continued
+camera/inference/conversion workload despite degradation 6 and diagnostic overhead are
+possible contributors. No excessive concurrent inference batches established. Reusable
+RGB/direct task buffers and existing backpressure remain unchanged. Nonmonotonic PSS/RSS
+and stable PID do not establish allocation leak or duplicate pipeline. Native allocations,
+actual GPU placement, charging/other-app contribution and allocation rates remain unmeasured.
+Missing aspect error remains consistent with launcher foreground after app stop, not an
+independently established UI bug.
+
+FIXES: shared host thermal guard, bounded single-window runner and cooldown (ADR-020).
+Single --aspect selection resumes missing conditions; matrix/lifecycle batching rejected.
+Abort force-stops app and marks session incomplete, without automatic retry. RGB conversion
+hoists row/destination indexing outside pixel loop; output compared against reference for
+odd crops, nonneutral chroma, strides, positions and four rotations. Device improvement is
+unmeasured; no thermal-fix claim. Production inference schedule unchanged. Keep traces optional
+and screenshot/memory cadence ~10 s while thermal polling runs independently at ~2 s.
+
+NEXT PHYSICAL SETUP after Ready: rear landscape 480p 4:3, targeted 30-second full-body/lateral
+framing and motion check. Prior window has lateral clipping, warranting only targeted invalid/
+missing coverage, not repeating valid portrait tests. Guarded framing review and 15 s countdown
+required. Stop/cool down and review before other landscape conditions or front setups.
+If framing is wrong, stop and correct. Capture/offline/lifecycle, optimized baselines and soak
+remain pending; long soak deferred until short-window thermal behavior is understood.
+Awaiting new Ready; no camera relaunched. No interrupted PASS, Phase 3, Premium UI, merge
+or owner acceptance.
+
+Validation: camera debug unit tests (including new conversion equivalence), perception API
+tests, debug/profile/release builds and app lintDebug PASSED. Python evidence/thermal suite:
+8 tests PASSED. Full spec validation using cached jsonschema/referencing: 0 errors, 0 warnings.
+No new device behavior/performance test or acceptance claimed. Prepared debug APK hash: 915b900a923e8a5e95583f983fbca9b1eb6bab48bf98b4f00912fe0772cb5e11.
+Guarded --framing-only saves a setup screenshot then stops app without collecting test metrics;
+use after Ready to review framing before the separately bounded test invocation.
+Camera remains stopped and new APK device verification remains pending Ready.
+
+
+### Guarded rear-landscape framing check - 2026-10-08
+Owner confirmed new Ready. Clean checkpoint ab02d7bf5c37186d0782448366d630541116b5e2
+verified; fresh initial device check status 0, SKIN 37.8 C, BAT 35.9 C, app stopped.
+Installed prepared debug APK 915b900a923e8a5e95583f983fbca9b1eb6bab48bf98b4f00912fe0772cb5e11.
+Ran only --framing-only after guarded 30-second camera-off normal-status cooldown.
+Local evidence: device-evidence/phase2/physical/recovery-framing-20261008/.
+Guard samples all status 0; final SKIN 39.7 C. Camera auto-stopped after setup snapshot;
+runner exited 0, session FRAMING_ONLY_NO_TEST_COLLECTION. Pose overlay visibly present,
+but subject lower legs/feet clipped at preview bottom: full-body framing NOT ready.
+No countdown, physical test collection, performance PASS or repeated completed tests.
+Next: reposition subject/phone to include whole head/hands/feet with margin; owner Ready
+retained for this setup, but request adjustment notification and recheck before collection.
+Camera stays stopped meanwhile; fresh cooldown/thermal checks required on next launch.
+
+Post-check process audit found an app process present after runner exit (cause unestablished).
+Explicitly force-stopped again; pidof empty and camera service Active Camera Clients [] verified.
+No capture/logcat/perfetto processes observed. Keep app closed pending framing correction.
+
+
+### Adjusted framing refused by thermal preflight - 2026-10-08
+Owner requested full-body recheck with no collection if head/feet cropped. Guard refused
+before camera launch: Android status 1 (LIGHT), SKIN 39.3 C; required status is 0.
+Fresh local evidence recovery-framing-adjusted-20261008/ retained, session INCOMPLETE.
+No framing image, countdown or 30-second collection ran. No automatic retry.
+Read-only follow-up showed status 1, SKIN 40.1 C, BAT 36.4 C and app PID 24691 owning
+rear camera 0 despite runner refusal/force-stop. Cause of reactivation unestablished;
+not evidence that guarded runner launched it. Explicitly force-stopped again and verified
+pidof empty / Active Camera Clients []. Owner advised to keep app closed during cooldown;
+agent will reopen only after fresh normal checks. Framing remains unverified, no PASS.
+Prior evidence unchanged. Physical testing stopped on elevated preflight as instructed.
+Next: cool phone with app closed; fresh thermal preflight and guarded head/feet review,
+then 15-second countdown only if framing passes and thermal remains acceptable.
+
+
+### Physical pause / source-only thermal review - 2026-10-08
+
+Owner paused ALL physical testing and camera/inference launches. Prior Ready is not permission
+to resume during this pause. Reviewed retained logs/trace/source only; no ADB or device activity.
+Findings and next safe test: [phase-2-thermal-review.md](phase-2-thermal-review.md), ADR-021.
+Genuine defect fixed: framing-only host path previously initialized full AI/analysis. New debug
+preview-only path creates no MediaPipe pipeline and binds no analyzer/capture, omits sensor/
+diagnostic overlay work, selects camera/aspect at launch, and closes within a best-effort 12 s
+monotonic deadline. Host rejects missing preview-only label. Full countdown moves before camera
+launch, eliminating 15 s of idle inference. LIGHT launch policy reviewed but kept conservative;
+SEVERE/CRITICAL/rapid-rise abort and Android protections unchanged. Root thermal cause unresolved.
+Trace query retained locally at device-evidence/phase2/physical/framing-source-review-20261008/;
+no source evidence modified. Device gains/unattended shutdown behavior UNVERIFIED.
+All physical gates pending and tests paused; no acceptance/merge/Phase 3/Premium UI.
+
+
+Host validation for paused investigation: debug/profile/release builds, camera unit tests,
+perception API tests and app lintDebug PASSED. Host collection/thermal/framing integration suite:
+11 tests PASSED (mocked ADB only, no device). Full spec validator: 0 errors, 0 warnings.
+Diff whitespace check passed. Reverified previous 384-file evidence inventory: no mismatches.
+No new APK installed or device check run; preview-only behavior and thermal gain pending physical
+verification after explicit resume. Local trace-derived review/inventory retained, never uploaded.
+
+
+### One preview-only request blocked before launch - 2026-10-08
+Owner Ready authorized one bounded rear-landscape preview-only check, no AI/analysis/collection.
+Checkpoint 9d57e8d6851d60c8257939f4b38dae83e99ea5c9 / clean tree verified. Initial read status 0,
+SKIN 38.3 C; later pre-install read status 0 / SKIN 39.8 C. Installed validated debug APK
+8899dbbd861d4a320cb163d5a72722a58947e75f295f74a289f24e34352645e4 without launching.
+During camera-off cooldown guard observed status 1 / SKIN 40.3 C and refused launch.
+Runner cameraLaunches=0, INCOMPLETE, no framing screenshot or countdown/collection/inference
+requested. Preview-only mode and 12-second automatic shutdown NOT EXERCISED; no PASS.
+Subsequent audit unexpectedly found app PID 6692 owning rear camera 0 despite runner refusal
+and cleanup. Reactivation source UNKNOWN; explicitly force-stopped again, pidof empty and
+Active Camera Clients [] verified. Final post-stop status 1 / SKIN 40.1 C; maximum across
+recorded samples 40.3 C. Full head/hands/feet visibility UNKNOWN (no new framing image).
+Local evidence: device-evidence/phase2/physical/preview-only-once-20261008-191941/;
+previous evidence/checkpoints unchanged. No retry; owner advised to keep app closed.
+Errors: cooldown normal-status requirement failed; unexpected external app reactivation
+unresolved. Testing remains stopped with elevated thermal state; prior unfinished gates pending.
+
+
+### Camera reactivation investigation / camera-idle invariant - 2026-10-08
+PHASE: 2; STATUS: partial, physical camera/inference testing PAUSED.
+Checkpoint 400a688 verified; same branch/Draft PR #3. No new camera/inference/installation or
+instrumentation launch. See [camera idle review](phase-2-camera-idle-review.md), ADR-022.
+Retained active client was actual rear camera 0 owned by app PID 6692. Root trigger unknown;
+zero harness launches did not imply idle. Confirmed harness defect fixed: missing camera/PID
+verification during cooldown and after stop. Added fail-closed ownership invariant, exact
+project/test-package stop/verification, idle-only mode, command journal and resilient cleanup.
+Normal user startup and all thermal protections unchanged. No product lifecycle bug claimed.
+Device currently disconnected; no current device cleanup/thermal state certified. Latest
+retained cleanup had empty PID and clients []; current host capture-process inventory empty.
+Next: reconnect for cleanup/idle-only diagnostics, no launch. NOT SAFE TO RESUME physical tests.
+Evidence preserved; no interrupted PASS, merge, owner acceptance, Phase 3 or Premium UI.
+
+
+Validation: 20 host collection/thermal/ownership/framing regression tests PASSED, including
+idle-only no-launch, reactivation-before-launch abort and guard shutdown despite stop failure.
+Camera unit/perception API tests, debug/profile/release builds and lintDebug PASSED (host only).
+Full spec validation: 0 errors, 0 warnings. Diff check passed. Rehashed previous 384-file
+inventory: 0 mismatches. No physical test, camera launch, inference or instrumentation run.
+Current device unavailable; final live cleanup remains UNVERIFIED, not PASS. Local-only
+review evidence: device-evidence/phase2/physical/camera-idle-review-20261008/.
+
+
+### Device cleanup and idle verification ONLY - 2026-10-08
+Owner authorized cleanup-only from e041702ea84b91b0575cfa7285e3e9458bba1c1d.
+Checkpoint/clean tree verified; Samsung SM-S918B serial R5CW40EE9QK connected/authorized.
+No camera launch, MediaPipe, inference, installation, physical test or thermal override.
+Initial, post-cleanup, ~3-second interval and final samples: no com.aiphotographer process,
+no active camera client. 30.746-second idle observation; no reactivation observed. No device
+logcat/perfetto/screenrecord candidates; no host task-owned collectors in inventory.
+No package/process needed stopping. Device cleanup/idle VERIFIED for sampled window only.
+Thermal status NORMAL (0) throughout. Battery 34.6 -> 34.9 C, USB charging unchanged.
+Skin initially 35.7 C, minimum 35.6 C, final/max 38.3 C. Rise of 2.7 C within a sampled
+interval under 30 seconds meets existing rapid-rise abort seed, despite no observed project
+camera/inference. Root heat contribution remains unresolved; no new attribution claim.
+SAFE FOR NEXT SHORT TEST: NO; require cooling/stable thermal trend and fresh idle check,
+then explicit authorization/Ready. No automatic retry or physical gate PASS.
+Local evidence: device-evidence/phase2/physical/cleanup-idle-20261008-193104/ includes raw
+process/camera/thermal snapshots, battery reports, device/host times, collector inventory,
+report and safety review. Previous 384 inventoried files remain unchanged. Prior checkpoint
+preserved; physical tests remain paused. No merge, acceptance, Phase 3 or Premium UI.
+
+
+### Fresh cleanup-only idle observation - 2026-10-08 19:39-19:40
+Owner repeated cleanup-only request from e041702. Preserved newer descendant fe3a599 and clean
+tree; no checkout/reset or evidence overwrite. Samsung SM-S918B R5CW40EE9QK connected.
+No camera/MediaPipe/inference/physical test launched. Fresh local evidence:
+device-evidence/phase2/physical/cleanup-idle-20261008-193941/.
+31.693-second idle observation plus initial/final snapshots: no project processes, no active
+camera clients, no unexpected reactivation, no device/host task-owned collectors. No stop needed.
+Thermal NORMAL (0) throughout; SKIN initial/max 36.7 C, final 36.5 C; battery 34.9 -> 34.8 C.
+No >=2 C/30 s rapid rise observed. Cleanup/idle verified for sampled window; no errors.
+Eligible for a next short guarded preview-only check ONLY after explicit Ready and fresh
+preflight; this result does not authorize automatic launch or inference/collection. Earlier
+rapid-rise observation remains preserved. No Phase 2 acceptance, merge or Phase 3.
+
+
+### ONE guarded rear-landscape preview-only framing check - 2026-10-08
+Owner explicitly requested one check and confirmed Ready via input. Checkpoint f02d096,
+branch and clean tree verified. SM-S918B R5CW40EE9QK connected; idle-only preflight verified
+NORMAL (0), no rapid rise, no project PID/camera client; no launch during preflight.
+Ran exactly one guarded --framing-only rear-landscape 4:3 launch on installed validated
+8899dbbd861d4a320cb163d5a72722a58947e75f295f74a289f24e34352645e4 debug APK.
+UI label confirms analysis disabled; developer/perception overlays absent. Local screenshot
+shows full head, both hands and both feet inside frame (current pose only; motion coverage
+not tested). New path skips MediaPipe factory and ImageAnalysis; no inference/collection run.
+Host launch-command to automatic cleanup 9.375 s, before 12-second activity deadline. The
+12-second timer is configured but was not independently exercised because host stopped earlier.
+Cleanup verified zero project/test PID and zero active camera clients. No retry/errors/guard
+trigger. Guard thermal status 0 throughout; before 36.0 C, after/max 36.3 C SKIN. Additional
+~12-second post-shutdown observations remained status 0 / 36.3 C, zero PID/client, no reactivation.
+Evidence preserved locally at guarded-preview-only-20261008/ and prior idle-only preflight at
+preview-ready-preflight-20261008/ under device-evidence/phase2/physical/. Previous 384-file
+inventory unchanged. Framing-only success is not full-inference tracking, performance, alignment
+or landscape-matrix PASS. No repeated completed tests, merge, acceptance or Phase 3.
+Safest next: keep camera stopped, cool/rest, review this result; only a separately authorized
+short inference test with new Ready, fresh idle/thermal checks and camera-off countdown may follow.
+
+
+### One authorized rear-landscape inference window - 2026-10-08
+Continued from e1a511aa2797ddb440a2f76d1b73ad8b1e9fd82b on the existing Phase 2 branch.
+Owner accepted prior preview-only framing and confirmed Ready. Exactly one launch, no retry.
+Samsung SM-S918B / Android 16 API 36, installed validated debug APK
+8899dbbd861d4a320cb163d5a72722a58947e75f295f74a289f24e34352645e4.
+Camera-off idle preflight: NORMAL (0), stable SKIN 35.8-35.9 C, no project PID/camera client.
+Runner repeated guarded cooldown and 15-second camera-off countdown before rear-landscape
+4:3 inference. Delivered analysis 640x480/crop 640x480. Local MediaPipe logs report pose=GPU,
+face=GPU; hardware execution placement was not independently profiled.
+
+Collection completed: 30.000 s requested sampling window, 30.679 s collector wall time;
+29.787 s counter interval. Launch-command to force-stop was 40.024 s including startup/UI
+verification and collection teardown, so this was not a 30-second total camera-on limit.
+Counter deltas: pose completed/detected 230/230 (7.721 Hz), face completed/detected 56/1
+(1.880 Hz), errors 0; offered 894, accepted 230, busy skipped 17, cadence skipped 647.
+Face coverage is insufficient for PASS. Saved preview shows pose landmarks; diagnostic overlay
+obscures the upper body/head area, limiting visual alignment assessment. Prior full-body framing
+remains accepted, but numerical overlay alignment and motion/face coverage remain unverified.
+Last rolling task-to-callback latency p50/p95 ms: pose 37.664/41.864, face 24.405/49.330,
+batch 76.804/94.933. These are rolling snapshots, not exact window-only percentiles.
+Last RGB conversion/rotation rolling p50/p95 35.920/49.567 ms. App-reported preview capture
+~30 Hz does not measure display FPS or CameraX internal drops. Adaptation degradation level
+4 -> 6 is app policy, not Android thermal status. Optimized-build performance, CPU/power,
+allocation rate, display FPS and thermal endurance are unmeasured in this run.
+Sampled PSS 459420-495563 KiB; RSS 540388-577760 KiB; peak between samples unknown.
+
+Android thermal status NORMAL (0) throughout both guards, no rapid-rise guard trigger.
+Runner preflight SKIN 35.3 C, near-launch 35.4 C; end/max 37.2 C. Post-stop three snapshots
+across ~10 seconds: NORMAL (0), SKIN 37.2 -> 37.0 -> 37.0 C, no project/test PID and no
+active camera clients. Runner cleanup also verified zero clients/PIDs; host collector/logcat
+process inventory empty. No test errors, automatic retry, thermal override or further launch.
+Evidence retained locally under device-evidence/phase2/physical/guarded-inference-one-20261008/
+and inference-one-preflight-20261008/. Earlier 384-file preserved inventory hashes unchanged.
+No source changes. Collection completion is not landscape matrix PASS or owner acceptance.
+Remaining: sufficient face coverage, front/mirroring, capture/offline/lifecycle outstanding items,
+overlay alignment and optimized/performance gates per the existing matrix; completed evidence
+is preserved and not repeated. Safest next: camera-off cooldown and evidence review; only a
+separately authorized bounded setup with fresh Ready/normal-status idle preflight may follow.
+Prefer a strict total camera-on deadline for future short runs to bound startup overhead too.
+No merge, Phase 3 or Premium UI.
+
+Session validation: 20 host-only Python regression tests passed; cached full spec validation
+0 errors/0 warnings; git diff --check passed. No source/APK changes, so prior validated
+build/lint results remain applicable; builds were not rerun for this evidence-only update.
+
+
+### Face-only verification preparation - 2026-10-10 (physical pending)
+Continued from 768634306b90811004bc6b20de5c2a27211ebf52; branch/clean baseline verified.
+Reviewed existing face evidence and source: 1/56 detected in prior 29.787-second window,
+zero errors, 1.880 Hz, rolling face p50/p95 24.405/49.330 ms. Small face at full-body distance
+and pose-dependent scheduling are plausible limits, not a proven crop/rotation/confidence bug.
+Bundled MediaPipe 0.10.32 defaults checked locally: detection/presence/tracking 0.5 unchanged.
+No confirmed product defect or threshold change. See docs/phase-2-face-review.md and ADR-023.
+Added debug-only isolated face mode: no pose construction/inference or subject prerequisite,
+existing face cadence/backpressure and safety retained, no pose-model rebuild in isolated mode.
+Runner --face-only requires a single 30-second collection and current-PID mode confirmation.
+Added pure 478 finite XYZ/optional confidence validity helper/tests and faceValid478 aggregate
+counter; old logs remain readable. Count/finite validity is not a visual accuracy claim.
+
+ADB device list empty; idle-only attempt failed get-state before thermal access/camera launch.
+Evidence: device-evidence/phase2/physical/face-only-idle-20261010/ and face-only-review-20261010/.
+No APK installed, inference or physical test run; current device thermal/idle/cleanup unverified.
+Prior 384-file evidence inventory unchanged, pose evidence preserved. No completed tests repeated.
+Pending exactly one close-face setup: rear-landscape, one face 50-100 cm, even lighting; initial
+forward face then gentle left/right turns; no full-body requirement. Reconnect device and wait
+for owner Ready before any launch. Fresh NORMAL/stable idle checks and 15-second camera-off
+countdown mandatory; thermal monitoring, partial evidence preservation and no automatic retry.
+Report face completed/detected/valid478, rates/rolling latency, sampled memory/thermal trend,
+actual launch-to-stop time including startup, and verified post-stop camera/process/collector release.
+No acceptance, merge, Phase 3 or Premium UI. Physical face-only behavior remains unverified.
+
+Validation: final debug/profile/release builds, app lintDebug, 11 perception API unit tests and
+6 camera unit tests passed. Host-only Python harness suite 23 tests passed; full cached spec
+validation 0 errors/0 warnings; diff whitespace check passed. New isolated-pipeline instrumentation
+regression compiled successfully but was NOT run on-device. Raw host build log retained locally
+in face-only-review-20261010/final-host-validation.txt. Prepared debug APK SHA-256:
+433055806bdda915289c0580ddf7cdd97165ba71a752ff56f527d01f5e34e989 (not installed).
+
+
+### Authorized face-only attempt after Ready - 2026-10-10 (INCOMPLETE)
+Owner confirmed Ready. Continued from a3c79e870187498c349af50fbd433be16006587b;
+clean tree and validated APK hash checked. Samsung SM-S918B R5CW40EE9QK reconnected,
+Android 16 API 36. Camera-off idle preflight NORMAL (0), stable SKIN around 34.7 C,
+zero project/test PID and active camera clients. Installed prepared debug APK with -r,
+no data/evidence deletion or install auto-launch. SHA-256:
+433055806bdda915289c0580ddf7cdd97165ba71a752ff56f527d01f5e34e989.
+Fresh runner cooldown and 15-second camera-off countdown passed. Exactly ONE rear-landscape
+--face-only launch attempted; no retry. Runner UI check found displayed PORTRAIT, bounds
+[0,0][720,1544], and aborted before the 30-second collector. This proves a displayed-orientation
+mismatch, not the phone's physical orientation or a CameraX/rotation bug; system auto-rotate/setup
+cause unverified. No Android orientation/thermal setting changed. Attempt is INCOMPLETE, not PASS.
+Launch-command to force-stop command 9.204 s. Partial startup logs retained after cleanup.
+
+PID 31647 logs confirm mode FACE_ONLY, pose STOPPED/disabled_face_only, face READY/configured GPU.
+Last startup snapshot: pose completed/detected 0/0; face completed/detected 62/33;
+faceValid478 33, errors 0, elapsed 6.433 s. Thus all 33 reported detected results passed the
+478 finite XYZ/valid-or-absent confidence contract; this does not establish visual accuracy.
+First-to-last startup counter interval 6.295 s gives face completion rate ~9.690 Hz;
+not a valid 30-second collection rate. Last rolling face p50/p95 41.453/55.592 ms (62 samples).
+GPU is configured delegate, hardware execution not independently profiled. Early no-face startup
+results cannot establish detection failure under a settled close-face/head-turn setup. No preview
+screenshot or memory sampling collector ran; close-face framing, 30-second detection success,
+head-turn coverage and memory are UNMEASURED. Validity observed only on partial startup results.
+
+Runner thermal guard NORMAL (0) throughout, SKIN initial 35.0 C, end/max 35.2 C;
+no rapid-rise/thermal guard trigger. Post-stop three read-only samples across ~10 seconds:
+NORMAL (0), SKIN 35.6 -> 35.5 -> 35.5 C; maximum observed including post-stop 35.6 C.
+Battery 33.0 C in each post-stop sample. Runner cleanup and all three later snapshots:
+zero project/test PID, zero active camera clients, no unexpected reactivation. Host collector/logcat
+inventory empty; 30-second collector never started. No sustained run, repeat or new launch.
+Evidence retained locally at face-ready-preflight-20261010/ and guarded-face-only-20261010/
+under device-evidence/phase2/physical/, including startup-ui.xml, partial-startup-app.log,
+partial-review.json, thermal guard, ownership journal and post-stop diagnostics.
+Prior 384-file inventory hashes unchanged; previous pose evidence preserved.
+No confirmed code defect or source change in this session. Existing automated builds/tests/lint
+from preparation remain applicable. Physical face-only test is still pending completion.
+Safest next: keep camera off, cool/rest, resolve displayed-orientation setup before a separately
+authorized attempt. Owner may choose portrait for a face-only check or arrange landscape/system
+Auto rotate; either needs explicit authorization and fresh Ready, normal/stable idle preflight.
+Do not automatically retry this exhausted single-launch authorization. No acceptance, merge or Phase 3.
