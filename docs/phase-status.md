@@ -1999,3 +1999,46 @@ validation 0 errors/0 warnings; diff whitespace check passed. New isolated-pipel
 regression compiled successfully but was NOT run on-device. Raw host build log retained locally
 in face-only-review-20261010/final-host-validation.txt. Prepared debug APK SHA-256:
 433055806bdda915289c0580ddf7cdd97165ba71a752ff56f527d01f5e34e989 (not installed).
+
+
+### Authorized face-only attempt after Ready - 2026-10-10 (INCOMPLETE)
+Owner confirmed Ready. Continued from a3c79e870187498c349af50fbd433be16006587b;
+clean tree and validated APK hash checked. Samsung SM-S918B R5CW40EE9QK reconnected,
+Android 16 API 36. Camera-off idle preflight NORMAL (0), stable SKIN around 34.7 C,
+zero project/test PID and active camera clients. Installed prepared debug APK with -r,
+no data/evidence deletion or install auto-launch. SHA-256:
+433055806bdda915289c0580ddf7cdd97165ba71a752ff56f527d01f5e34e989.
+Fresh runner cooldown and 15-second camera-off countdown passed. Exactly ONE rear-landscape
+--face-only launch attempted; no retry. Runner UI check found displayed PORTRAIT, bounds
+[0,0][720,1544], and aborted before the 30-second collector. This proves a displayed-orientation
+mismatch, not the phone's physical orientation or a CameraX/rotation bug; system auto-rotate/setup
+cause unverified. No Android orientation/thermal setting changed. Attempt is INCOMPLETE, not PASS.
+Launch-command to force-stop command 9.204 s. Partial startup logs retained after cleanup.
+
+PID 31647 logs confirm mode FACE_ONLY, pose STOPPED/disabled_face_only, face READY/configured GPU.
+Last startup snapshot: pose completed/detected 0/0; face completed/detected 62/33;
+faceValid478 33, errors 0, elapsed 6.433 s. Thus all 33 reported detected results passed the
+478 finite XYZ/valid-or-absent confidence contract; this does not establish visual accuracy.
+First-to-last startup counter interval 6.295 s gives face completion rate ~9.690 Hz;
+not a valid 30-second collection rate. Last rolling face p50/p95 41.453/55.592 ms (62 samples).
+GPU is configured delegate, hardware execution not independently profiled. Early no-face startup
+results cannot establish detection failure under a settled close-face/head-turn setup. No preview
+screenshot or memory sampling collector ran; close-face framing, 30-second detection success,
+head-turn coverage and memory are UNMEASURED. Validity observed only on partial startup results.
+
+Runner thermal guard NORMAL (0) throughout, SKIN initial 35.0 C, end/max 35.2 C;
+no rapid-rise/thermal guard trigger. Post-stop three read-only samples across ~10 seconds:
+NORMAL (0), SKIN 35.6 -> 35.5 -> 35.5 C; maximum observed including post-stop 35.6 C.
+Battery 33.0 C in each post-stop sample. Runner cleanup and all three later snapshots:
+zero project/test PID, zero active camera clients, no unexpected reactivation. Host collector/logcat
+inventory empty; 30-second collector never started. No sustained run, repeat or new launch.
+Evidence retained locally at face-ready-preflight-20261010/ and guarded-face-only-20261010/
+under device-evidence/phase2/physical/, including startup-ui.xml, partial-startup-app.log,
+partial-review.json, thermal guard, ownership journal and post-stop diagnostics.
+Prior 384-file inventory hashes unchanged; previous pose evidence preserved.
+No confirmed code defect or source change in this session. Existing automated builds/tests/lint
+from preparation remain applicable. Physical face-only test is still pending completion.
+Safest next: keep camera off, cool/rest, resolve displayed-orientation setup before a separately
+authorized attempt. Owner may choose portrait for a face-only check or arrange landscape/system
+Auto rotate; either needs explicit authorization and fresh Ready, normal/stable idle preflight.
+Do not automatically retry this exhausted single-launch authorization. No acceptance, merge or Phase 3.
