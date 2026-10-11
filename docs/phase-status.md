@@ -2143,3 +2143,29 @@ resume authorization, fresh verified SM-S918B normal/stable/available checks and
 No automatic retry/test, merge, Phase 3, Premium UI or acceptance claim.
 
 Final full cached spec validation: 0 errors, 0 warnings; git diff --check passed.
+
+
+### Authorized face-only test blocked by ADB disconnection - 2026-10-11
+Continued from 061e9b8a6ae365f10e2c226f369782c3c3a05866, clean checkpoint verified.
+Exact target serial R5CW40EE9QK/model SM-S918B verified over ADB, Android API 36.
+Validated debug APK hash remains 433055806bdda915289c0580ddf7cdd97165ba71a752ff56f527d01f5e34e989;
+no install/source change. Started updated idle-only preflight before requesting Ready.
+After ~12.445 seconds of thermal samples, ADB disconnected during the initial 30-second
+thermal observation. Seven retained readings NORMAL (0), SKIN 33.4 C throughout; available
+camera ownership snapshots had no clients/project PID, no observed Samsung activation.
+Required thermal observation and subsequent bounded three-sample availability phase did NOT
+complete. Session INCOMPLETE; telemetry loss failed closed. Read-only diagnostic afterwards
+showed empty adb devices list and explicit target device-not-found error. No automatic retry.
+No Ready requested, camera launch, Pose/Face inference, screenshot/collector or 30-second test.
+
+Initial project-only stop completed before monitoring. Final stop/release verification attempts
+failed because the device disappeared; cleanupErrors and thermalStop saved in session.json.
+Do not claim current camera/PID/thermal state or successful final device cleanup while disconnected.
+No Samsung service or Android settings changed. Face detection, valid478, latency, rate, memory
+and launched-app portrait orientation are unmeasured this session. Physical face-only verification
+remains pending, not PASS. Evidence retained locally at
+ device-evidence/phase2/physical/stable-face-ready-preflight-20261011/.
+Previous 384-file inventory hashes unchanged; earlier valid/partial pose and face evidence preserved.
+No source changes; prior host builds/tests/lint applicable. Stop here; reconnect verified SM-S918B,
+then separately resume fresh full preflight and request explicit Ready only after all checks pass.
+No automatic camera launch, retry, Phase 2 acceptance, merge, Phase 3 or Premium UI.
