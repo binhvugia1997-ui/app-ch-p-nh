@@ -773,3 +773,64 @@ includes outstanding front/mirroring, capture/offline/lifecycle, overlay alignme
 performance/thermal gates per existing matrix; do not repeat completed valid tests.
 Safest next: keep project camera off, natural cooldown and review rapid-rise evidence before any
 new physical authorization. No automatic retry, safety weakening, merge, Phase 3 or Premium UI.
+
+
+### Rapid-rise reconstruction - 2026-10-11 (HOST REVIEW ONLY)
+Continued from 650bb980ad9ee7b068b0055ed18d56ab32c081ad on the existing Phase 2 branch.
+No ADB/device commands, camera launch, inference, install or physical retry in this review.
+Raw source: ignored guarded-face-portrait-20261011/thermal-guard.json (42 samples),
+commands.jsonl (42 matching thermal requests), child thermal-guard.json, four raw thermal
+snapshots, samples.json and app.log. All prior evidence retained; parent/child summaries unchanged.
+
+Thermal timeline (UTC, command REQUEST times, not exact sensor acquisition times):
+- 08:25:24.083: first parent request; NORMAL / 34.5 C. Camera-off preflight remained 34.5-34.6 C.
+- 08:26:20.217: request for parent sample 28, NORMAL / 34.5 C,
+  monotonic 5064894.5621182; near end of camera-off countdown, 3.176 s before launch command.
+- 08:26:23.393: sole app launch command; subsequent log metrics confirm face-only inference.
+- 08:26:28.546: last reported 34.5 C (sample 32), request 5.153 s after launch.
+- 08:26:30.636: first reported rise to 35.1 C, request 7.243 s after launch (startup inference).
+- 08:26:38.928: first reported 35.9 C, request 15.535 s after launch (collector/inference active).
+- 08:26:49.359: sample 42 request, NORMAL / 36.6 C, monotonic 5064923.6914649;
+  first force-stop request 08:26:49.412. Launch-to-stop command interval 26.019 s.
+- Child monitor later reported 36.7 C; post-stop samples fell 36.5 -> 36.3 C with zero camera/PIDs.
+
+Exact trigger reconstruction: guard selects earliest sample with 0 < elapsed <= 30 s.
+Sample 27 at 5064892.4930286 is excluded (31.1984363 s old). Sample 28 is selected:
+5064923.6914649 - 5064894.5621182 = 29.1293467 s;
+36.6 - 34.5 = 2.1000000000000014 C in floating-point, exceeding unchanged >=2 C threshold.
+The baseline precedes launch but is correctly inside the rolling window. The reported rise
+occurs after launch, during startup and collected inference; no rise is reported in preflight
+or countdown. Using the last 34.5 C sample also gives +2.1 C in 20.7824940 s, so this stop
+is not caused by including a countdown baseline. No baseline reset at launch is appropriate.
+
+Findings: no confirmed measurement/calculation defect causing this interruption. All 42 parent
+monotonic timestamps strictly increase, sampling intervals 2.055-2.108 s; no unit mismatch,
+reordered/duplicated timestamps or expired-window baseline at trigger. Wall clock is used only
+for command audit, never for thermal subtraction. Both monitor processes use host monotonic
+clock but separate histories: child starts at 35.1 C, so its observed +1.6 C does not trigger;
+this is not contradictory evidence. Android NORMAL and the independent rapid-rise guard can
+legitimately disagree about whether the engineering stop condition is met.
+Parser consistently selects mType=3 / mName=SKIN. Four saved full dumps show cached/HAL
+SKIN pairs equal at 35.1, 35.9, 36.6 and 36.7 C; AP/BAT are not accidentally substituted.
+Parent polls retain parsed values and host completion timestamps, not complete raw payloads
+or HAL acquisition timestamps. Thus cache freshness for every parent sample, physical sensor
+accuracy and exact update latency cannot be proved. Repeated plateaus are compatible with
+HAL/cache update cadence, not proof of stale data. Evidence supports a real reported rise;
+causal heat contributions from camera, conversion, inference, display or diagnostics remain
+unmeasured. No claim that inference alone caused it. Earliest-in-window comparison is existing
+policy, not a rolling-minimum calculation; this run's flat baseline does not distinguish them.
+
+Fixes: no production or guard changes justified. No thresholds, Android protections or launch
+requirements changed. Added five host regression tests: full sanitized 42-sample replay and
+exact selected baseline; inclusive 30 s / expired boundary; non-positive elapsed exclusion;
+child-versus-parent history; SKIN selection among AP/BAT and equal cached/HAL entries.
+Validation: 43 Python host tests PASS; debug/profile/release assemble, app lintDebug and 28
+geometry/perception API/camera Kotlin unit tests PASS (Gradle incremental tasks accepted).
+Initial validation command used nonexistent JVM testDebugUnitTest tasks; corrected to :test
+for pure JVM modules and reran successfully. No device instrumentation executed.
+Spec validation and diff whitespace checks required before checkpoint; results recorded below.
+Partial face results remain 160/160 valid478 over 16.610 s, 9.633 Hz, NOT a completed 30 s PASS.
+Next safe action: remain paused with camera off; review workload using existing source/logs.
+Any new physical attempt needs separate owner authorization plus fresh normal/stable idle
+preflight and Ready. No automatic retry, merge, owner acceptance, Phase 3 or Premium UI.
+Final host validation: spec validator 0 errors / 0 warnings; diff check PASS; original 384-file evidence inventory rehashed with zero mismatches.
