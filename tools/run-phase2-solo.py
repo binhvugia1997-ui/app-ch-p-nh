@@ -45,7 +45,7 @@ def main():
         parser.error('Face-only verification requires exactly one 30-second inference collection.')
     if args.plan and args.face_only:
         print('One face-only 30-second collection: one visible face 50-100 cm away, even light, '
-              'face forward then gentle left/right turns; no full-body requirement. Wait for Ready, '
+              'face forward then gentle left/right turns; rear-portrait recommended; no full-body requirement. Wait for Ready, '
               'fresh NORMAL/stable camera-off preflight and 15-second camera-off countdown. '
               'Debug face-only configuration must be confirmed; thermal guards stop the app; no retry. '
               'Startup/cleanup add camera-on overhead beyond the collection window.')
@@ -161,6 +161,9 @@ def main():
                 guard.check()
         guard.check()
         idle.require_idle()
+        rotation_settings = {key: adb('shell','settings','get','system',key).strip()
+                             for key in ('accelerometer_rotation','user_rotation')}
+        (output/'rotation-settings-before-launch.json').write_text(json.dumps(rotation_settings,indent=2),encoding='utf-8')
         # Fresh task resets diagnostic controls to known defaults; no app data or evidence is deleted.
         adb('shell','am','start','-S','-f','0x10008000','-n',APP+'/.MainActivity',
             '--ez','analysis720p',str(args.analysis720p).lower(),
@@ -170,6 +173,9 @@ def main():
             '--ez','framingWide',str(args.aspect == '16:9').lower())
         time.sleep(6)
         ui = hierarchy()
+        ET.ElementTree(ui).write(output/'startup-ui.xml',encoding='utf-8',xml_declaration=True)
+        metadata['uiHierarchyRotation'] = ui.get('rotation')
+        metadata['expectedOrientation'] = args.configuration.rsplit('-',1)[1]
         if args.framing_only:
             labels = {ET.parse(p).find("string[@name='framing_preview']").text for p in
                       (ROOT/'app/src/main/res/values/strings.xml', ROOT/'app/src/main/res/values-vi/strings.xml')}
@@ -181,7 +187,8 @@ def main():
         displayed = 'landscape' if bounds[2]-bounds[0] > bounds[3]-bounds[1] else 'portrait'
         metadata['displayedOrientation'] = displayed
         if not args.configuration.endswith(displayed):
-            raise RuntimeError('Displayed orientation does not match physical setup; no capture started.')
+            raise RuntimeError(f'Displayed orientation {displayed} does not match requested {metadata["expectedOrientation"]}; '
+                               'Test collector not started. Camera/startup inference may already have run; stopping without retry.')
         if args.configuration.startswith('front') and not args.framing_only:
             tap(switch_texts)
         configurations = [(720 if args.analysis720p else 480, args.aspect)]
@@ -232,7 +239,8 @@ def main():
             guard.check()
             previous = (resolution,aspect)
         metadata['collectionStatus'] = 'COMPLETE_REQUIRES_EVIDENCE_REVIEW'
-    except BaseException:
+    except BaseException as error:
+        metadata['failureReason'] = str(error)
         metadata['collectionStatus'] = 'INCOMPLETE'
         raise
     finally:

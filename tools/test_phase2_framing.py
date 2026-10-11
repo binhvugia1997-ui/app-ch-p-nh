@@ -1,5 +1,6 @@
 """Host-only runner integration: all ADB and camera operations are mocked."""
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -36,11 +37,23 @@ class FramingTests(unittest.TestCase):
     def test_face_only_unconfirmed_aborts_and_cleans_up(self):
         self.run_framing(False, framing=False, face_only=True)
 
-    def run_framing(self, supported, framing=True, unexpected=False, idle_only=False, stop_failure=False, face_only=False):
+    def test_face_only_portrait_is_supported_without_rotation_override(self):
+        self.run_framing(True, framing=False, face_only=True, orientation='portrait')
+
+    def test_face_only_landscape_request_portrait_display_aborts_and_preserves_evidence(self):
+        self.run_framing(True, framing=False, face_only=True, mismatch=True)
+
+    def test_face_only_portrait_request_landscape_display_also_aborts(self):
+        self.run_framing(True, framing=False, face_only=True, orientation='portrait', mismatch=True)
+
+    def run_framing(self, supported, framing=True, unexpected=False, idle_only=False, stop_failure=False, face_only=False, orientation='landscape', mismatch=False):
         calls = []
         xml = '<hierarchy><node bounds="[0,0][1544,720]"><node text="Framing preview (analysis off)" /></node></hierarchy>'
         if not supported:
             xml = '<hierarchy><node bounds="[0,0][1544,720]" /></hierarchy>'
+        if (orientation == 'portrait') != mismatch:
+            xml = xml.replace('[1544,720]','[720,1544]')
+        xml = xml.replace('<hierarchy>','<hierarchy rotation="0">')
         camera_reads = 0
         def run(args, **kwargs):
             nonlocal camera_reads
@@ -78,6 +91,8 @@ class FramingTests(unittest.TestCase):
                 argv.remove('--framing-only')
                 argv[argv.index('front-landscape')] = 'rear-landscape'
                 argv[argv.index('16:9')] = '4:3'
+            if orientation == 'portrait':
+                argv[argv.index('rear-landscape')] = 'rear-portrait'
             if face_only:
                 argv.append('--face-only')
             with patch.object(solo.sys,'argv',argv), patch.object(solo.subprocess,'run',side_effect=run), \
@@ -89,6 +104,9 @@ class FramingTests(unittest.TestCase):
                         solo.main()
                 elif unexpected:
                     with self.assertRaisesRegex(RuntimeError,'invariant violated'):
+                        solo.main()
+                elif mismatch:
+                    with self.assertRaisesRegex(RuntimeError,'startup inference may already have run'):
                         solo.main()
                 elif face_only and not supported:
                     with self.assertRaisesRegex(RuntimeError,'Face-only mode not confirmed'):
@@ -113,6 +131,19 @@ class FramingTests(unittest.TestCase):
                 self.assertIn('6692',(output/'camera-idle.jsonl').read_text())
                 popen.assert_not_called()
                 return
+            if mismatch:
+                popen.assert_not_called()
+                self.assertIn(['GUARD_CLOSE'],calls)
+                self.assertTrue(any('force-stop' in c for c in calls))
+                meta = json.loads((output/'session.json').read_text())
+                self.assertEqual('landscape' if orientation == 'portrait' else 'portrait',meta['displayedOrientation'])
+                self.assertEqual(orientation,meta['expectedOrientation'])
+                self.assertEqual('INCOMPLETE',meta['collectionStatus'])
+                self.assertIn('collector not started',meta['failureReason'])
+                self.assertTrue((output/'startup-ui.xml').exists())
+                self.assertTrue((output/'rotation-settings-before-launch.json').exists())
+                self.assertFalse(any('settings' in c and 'put' in c for c in calls))
+                return
             if face_only and not supported:
                 popen.assert_not_called()
                 self.assertIn('INCOMPLETE',(output/'session.json').read_text())
@@ -122,6 +153,7 @@ class FramingTests(unittest.TestCase):
                 if face_only:
                     launch = next(c for c in calls if 'start' in c)
                     self.assertEqual('true',launch[launch.index('faceOnly')+1])
+                self.assertFalse(any('settings' in c and 'put' in c for c in calls))
                 popen.assert_called_once()
                 self.assertFalse((output/'framing.png').exists())
                 launch_index = next(i for i,c in enumerate(calls) if 'start' in c)

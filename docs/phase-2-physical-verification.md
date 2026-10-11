@@ -577,3 +577,26 @@ Safest next: keep camera off, cool/rest, resolve displayed-orientation setup bef
 authorized attempt. Owner may choose portrait for a face-only check or arrange landscape/system
 Auto rotate; either needs explicit authorization and fresh Ready, normal/stable idle preflight.
 Do not automatically retry this exhausted single-launch authorization. No acceptance, merge or Phase 3.
+
+
+### Face-only orientation investigation - 2026-10-11
+Continued from 69259a4c9ae7c926ab8283e3afb26e263b258e6e; clean branch/checkpoint verified.
+No camera/inference/physical tests or APK install. Retained app XML confirms portrait/rotation 0;
+CameraX logs 640x480 -> upright 480x640. Runner landscape expectation caused the correct abort.
+Historical auto-rotation/physical positioning unknown; no Activity/CameraX defect established.
+Earlier landscape screenshot inspected, demonstrating retained landscape support. Current target
+SM-S918B absent; only different Samsung SM-N981N attached. Read-only queries used target serial,
+failed safely; other phone untouched. No current target thermal/rotation/idle claims made.
+Confirmed harness bug fixed: misleading no-capture wording despite startup inference. Runner now
+saves startup XML, read-only rotation settings, expected/displayed orientation and failureReason.
+Both orientation modes supported; mismatch still aborts without collector/retry. No product code,
+manifest, global orientation lock, model/confidence threshold or thermal protection changes.
+Regression suite 26 host Python tests passed, including portrait/landscape success, mismatches in
+both directions, evidence/cleanup and no settings writes. Host debug/profile/release builds,
+lintDebug and 28 Kotlin unit tests (geometry 11, perception API 11, camera 6) passed.
+Previous 384-file inventory hashes unchanged; partial face attempt remains INCOMPLETE, not PASS.
+Details: docs/phase-2-orientation-review.md. Raw build/diagnostic review retained locally under
+orientation-review-20261011/. Smallest prepared next: one rear-PORTRAIT face-only 30-second
+window at 50-100 cm, even lighting and gentle head turns; no full-body requirement or extra
+framing run. Needs separate authorization, fresh Ready, target device normal/stable/idle checks
+and 15-second camera-off countdown. No launch now; no retry/acceptance/merge/Phase 3.
