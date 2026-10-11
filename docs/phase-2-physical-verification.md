@@ -626,3 +626,25 @@ Previous 384-file inventory hashes unchanged. No code changes or repeated physic
 Next: remain camera-off; separately resume only after Ready and a fresh stable NORMAL/idle
 preflight without external camera activity. No inference/collection launched automatically.
 No merge, Phase 3, Premium UI or acceptance claim.
+
+
+### Fresh idle-only preflight stopped on Samsung client - 2026-10-11
+Continued from cfb77c88c0a680ec8087e6ec060421f9f4f809a0, clean checkpoint verified.
+ADB serial R5CW40EE9QK and model SM-S918B verified; no other device used. Fresh camera-off
+--idle-only preflight performed as requested. Initial host collector inventory empty; no project
+PID throughout. Before completion, at 2026-10-11 04:08:48.205 UTC (11:08:48.205 Asia/Bangkok),
+camera 1 active client com.samsung.android.smartface PID 8505 appeared. Guard correctly aborted;
+preflight INCOMPLETE. No project app launch, camera/inference, Pose, Face collection, or retry.
+No Ready requested because checks failed. Samsung service was not disabled, killed or modified;
+no device/thermal settings changed. External activation purpose remains unestablished.
+Thermal NORMAL (0) throughout; SKIN initial/max 39.2 C, final/min 39.1 C; no rapid-rise trigger.
+Final cleanup snapshot had zero active clients and project/test PID, but this does not negate
+intermittent ownership during preflight or establish a stable idle interval. Existing runner only
+stops exact project packages; no external owner stopped. No collectors were launched.
+Evidence preserved at device-evidence/phase2/physical/face-idle-resume-20261011/; previous
+384-file inventory unchanged. No code changes; no build/unit-test rerun required for doc-only
+update. Face detection/valid478/rate/latency/memory unmeasured in this session; authorized one
+rear-portrait 30-second face-only window remains pending, with no completed physical test repeated.
+Stop here as requested. Next: keep project camera off; resolve/review intermittent external camera
+ownership without changing Samsung services, then separately request fresh preflight. Only after
+all checks pass request Ready; no automatic retry, merge, Phase 3 or acceptance claim.
