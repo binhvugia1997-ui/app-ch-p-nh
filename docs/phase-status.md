@@ -2530,3 +2530,15 @@ Host tests cover the pure probe and collector's aggregate-log contract; the Andr
 compiles, while its actual Face callback integration and performance remain device-unverified.
 No device/camera test or inference ran before these automated gates. Phase 2 owner acceptance,
 physical tracking, PR merge and Phase 3 remain pending.
+
+### Guarded Face-only readiness stopped: target unavailable - 2026-10-11
+
+After all host checks passed and commit 77f4d73 was pushed, one read-only `adb devices -l`
+availability check listed no attached devices. The exact target SM-S918B / serial R5CW40EE9QK
+could not be verified. No thermal or camera-idle preflight, Ready request, APK install, app
+launch, camera/inference, collector or physical retry occurred. Current device thermal, camera
+ownership and cleanup state are UNKNOWN; no new latency, rate, memory or continuity number
+exists. The planned one-person rear-portrait Face-only 30-second verification remains pending.
+Resume only after the exact target reconnects, then perform fresh NORMAL/stable thermal and
+stable camera-idle preflight; request explicit Ready before one guarded camera launch. Keep
+existing thermal guards, no automatic retry, PR merge or Phase 3.
