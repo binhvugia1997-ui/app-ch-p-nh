@@ -722,3 +722,54 @@ previous 384-file evidence inventory unchanged. No code changes; prior host buil
 validation applicable. Stop here with project camera off; cool/rest, then separately resume fresh
 NORMAL/stable thermal and camera availability checks, followed by explicit Ready only on pass.
 No automatic retry, owner acceptance, merge, Phase 3 or Premium UI.
+
+
+### ONE rear-portrait face-only attempt after Ready - 2026-10-11 (THERMAL ABORT / INCOMPLETE)
+Continued from f8da811efc7cab00669f34fe48cab52a300d5176 with the validated stable-idle harness.
+Samsung SM-S918B serial R5CW40EE9QK / Android 16 API 36 verified. Initial idle-only preflight
+passed: NORMAL (0), stable SKIN 35.8 -> 35.7 C, three consecutive idle samples, no project PID,
+clients/collectors or observed reactivation. Owner then explicitly confirmed Ready. Exactly ONE
+rear-portrait --face-only --seconds 30 launch attempted; no retry or Pose inference.
+Fresh runner 30-second NORMAL observation, bounded stable availability wait and 15-second
+camera-off countdown passed. Validated installed debug APK:
+433055806bdda915289c0580ddf7cdd97165ba71a752ff56f527d01f5e34e989.
+Mode confirmation: pose STOPPED/disabled_face_only, face READY/configured GPU. UI portrait,
+rotation 0; delivered analysis 640x480 -> upright crop 480x640. No orientation mismatch.
+Saved ~10-second preview shows one face with face landmarks over it; numerical alignment,
+exact distance and complete head-turn coverage not independently measured.
+
+Parent rapid-rise guard STOPPED app: SKIN 34.5 -> 36.6 C across 29.130 seconds triggered
+>=2 C within 30 s, despite Android status NORMAL (0). Parent preflight first 34.5 C, stop/max
+36.6 C; child diagnostic monitor reached maximum 36.7 C after stop. No SEVERE/CRITICAL event,
+no thermal override or changed settings. Host launch-command to FIRST force-stop command
+26.019 s; this is not an exact hardware camera-on duration. Session INCOMPLETE, not PASS.
+Collector timer reached 30.001 s (31.133 s wall), but app PID was missing at 21.766/30.001 s
+samples. Raw collector summary COMPLETE means its timer finished; counterWindowInvalid=true.
+Overall session/thermalStop/review-result.json correctly record interruption. Do not use this
+as a completed 30-second inference test or full-window performance result. Diagnostic collection
+continued after immediate app stop until its timer, without inference; all collectors then exited.
+
+Partial evidence only: first/last same-PID/session metric snapshots span 16.610 s with
+160 face completions, 160 detections, 160 valid478 observations, zero pose completions/errors.
+Partial face completion rate 9.633 Hz, detection success 160/160 (100%) within that counter
+interval; not a full 30-second rate or head-turn acceptance result. Last cumulative snapshot
+includes startup: 233 completed / 221 detected / 221 valid478; every reported detected face
+passed the 478 finite XYZ/valid-or-absent confidence contract. Zero source errors recorded.
+Last rolling task-to-callback face latency p50/p95 40.959/55.082 ms (233 samples), not
+exact partial/full-window percentiles. Configured GPU is logged, execution placement unprofiled.
+PSS sampled before stop 221781-250379 KiB; RSS 282888-315624 KiB. Later samples null after
+force-stop; process peak, optimized-build performance, CPU/power/allocations remain unmeasured.
+
+Runner final snapshots and three read-only post-stop checks: zero active camera clients and
+project/test PIDs; host collector/logcat inventory empty. Post-stop thermal NORMAL (0), SKIN
+36.5 -> 36.5 -> 36.3 C over ~10 seconds. No unexpected ownership errors reported. No device
+settings changed, so nothing to restore; Samsung services untouched.
+Evidence retained locally under device-evidence/phase2/physical/face-cooled-preflight-20261011/
+and guarded-face-portrait-20261011/, including review-result.json preserving overall INCOMPLETE
+without overwriting raw collector output. Previous 384-file inventory hashes unchanged.
+No code changes; prior automated builds/tests/lint remain applicable. Face-only 30-second gate
+still pending; partial validity/portrait behavior observed, not owner acceptance. Remaining Phase 2
+includes outstanding front/mirroring, capture/offline/lifecycle, overlay alignment and optimized
+performance/thermal gates per existing matrix; do not repeat completed valid tests.
+Safest next: keep project camera off, natural cooldown and review rapid-rise evidence before any
+new physical authorization. No automatic retry, safety weakening, merge, Phase 3 or Premium UI.
