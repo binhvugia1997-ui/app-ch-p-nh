@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-11** by **Codex Local** (host-only Face pipeline audit; physical testing paused).
+Last updated: **2026-10-11** by **Codex Local** (host-only collector lifecycle hardening; physical testing paused).
 
 ---
 
@@ -2337,3 +2337,17 @@ Previous evidence and checkpoints preserved. Validation results recorded in the 
 Next safe action stays host-only: explicit diagnostic/cancellation design review; physical gates
 remain incomplete, no automatic retry, owner acceptance, merge, Phase 3 or Premium UI.
 Final host validation: 43 Python / 37 Kotlin tests, debug/profile/release builds, lint and spec validation PASS. Original 384-file inventory has zero hash mismatches.
+
+
+### Collector lifecycle hardening - 2026-10-11 (HOST ONLY)
+Continued from e457edadb131cefb936a21954cd30f31d7529ce2. See
+[collector lifecycle audit](phase-2-collector-lifecycle-audit.md). Runner now checks its thermal
+guard while the child collects, cooperatively cancels it on failure, applies bounded owner-scoped
+process cleanup, and retains partial evidence as INCOMPLETE. Collector independently closes
+logcat/trace, verifies project camera cleanup on failure, rejects early logcat loss and requires
+bounded trace duration/verified ownership. Thermal thresholds, normal-status preflight, camera
+ownership checks, inference quality/cadence, screenshots and required metrics unchanged.
+No device/ADB/emulator/camera/inference execution in this session. Main-thread debug RSS read
+identified; no UI change without Android lifecycle regression. Old evidence preserved and physical
+acceptance pending. Host validation recorded in linked audit. No retry, merge or Phase 3.
+Final host validation: 56 Python tests, 37 Kotlin tests, debug/profile/release builds, lint and spec validation PASS. Original 384-file evidence inventory unchanged. Revised cleanup has no device result yet.

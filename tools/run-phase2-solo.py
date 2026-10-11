@@ -8,12 +8,12 @@ import json
 from pathlib import Path
 import re
 import subprocess
-import signal
 import sys
 import time
 import xml.etree.ElementTree as ET
 from phase2_thermal import ThermalGuard
 from phase2_camera_idle import CameraIdle
+from phase2_process import wait_collector
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = 'com.aiphotographer.app'
@@ -72,7 +72,7 @@ def main():
     def adb(*parts):
         with (output/'commands.jsonl').open('a',encoding='utf-8') as audit:
             audit.write(json.dumps({'time':time.time(),'args':list(parts)})+'\n')
-        return subprocess.run(command+list(parts),capture_output=True,text=True,encoding='utf-8',timeout=5 if parts in (('shell','dumpsys','thermalservice'),('shell','dumpsys','media.camera')) else 45,check=True).stdout
+        return subprocess.run(command+list(parts),capture_output=True,text=True,encoding='utf-8',timeout=5 if parts in (('shell','dumpsys','thermalservice'),('shell','dumpsys','media.camera')) else 10 if parts[:3] == ('shell','am','force-stop') else 45,check=True).stdout
 
     def hierarchy():
         adb('shell','uiautomator','dump','/data/local/tmp/phase2-solo.xml')
@@ -89,21 +89,13 @@ def main():
         adb('shell','input','tap',str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
         time.sleep(4)
 
-    def collect(argv):
-        # Keep the child alive long enough to write INCOMPLETE and stop its owned capture.
-        process = subprocess.Popen(argv,creationflags=getattr(subprocess,'CREATE_NEW_PROCESS_GROUP',0))
-        try:
-            code = process.wait()
-            if code:
-                raise subprocess.CalledProcessError(code,argv)
-        except BaseException:
-            if process.poll() is None:
-                process.send_signal(getattr(signal,'CTRL_BREAK_EVENT',signal.SIGINT))
-                try:
-                    process.wait(timeout=60)
-                except subprocess.TimeoutExpired:
-                    process.terminate();process.wait(timeout=10)
-            raise
+    def collect(argv, cancel_file):
+        process = subprocess.Popen(argv, **({'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP}
+                                             if sys.platform == 'win32' else {'start_new_session': True}))
+        def cancel():
+            cancel_file.write_text(json.dumps({'reason': guard.failure or 'Runner cancelled collection.',
+                                               'time': time.time()}), encoding='utf-8')
+        wait_collector(process, guard.check, cancel, stop_project, args.seconds)
 
     output.mkdir(parents=True)
     if adb('get-state').strip() != 'device':
@@ -235,13 +227,15 @@ def main():
             run = output/f'{index+1:02}-{resolution}p-{aspect.replace(":","x")}'
             capture = [sys.executable,str(ROOT/'tools/collect-phase2-device.py'),'--adb',args.adb,
                        '--serial',args.serial,'--output',str(run),'--seconds',str(args.seconds),'--preview-samples']
+            cancel_file = output/f'{index+1:02}-collector-cancel.json'
+            capture += ['--cancel-file', str(cancel_file)]
             if args.trace:
                 config = output/f'{index+1:02}-trace.pbtxt'
                 template = (ROOT/'tools/phase2-perfetto.pbtxt').read_text()
                 config.write_text(re.sub(r'duration_ms: \d+',f'duration_ms: {args.seconds*1000}',template))
                 capture += ['--trace-config',str(config)]
             guard.check()
-            collect(capture)
+            collect(capture, cancel_file)
             guard.check()
             previous = (resolution,aspect)
         metadata['collectionStatus'] = 'COMPLETE_REQUIRES_EVIDENCE_REVIEW'

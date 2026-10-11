@@ -60,6 +60,9 @@ class ThermalGuard:
         self.done.set()
         if self.thread:
             self.thread.join(timeout=15)
+            if self.thread.is_alive():
+                self.failure = self.failure or 'Thermal monitor shutdown unverified after bounded join.'
+                raise RuntimeError(self.failure)
         if final_sample and not self.failure:
             self.poll()
         self.check()
