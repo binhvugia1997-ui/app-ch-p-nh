@@ -2509,3 +2509,24 @@ Device model/Android version, latency, FPS, memory and thermal for this change: 
 Next: review a separately authorized, guarded 30-second controlled single-person Face-only
 session on the target device, including framing/head turns, aggregate continuity counters,
 detection/validity, latency and thermal evidence. No automatic retry, PR merge or Phase 3.
+
+### Face continuity host regression follow-up - 2026-10-11 (HOST ONLY)
+
+Continued from dfec5f404382756eea06ad9537c8d5bc575a8785. The previous focused Python
+test failure was caused by loading the standalone collector with importlib while the repository
+root, rather than `tools/`, was on sys.path. The test now adds its own tools directory only
+during collector import, then restores sys.path. The exact previously failed command,
+`python -m unittest tools.test_phase2_collection`, passed all 7 cases. Added a realistic
+PerceptionMetrics log window regression verifying separate Face completion, detection,
+valid478, continuity-pair, disjoint-pair and reacquisition deltas. Added a pure-probe regression
+for breaking a geometry/source chain without decreasing session aggregate counters.
+
+Full host suite: 59 Python tests passed; 35 Kotlin tests passed (geometry 11, perception API 18,
+camera 6). Offline debug/profile/release builds and app lintDebug passed (Gradle 305 tasks,
+11 executed / 294 up-to-date). Full cached Python 3.13 spec validation 0 errors / 0 warnings;
+diff whitespace check passed. Debug APK SHA-256:
+`C0DF7538CF67D7F0E763FB5CD01D3F0E19834FBB40CAD390EC67947C9ED1D9E5`.
+Host tests cover the pure probe and collector's aggregate-log contract; the Android pipeline
+compiles, while its actual Face callback integration and performance remain device-unverified.
+No device/camera test or inference ran before these automated gates. Phase 2 owner acceptance,
+physical tracking, PR merge and Phase 3 remain pending.

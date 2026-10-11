@@ -1,11 +1,17 @@
 """Deterministic evidence-window tests; no ADB or human required."""
 import importlib.util
 from pathlib import Path
+import sys
 import unittest
 
-spec = importlib.util.spec_from_file_location('collector', Path(__file__).with_name('collect-phase2-device.py'))
+TOOLS = Path(__file__).resolve().parent
+spec = importlib.util.spec_from_file_location('collector', TOOLS / 'collect-phase2-device.py')
 collector = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(collector)
+sys.path.insert(0, str(TOOLS))
+try:
+    spec.loader.exec_module(collector)
+finally:
+    sys.path.pop(0)
 
 
 def line(t, count, session=1, pid=123):
@@ -69,6 +75,27 @@ class CollectionTests(unittest.TestCase):
             result = collector.metric_report(first+'\n'+last, [{'pid':'123'}], True)
             self.assertTrue(result['counterWindowInvalid'])
             self.assertNotIn('ratesHz', result)
+
+    def test_realistic_metrics_log_keeps_face_counts_separate(self):
+        def record(t, completed, detected, valid, pairs, disjoint, reacquired):
+            counters = ', '.join(f'{key}=0' for key in collector.COUNTERS if key not in
+                                 ('faceCompleted', 'faceDetected'))
+            return (f' 12345.123 123 124 I Phase2Baseline: PerceptionMetrics(sessionId=7, '
+                    f'{counters}, faceCompleted={completed}, faceDetected={detected}, '
+                    f'faceValid478={valid}, faceContinuityPairs={pairs}, '
+                    f'faceDisjointPairs={disjoint}, faceReacquisitions={reacquired}, '
+                    f'elapsedSeconds={t}, latencies={{face=LatencySummary(count={completed}, '
+                    f'p50Ms=38.0, p95Ms=52.0)}})')
+        log = '\n'.join((record(2, 20, 18, 18, 16, 0, 1),
+                         record(32, 310, 301, 301, 290, 1, 3)))
+        result = collector.metric_report(log, [{'pid': '123'}], True)
+        self.assertNotIn('counterWindowInvalid', result)
+        self.assertEqual(290, result['counterDeltas']['faceCompleted'])
+        self.assertEqual(283, result['counterDeltas']['faceDetected'])
+        self.assertEqual(283, result['counterDeltas']['faceValid478'])
+        self.assertEqual(274, result['counterDeltas']['faceContinuityPairs'])
+        self.assertEqual(1, result['counterDeltas']['faceDisjointPairs'])
+        self.assertEqual(2, result['counterDeltas']['faceReacquisitions'])
 
 
 if __name__ == '__main__':

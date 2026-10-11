@@ -43,4 +43,17 @@ class FaceContinuityProbeTest {
         assertEquals(0, probe.comparablePairs)
         assertEquals(0, probe.disjointPairs)
     }
+
+    @Test fun geometryOrSourceChangeBreaksChainWithoutResettingSessionCounters() {
+        val probe = FaceContinuityProbe()
+        probe.observe(box(0.1, 0.3))
+        probe.observe(box(0.7, 0.9))
+        probe.breakChain()
+        probe.observe(box(0.1, 0.3))
+        assertEquals(1, probe.comparablePairs)
+        assertEquals(1, probe.disjointPairs)
+        assertEquals(0, probe.reacquisitions)
+        probe.observe(box(0.2, 0.4))
+        assertEquals(2, probe.comparablePairs)
+    }
 }
