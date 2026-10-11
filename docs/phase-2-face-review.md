@@ -359,3 +359,20 @@ Next safe action: remain paused with camera off; review workload using existing 
 Any new physical attempt needs separate owner authorization plus fresh normal/stable idle
 preflight and Ready. No automatic retry, merge, owner acceptance, Phase 3 or Premium UI.
 Final host validation: spec validator 0 errors / 0 warnings; diff check PASS; original 384-file evidence inventory rehashed with zero mismatches.
+
+
+### Face-only performance audit - 2026-10-11 (HOST ONLY)
+Continued from e07dc9649878d72ce003b56ce264363ef765b3ea. See
+[complete source/log audit](phase-2-face-performance-audit.md) for camera/conversion/buffer,
+MediaPipe/delegate/scheduling, Pose isolation, UI/diagnostic and cleanup findings.
+Confirmed redundant Face bounds filter allocation and repeated scans removed with a pure,
+validated one-pass bounds helper; all 478 outputs, confidence/geometry/head-pose contracts
+and independent valid478 metric preserved. Three new host regressions; no thermal/rate/model,
+UI/product behavior or safety-policy change. No architecture/module boundary change.
+Other conversion/packing/rendering/diagnostic costs remain plausible contributors, not a proven
+cause of the +2.1 C rise. No measured speed, memory or thermal improvement claimed.
+No ADB connection/commands, camera, phone inference, install or physical test. Existing raw
+measurements and interrupted status remain preserved. No auto retry, acceptance, merge or Phase 3.
+Validation and final preservation results are recorded in the audit. Next safe action: remain
+paused, review optional diagnostic overhead on host before separately authorized physical work.
+Host validation complete: 43 Python / 35 Kotlin tests PASS; debug/profile/release builds, lint, instrumentation APK compilation and specs PASS. Original 384-file evidence inventory unchanged.
