@@ -2067,3 +2067,29 @@ framing run. Needs separate authorization, fresh Ready, target device normal/sta
 and 15-second camera-off countdown. No launch now; no retry/acceptance/merge/Phase 3.
 
 Full cached spec validation: 0 errors, 0 warnings; git diff --check passed.
+
+
+### Rear-portrait face-only prelaunch idle guard stop - 2026-10-11
+Continued from d66183846336f28e3b45bc1f803c0c5cd1b658df, clean tree verified.
+Owner authorized one pending rear-portrait face-only window, explicitly SM-S918B only and
+new Ready before launch. ADB get-serialno R5CW40EE9QK and ro.product.model SM-S918B verified;
+Android API 36. No commands targeted SM-N981N. Ready requested; no launch before confirmation.
+Camera-off idle-only preflight on verified SM-S918B aborted before camera/inference launch.
+At 2026-10-11 04:05:59.881 UTC (11:05:59.881 Asia/Bangkok), active camera 1 client appeared:
+com.samsung.android.smartface, PID 31894. Project/test PID remained empty. This is external
+Samsung ownership, not AI Photographer reactivation; trigger/purpose not established.
+Existing zero-active-client guard correctly failed closed. Do not relax it or stop external owners.
+No project camera launch, Pose/Face inference, collector or 30-second test ran; no automatic retry.
+
+Thermal NORMAL (0) for all guard samples; SKIN initial 38.2 C, final 38.0 C, min 37.9 C,
+max 38.2 C; no rapid-rise/thermal abort. Final two cleanup snapshots showed zero active camera
+clients and no project/test PID after the external client released; no Samsung process stopped.
+No device settings changed, so no settings restoration needed. Camera-off observation was
+INCOMPLETE due to intermittent external ownership even though final snapshots were idle.
+The authorized 30-second face-only verification remains PENDING, with all metrics unmeasured
+for this session. Existing partial face/valid pose evidence retains its earlier status.
+Raw evidence preserved locally in device-evidence/phase2/physical/face-portrait-ready-idle-20261011/.
+Previous 384-file inventory hashes unchanged. No code changes or repeated physical tests.
+Next: remain camera-off; separately resume only after Ready and a fresh stable NORMAL/idle
+preflight without external camera activity. No inference/collection launched automatically.
+No merge, Phase 3, Premium UI or acceptance claim.
