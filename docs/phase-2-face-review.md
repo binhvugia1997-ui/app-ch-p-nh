@@ -444,3 +444,21 @@ new host tests in this session; previous 56 Python / 37 Kotlin tests, builds, li
 validation remain applicable. Next safest action: keep camera off, allow natural cooldown,
 then run a separately authorized fresh NORMAL/stable trend and camera-idle preflight before
 requesting Ready. Do not auto retry, claim Phase 2 acceptance, merge PR #3 or start Phase 3.
+
+### Single guarded rear-portrait Face-only collection - 2026-10-11
+After explicit Ready, a fresh SM-S918B camera-off preflight cooled 34.3 -> 34.0 C and found
+zero clients/PIDs. One guarded 30.078 s Face-only counter window completed in displayed portrait:
+290 completed, 283 detected (97.6%), 283/283 valid 478-landmark outputs, 9.64 Hz, zero errors,
+and zero Pose completions. The mode log confirms configured Pose STOPPED / disabled_face_only.
+Final rolling Face p50/p95 latency was 38.32/51.70 ms; sampled PSS 255,693-293,830 KiB.
+These rolling latency values include startup history, not just the counter window.
+
+All thermal status samples were NORMAL (0); peak skin was 35.9 C and no rapid-rise guard
+triggered. Normal collector shutdown, app stop and camera release were verified; the revised
+thermal-abort cancellation path was not exercised. Four preview samples show facial overlay.
+The later samples also show a second person, and one sample is motion-blurred; strict controlled
+single-face/head-turn tracking quality and distance are not verified. No repeat is authorized or
+performed. The completed numerical detection/landmark measurements remain valid with this setup
+limitation. Original and new raw evidence remain ignored under device-evidence/phase2/physical/;
+new paths: face-ready-preflight-after9a411d8-20261011/ and
+face-ready-one-after9a411d8-20261011/. Other Phase 2 physical gates and owner acceptance pending.

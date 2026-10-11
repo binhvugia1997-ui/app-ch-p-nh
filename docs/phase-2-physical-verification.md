@@ -1,9 +1,8 @@
 # Phase 2 — consolidated solo physical verification
 
-Status: **PHYSICAL TESTING PAUSED BY OWNER**, 2026-10-08.
-No camera launch or sustained inference; only retained-evidence/source review and host tests.
-Prior Ready/resume instructions below are historical and overridden by this pause.
-Remaining gates are PENDING_PHYSICAL_VERIFICATION. No owner acceptance.
+Status: **ONE GUARDED FACE-ONLY WINDOW COMPLETED**, 2026-10-11.
+The owner separately authorized that single run after the earlier pause. The four-setup matrix
+below and remaining gates are still PENDING_PHYSICAL_VERIFICATION; no owner acceptance.
 Reference device: Samsung SM-S918B / Android 16 / API 36 only. Do not generalize its results.
 This is the single current physical session plan; historical measurements remain in phase-status.md.
 
@@ -919,3 +918,28 @@ new host tests in this session; previous 56 Python / 37 Kotlin tests, builds, li
 validation remain applicable. Next safest action: keep camera off, allow natural cooldown,
 then run a separately authorized fresh NORMAL/stable trend and camera-idle preflight before
 requesting Ready. Do not auto retry, claim Phase 2 acceptance, merge PR #3 or start Phase 3.
+
+## One rear-portrait Face-only window after Ready - 2026-10-11
+
+Fresh camera-off preflight on SM-S918B/R5CW40EE9QK was NORMAL (0), with skin cooling
+34.3 -> 34.0 C and zero clients/project PIDs in 22 snapshots. The guarded runner repeated
+its thermal and stable-idle checks, then ran one portrait Face-only window after the 15-second
+countdown. UI hierarchy reported portrait rotation 0. Mode evidence confirmed Pose disabled;
+no Pose completions occurred. Collection finished with 290 Face completions, 283 detections,
+283 valid 478-landmark outputs, 9.64 Hz, and zero app errors. Final rolling Face latency was
+p50/p95 38.32/51.70 ms; sampled PSS was 255,693-293,830 KiB. These are debug-run values,
+and the rolling latency percentiles are not isolated to the 30.078 s counter window.
+
+Thermal status stayed NORMAL (0); peak observed skin temperature was 35.9 C, with no rapid-rise
+trigger. The collector and app exited normally; final runner checks and separate ADB diagnostics
+found no project PID or active camera client. Host collector inventory was empty. The normal
+collector shutdown path is device-verified, while forced cancellation on a thermal abort remains
+unexercised for the revised collector. No automatic retry.
+
+Visual evidence shows the principal face and landmark overlay, but a second person appears in
+later screenshots, with one blurred sample. The strict single-face and gentle-head-turn tracking
+condition is therefore still pending; 50-100 cm distance and tracking error were not measured.
+This completed numeric Face collection does not close other Phase 2 physical gates or establish
+owner acceptance. Raw evidence stays ignored under face-ready-preflight-after9a411d8-20261011/
+and face-ready-one-after9a411d8-20261011/; see [phase status](phase-status.md) for measured
+details. No further physical test is authorized by this one-run instruction.

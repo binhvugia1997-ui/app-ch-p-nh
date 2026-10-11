@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-11** by **Codex Local** (SM-S918B post-install preflight stopped before Ready; Face test pending).
+Last updated: **2026-10-11** by **Codex Local** (one guarded SM-S918B rear-portrait Face-only window completed; evidence review below).
 
 ---
 
@@ -26,7 +26,7 @@ Historical Phase 1/2 measurements and known limitations remain unchanged.
 
 Latest resumable state: see the safe checkpoint at the end of this document.
 Current solo session: [phase-2-physical-verification.md](phase-2-physical-verification.md).
-**PHYSICAL TESTING PAUSED BY OWNER: no camera launch or inference. Source review and host validation only. Previous landscape attempt INCOMPLETE.**
+**The owner separately authorized one guarded rear-portrait Face-only run after the prior pause. It completed on 2026-10-11. Other physical gates remain pending; no further camera run is authorized by that one-run instruction. Previous landscape attempt remains INCOMPLETE.**
 
 ---
 
@@ -2388,3 +2388,41 @@ new host tests in this session; previous 56 Python / 37 Kotlin tests, builds, li
 validation remain applicable. Next safest action: keep camera off, allow natural cooldown,
 then run a separately authorized fresh NORMAL/stable trend and camera-idle preflight before
 requesting Ready. Do not auto retry, claim Phase 2 acceptance, merge PR #3 or start Phase 3.
+
+### One guarded rear-portrait Face-only window after Ready - 2026-10-11 (COLLECTION COMPLETE; CONTROLLED SETUP PARTIAL)
+Continued from 9a411d855c94f4297f664913ea7fab4b582d082d with the owner's explicit Ready.
+Only ADB serial R5CW40EE9QK / Samsung SM-S918B / Android API 36 was used. The new camera-off
+idle-only preflight retained 21 NORMAL (0) skin readings, 34.3 -> 34.0 C, with all 22 ownership
+snapshots showing no active camera client or project PID. The runner repeated its 30-second
+NORMAL-only thermal observation and three consecutive idle samples before a 15-second countdown.
+It launched exactly once, requested rear portrait / 480p 4:3, and confirmed displayed portrait
+(UI rotation 0). Face-only mode log showed Face READY (configured GPU) and Pose STOPPED with
+model=disabled_face_only; native delegate placement was not measured.
+
+The single 30.078 s counter window completed without guard trip or app errors: 290 Face completed,
+283 detected (97.6% of completed), and 283/283 detected outputs had valid 478 landmarks. Pose
+completed/detected were 0/0. Face rate was 9.64 Hz. Final rolling Face task-to-callback latency
+was p50/p95 38.32/51.70 ms (cumulative rolling values, not window-only percentiles); batch
+rolling p50/p95 was 72.69/87.19 ms. Four PSS samples ranged 255,693-293,830 KiB; this is
+sampled debug-build memory, not a peak. CameraX internal drops and native GPU execution remain
+unmeasured. No automatic retry or additional collection occurred.
+
+All parent and collector thermal readings were NORMAL (0). Parent SKIN min/max 33.7/35.9 C;
+collector readings during the window rose 34.5 -> 35.9 C. Largest parent rise within any 30 s
+was +1.6 C in 29.208 s, below the unchanged +2 C guard. A later read-only post-stop sample
+was NORMAL (0), SKIN 34.9 C. Runner final ownership journal and separate ADB check both showed
+no project PID and zero active camera clients; host inventory found no retained Phase 2 collector.
+Normal collector shutdown and camera release were exercised; the new thermal-abort cancellation
+path was not exercised in this successful window.
+
+Four retained preview screenshots show a central face with visible landmark overlay and portrait
+display. A second person entered the frame in later samples, and one sample has motion blur.
+Therefore the requested controlled one-face/frontal-plus-gentle-turn setup and continuous tracking
+accuracy are not fully verified by this run. The collection and numerical Face/478-landmark gate
+are complete; the stricter one-face motion-quality check remains pending owner authorization.
+The 50-100 cm distance was not measured. No screenshot or raw device log was committed; raw
+evidence is preserved under ignored face-ready-preflight-after9a411d8-20261011/ and
+face-ready-one-after9a411d8-20261011/. Previous evidence and completed Pose/preview tests
+remain unchanged. No source change; previous 56 Python / 37 Kotlin tests, debug/profile/release
+builds and lint remain applicable. Phase 2 owner acceptance, other camera/mirroring/capture/
+offline/lifecycle/performance gates, PR merge and Phase 3 remain pending.

@@ -120,3 +120,14 @@ new host tests in this session; previous 56 Python / 37 Kotlin tests, builds, li
 validation remain applicable. Next safest action: keep camera off, allow natural cooldown,
 then run a separately authorized fresh NORMAL/stable trend and camera-idle preflight before
 requesting Ready. Do not auto retry, claim Phase 2 acceptance, merge PR #3 or start Phase 3.
+
+### Device cleanup observation - 2026-10-11
+The separately authorized single SM-S918B rear-portrait Face-only collection completed its
+30.078 s counter window with the revised runner/collector. The child produced a COMPLETE
+summary, exited, and the parent recorded COMPLETE_REQUIRES_EVIDENCE_REVIEW. The parent's final
+ownership snapshots and an independent ADB check showed no project PID or active camera client;
+host inventory found no retained Phase 2 collector/logcat process. All thermal samples stayed
+NORMAL (0), so this verifies normal collector shutdown and camera cleanup on a device, not
+cooperative cancellation or forced teardown following a thermal abort. No trace was enabled.
+Raw logs and snapshots remain ignored in face-ready-one-after9a411d8-20261011/; no prior
+evidence was overwritten. See [phase status](phase-status.md) for Face and thermal metrics.
