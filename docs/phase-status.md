@@ -2320,3 +2320,20 @@ measurements and interrupted status remain preserved. No auto retry, acceptance,
 Validation and final preservation results are recorded in the audit. Next safe action: remain
 paused, review optional diagnostic overhead on host before separately authorized physical work.
 Host validation complete: 43 Python / 35 Kotlin tests PASS; debug/profile/release builds, lint, instrumentation APK compilation and specs PASS. Original 384-file evidence inventory unchanged.
+
+
+### Diagnostic workload audit - 2026-10-11 (HOST ONLY)
+Continued from f22c7cb012f3744f206a7365a64e658fe37f93aa. See
+[diagnostic overhead audit](phase-2-diagnostic-overhead-audit.md) for workload categories,
+thread ownership, historical polling/log/screenshot counts and RGB timing interpretation.
+Shared metrics/Trace instrumentation exists in all builds; debug overlay/RSS polling is debug-only;
+host verification adds dumpsys, screenshots and streaming logcat. System service costs unprofiled.
+Confirmed redundant LatencyWindow summary array copy removed by sorting its detached snapshot
+in place. Two new regression tests preserve ring order, rolling/clear/clamp and exact percentiles.
+All diagnostic fields/frequencies, inference quality/cadence and safety guards unchanged.
+No measured device speed/thermal improvement claimed. Overlapping thermal monitors retained;
+required evidence not removed. No device/ADB/emulator connection, camera or inference execution.
+Previous evidence and checkpoints preserved. Validation results recorded in the audit.
+Next safe action stays host-only: explicit diagnostic/cancellation design review; physical gates
+remain incomplete, no automatic retry, owner acceptance, merge, Phase 3 or Premium UI.
+Final host validation: 43 Python / 37 Kotlin tests, debug/profile/release builds, lint and spec validation PASS. Original 384-file inventory has zero hash mismatches.

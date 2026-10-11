@@ -30,7 +30,7 @@ class LatencyWindow(private val capacity: Int = 4096) {
     @Synchronized fun clear() { count = 0; next = 0 }
     @Synchronized fun summary(): LatencySummary {
         if (count == 0) return LatencySummary(0, null, null)
-        val sorted = values.copyOf(count).sortedArray()
+        val sorted = values.copyOf(count).apply { sort() }
         fun quantile(p: Double) = sorted[(kotlin.math.ceil(count * p).toInt() - 1).coerceAtLeast(0)] / 1e6
         return LatencySummary(count, quantile(.5), quantile(.95))
     }
