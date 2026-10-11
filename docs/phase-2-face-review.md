@@ -462,3 +462,36 @@ performed. The completed numerical detection/landmark measurements remain valid 
 limitation. Original and new raw evidence remain ignored under device-evidence/phase2/physical/;
 new paths: face-ready-preflight-after9a411d8-20261011/ and
 face-ready-one-after9a411d8-20261011/. Other Phase 2 physical gates and owner acceptance pending.
+
+### Saved 30-second Face-only evidence review - 2026-10-11 (HOST ONLY)
+
+Reviewed the retained `face-ready-one-after9a411d8-20261011/` session, collector summary,
+app log, thermal samples, memory samples, UI orientation record and four preview screenshots.
+No device connection or new collection. The 30.078255249 s counter window completed with
+290 Face completions, 283 detections (97.59% of completions), 283 valid 478-landmark outputs
+(100% of detections), 9.6415 completed Face results/s, zero Pose completions and zero source
+errors. Valid478 checks finite coordinates and the confidence contract; it does not measure
+anatomical landmark accuracy. Seven completed Face results had no reported detection.
+
+The screenshots are sparse samples, not a continuous recording. Screenshots 000-003 show
+landmarks on the principal face; screenshot 002 is motion-blurred. A second person's face is
+visible in screenshots 002 and 003. Therefore the controlled **one-face scene condition FAILS**
+for this collection. The saved logs contain cumulative detection counters, without
+per-frame face count, identity or target association. Whether the principal face was tracked
+continuously throughout all 30 seconds, or whether any result switched to the second face,
+is **UNKNOWN**. The visible overlay on sampled frames cannot turn that into a tracking PASS.
+The intended 50-100 cm distance, gentle head-turn coverage and numerical tracking error were
+not measured. Preserve the completed numeric results while keeping the controlled tracking
+gate open; a future authorized test needs a verified one-person scene and suitable motion
+evidence. Do not automatically repeat the run.
+
+The session records requested rear portrait and displayed portrait (UI rotation 0); screenshots
+also have a portrait display. Delivered camera geometry and physical head orientation were not
+measured by this evidence. Final **rolling** Face task-to-callback p50/p95 was 38.324/51.698 ms,
+and rolling batch p50/p95 was 72.689/87.192 ms; each includes startup history (361 completions),
+so neither is a percentile for only the 30-second window. Four debug PSS samples span
+255,693-293,830 KiB, not peak memory. All 50 parent and 16 collector thermal samples report
+NORMAL (0). Parent skin readings span 33.7-35.9 C; the largest parent rise within 30 s is
++1.6 C, below the unchanged +2 C stop condition. The normal collector/app cleanup is recorded;
+thermal-abort cancellation, CameraX internal drops, native GPU placement, sustained optimized
+profile performance and long-run thermal behavior remain unverified.

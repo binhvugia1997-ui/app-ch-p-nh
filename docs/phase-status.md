@@ -2426,3 +2426,49 @@ face-ready-one-after9a411d8-20261011/. Previous evidence and completed Pose/prev
 remain unchanged. No source change; previous 56 Python / 37 Kotlin tests, debug/profile/release
 builds and lint remain applicable. Phase 2 owner acceptance, other camera/mirroring/capture/
 offline/lifecycle/performance gates, PR merge and Phase 3 remain pending.
+
+### Recovery review after host power loss - 2026-10-11 (HOST ONLY)
+
+Resumed from checkpoint 8ecf05f08ff0e6e49b6a1b8e415797a344afc110. Current branch
+`codex/phase-2-pose-face-detection` is at a956ac4e48416f4d429cff8b25e1ef3d4033bc94,
+matching its upstream tracking branch. The two commits after the checkpoint are documentation
+records of the post-install preflight and the single guarded Face-only collection. The working
+tree was clean before this handoff entry; no source or test files changed in this review.
+
+Host process listing showed no Python, Java, ADB, Gradle or emulator process. Windows denied
+the process command-line inventory, so ownership could not be independently classified by
+command line. The latest retained preflight and collection contain 31 nonempty files; JSON and
+JSONL parse, and four preview PNG signatures are intact. The earlier 384-file preservation
+inventory rehashed with zero size/hash mismatches. Empty historical `post-*-pid.txt` files are
+expected no-PID observations, not interrupted output. No new incomplete temporary file was
+found in the physical evidence tree. The latest session and summary still report a completed
+30.078 s collection; its strict controlled one-face/tracking gate remains pending.
+
+Existing host validation remains the recorded 56 Python and 37 Kotlin tests, debug/profile/
+release builds, lint and spec validation PASS; these were not rerun because no implementation
+changed. No ADB/device query, camera launch, physical test, PR merge or Phase 3 work occurred.
+Host files are ready for a separately authorized SM-S918B verification session, conditional on
+fresh device identity, NORMAL/stable thermal trend and camera-idle preflight. Prior one-run Ready
+authorization was consumed; do not automatically repeat that run. Phase 2 remains in progress.
+
+### Saved Face-only evidence adjudication - 2026-10-11 (HOST ONLY)
+
+Reviewed the completed 30.078 s SM-S918B evidence without contacting the device. See
+[face review](phase-2-face-review.md) for source files and limits. Numeric Face result remains
+290 completed / 283 detected (97.59%) / 283 valid478 (100% of detections), 9.64 Hz, with
+zero Pose completions and zero source errors. Displayed orientation was portrait. Final Face
+task-to-callback rolling p50/p95 was 38.32/51.70 ms (startup included); four debug PSS
+samples span 255,693-293,830 KiB (not peak). Parent/collector thermal samples were all
+NORMAL; parent skin range 33.7-35.9 C and maximum 30-second rise +1.6 C. The +2 C rapid-rise
+guard did not trip.
+
+**Controlled one-face scene: FAIL for this run.** A second face is visible in saved preview
+screenshots 002 and 003; screenshot 002 is motion-blurred. **Continuous identity-specific
+tracking: UNKNOWN.** Four sparse screenshots and aggregate counters cannot prove which face
+was selected for every result or uninterrupted landmark alignment. Distance, head-turn coverage
+and tracking error were not measured. The numerical collection is retained, but this run does
+not pass the strict single-face tracking gate. Remaining physical gates include controlled Face
+tracking, front-camera/mirroring and remaining orientation/aspect checks, capture/offline and
+lifecycle checks, optimized performance/long soak and thermal-abort cleanup as applicable in
+the Phase 2 plan. Owner acceptance remains pending. No camera, device test or retry in this
+review; safety guards, PR merge and Phase 3 remain untouched.
