@@ -700,3 +700,25 @@ Previous 384-file inventory hashes unchanged; earlier valid/partial pose and fac
 No source changes; prior host builds/tests/lint applicable. Stop here; reconnect verified SM-S918B,
 then separately resume fresh full preflight and request explicit Ready only after all checks pass.
 No automatic camera launch, retry, Phase 2 acceptance, merge, Phase 3 or Premium UI.
+
+
+### Reconnected face-only preflight blocked by LIGHT thermal status - 2026-10-11
+Continued from 6404146950bd5486920bdec0d3c50e053f976634; clean checkpoint verified.
+Owner clarified previous ADB disconnection was intentional manual USB unplug. Its cause is now
+known; do not classify/investigate it as an unexplained ADB fault or project bug. Historical raw
+logs and incomplete preflight status remain preserved.
+Target reconnected and verified by ADB: serial R5CW40EE9QK, model SM-S918B, Android API 36.
+Fresh idle-only preflight stopped on first thermal sample: LIGHT (1), SKIN 40.1 C. NORMAL (0)
+launch requirement correctly rejected it. Only one thermal sample retained; stable trend not
+established, 30-second observation and stable-availability phase not completed. No Ready requested.
+No camera/app launch, Pose/Face inference, collector, physical test or automatic retry.
+Final camera-idle snapshots verified zero active clients and project/test PID. session.json records
+thermalStop/cleanupErrors from the latched thermal rejection; this does not mean camera release
+failed. Samsung services and Android/device/thermal settings untouched. No restoration needed.
+Face detection/valid478/rate/latency/memory and launched-app orientation unmeasured this session.
+Single rear-portrait face-only window remains pending; interrupted/blocked attempts not PASS.
+Evidence preserved locally in device-evidence/phase2/physical/face-reconnected-preflight-20261011/;
+previous 384-file evidence inventory unchanged. No code changes; prior host build/test/lint
+validation applicable. Stop here with project camera off; cool/rest, then separately resume fresh
+NORMAL/stable thermal and camera availability checks, followed by explicit Ready only on pass.
+No automatic retry, owner acceptance, merge, Phase 3 or Premium UI.
