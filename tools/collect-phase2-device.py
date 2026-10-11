@@ -19,6 +19,8 @@ from phase2_camera_idle import CameraIdle
 
 COUNTERS = ('offered', 'accepted', 'busySkipped', 'cadenceSkipped', 'poseCompleted',
             'poseDetected', 'faceCompleted', 'faceDetected', 'errors')
+FACE_OPTIONAL = ('faceValid478', 'faceContinuityPairs', 'faceDisjointPairs',
+                 'faceReacquisitions')
 
 
 def metric_report(text, samples, complete):
@@ -41,7 +43,8 @@ def metric_report(text, samples, complete):
               'last': records[-1] if records else None,
               'warning': 'Rolling task-to-callback percentiles; do not average percentiles. '
                          'App counters do not measure CameraX internal drops. COMPLETE means capture '
-                         'finished, not that human framing, tracking, or a verification gate passed.'}
+                         'finished, not that human framing, tracking, or a verification gate passed. '
+                         'Disjoint Face bounds indicate possible jumps, not identity proof.'}
     valid = complete and len(records) >= 2
     if valid:
         first, last = records[0], records[-1]
@@ -55,11 +58,26 @@ def metric_report(text, samples, complete):
                      all(b[k] >= a[k] for k in COUNTERS) for a, b in zip(records, records[1:])))
         if valid:
             deltas = {k: last[k] - first[k] for k in COUNTERS}
-            if all('faceValid478' in r for r in records):
-                if any(b['faceValid478'] < a['faceValid478'] for a,b in zip(records,records[1:])):
+            for key in FACE_OPTIONAL:
+                present = [key in r for r in records]
+                if any(present) and not all(present):
                     report['counterWindowInvalid'] = True
                     return report
-                deltas['faceValid478'] = last['faceValid478'] - first['faceValid478']
+                if all(present):
+                    if any(b[key] < a[key] for a,b in zip(records,records[1:])):
+                        report['counterWindowInvalid'] = True
+                        return report
+                    deltas[key] = last[key] - first[key]
+            continuity = ('faceContinuityPairs', 'faceDisjointPairs', 'faceReacquisitions')
+            if any(key in deltas for key in continuity) and not all(key in deltas for key in continuity):
+                report['counterWindowInvalid'] = True
+                return report
+            if ('faceContinuityPairs' in deltas and
+                    (deltas['faceDisjointPairs'] > deltas['faceContinuityPairs'] or
+                     deltas['faceContinuityPairs'] > deltas['faceDetected'] or
+                     deltas['faceReacquisitions'] > deltas['faceDetected'])):
+                report['counterWindowInvalid'] = True
+                return report
             report.update(counterWindowSeconds=seconds, counterDeltas=deltas,
                           ratesHz={k: deltas[k] / seconds for k in ('poseCompleted', 'faceCompleted')})
     if not valid:

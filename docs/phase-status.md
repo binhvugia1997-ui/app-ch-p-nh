@@ -2472,3 +2472,40 @@ tracking, front-camera/mirroring and remaining orientation/aspect checks, captur
 lifecycle checks, optimized performance/long soak and thermal-abort cleanup as applicable in
 the Phase 2 plan. Owner acceptance remains pending. No camera, device test or retry in this
 review; safety guards, PR merge and Phase 3 remain untouched.
+
+### Single-face continuity host preparation - 2026-10-11 (HOST ONLY)
+
+Continued from checkpoint 1411f3216266634c71c70dd123b684b53a8e9a88. Phase 2 remains
+IMPLEMENTATION_COMPLETE / PHYSICAL_VERIFICATION_PARTIAL / OWNER_ACCEPTANCE_PENDING. Prior
+30.078 s evidence remains 290 completed, 283 detected and 283 valid478; the controlled
+one-person scene failed and identity continuity is UNKNOWN. No device or camera contact in
+this session, and no physical result is inferred from host tests.
+
+Added a pure, constant-work Face continuity probe and aggregate counters for comparable
+successive bounding-box pairs, disjoint pairs and detection reacquisitions. It uses existing
+Face bounds, breaks the comparison on misses, source recovery, geometry changes and lifecycle
+restart, and preserves Face inference cadence/options and all thermal guards. Disjoint pairs
+are possible switches or tracking jumps; zero disjoint pairs is not proof of identity. Detection
+rate and valid478 remain separate. ADR-025 and phase-2-face-review.md define the interpretation
+and pending one-person visual review. The collector validates same-session monotonic deltas,
+rejects partial/impossible counter sets, and remains compatible with older evidence.
+
+Files: perception/api FaceContinuityProbe.kt and test, PerceptionPipeline.kt;
+perception/mediapipe MediaPipePipeline.kt; tools/collect-phase2-device.py and
+test_phase2_collection.py; docs/architecture.md, phase-2-face-review.md, phase-status.md.
+No new module, model, dependency, permission, production UI or acceptance threshold.
+
+Host validation: 58 Python harness tests passed; 34 Kotlin unit tests passed (geometry 11,
+perception API 17, camera 6); offline debug/profile/release builds and app lintDebug passed
+(Gradle 305 actionable tasks, 77 executed, 228 up-to-date). Full cached Python 3.13
+jsonschema/referencing spec validation: 0 errors / 0 warnings. The ordinary Python 3.11
+environment produced the optional structural-check warning, resolved for validation by using
+the existing workspace-local cached interpreter and packages without changing specs.
+After a final collector consistency guard, one targeted test invocation from the repository
+root failed at Python import setup (`phase2_thermal` not on its module path); it did not run
+any test cases and was not retried. The earlier 58-test discovery run used the correct tools
+path and passed before this final guard. The guard received static review only.
+Device model/Android version, latency, FPS, memory and thermal for this change: NOT_MEASURED.
+Next: review a separately authorized, guarded 30-second controlled single-person Face-only
+session on the target device, including framing/head turns, aggregate continuity counters,
+detection/validity, latency and thermal evidence. No automatic retry, PR merge or Phase 3.

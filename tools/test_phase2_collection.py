@@ -47,6 +47,29 @@ class CollectionTests(unittest.TestCase):
         self.assertEqual(12,r['last']['latencies']['pose']['p95Ms'])
         self.assertTrue(r['counterWindowInvalid'])
 
+    def test_face_continuity_window_and_legacy_evidence(self):
+        keys = collector.FACE_OPTIONAL
+        first = line(1, 10) + ''.join(f', {k}={v}' for k, v in zip(keys, (8, 5, 1, 1)))
+        last = line(3, 20) + ''.join(f', {k}={v}' for k, v in zip(keys, (17, 12, 2, 3)))
+        result = collector.metric_report(first+'\n'+last, [{'pid':'123'}], True)
+        self.assertEqual(7, result['counterDeltas']['faceContinuityPairs'])
+        self.assertEqual(1, result['counterDeltas']['faceDisjointPairs'])
+        self.assertEqual(2, result['counterDeltas']['faceReacquisitions'])
+        old = collector.metric_report(line(1, 10)+'\n'+line(3, 20), [{'pid':'123'}], True)
+        self.assertNotIn('faceContinuityPairs', old['counterDeltas'])
+
+    def test_partial_or_impossible_continuity_counters_reject_window(self):
+        base = line(1, 10)
+        for first, last in [
+            (base, line(3, 20)+', faceContinuityPairs=1'),
+            (base+', faceContinuityPairs=1', line(3, 20)+', faceContinuityPairs=2'),
+            (base+', faceContinuityPairs=3, faceDisjointPairs=1, faceReacquisitions=0',
+             line(3, 20)+', faceContinuityPairs=4, faceDisjointPairs=3, faceReacquisitions=0'),
+        ]:
+            result = collector.metric_report(first+'\n'+last, [{'pid':'123'}], True)
+            self.assertTrue(result['counterWindowInvalid'])
+            self.assertNotIn('ratesHz', result)
+
 
 if __name__ == '__main__':
     unittest.main()

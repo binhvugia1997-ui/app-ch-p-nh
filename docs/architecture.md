@@ -604,6 +604,21 @@ ADB calls have existing bounded timeouts, so the deadline is not a hard real-tim
 Normal user camera startup/CameraX/MediaPipe and Android thermal protections are unchanged.
 This refines ADR-022 for prelaunch readiness only. See [availability review](phase-2-camera-availability-review.md).
 
+**ADR-025 - aggregate Face continuity evidence (2026-10-11).**
+The single-face task returns one observation without an identity label. A pure probe compares only
+the already computed, upright, crop-local Face bounds on successive completed detections. It
+counts comparable positive-area pairs and pairs whose boxes have no positive-area intersection;
+a no-detection result breaks the pair and a later detection counts as reacquisition. Source
+recovery or geometry change breaks the chain; lifecycle restart also resets counters. A disjoint
+pair is a possible switch or abrupt tracking failure, not proof of another person's identity.
+Overlapping faces can switch unnoticed, and reacquisition leaves identity unknown. This is a
+diagnostic verification aid, not an acceptance threshold or production identity tracker.
+The three counters join the existing once-per-second aggregate metrics and the host collector's
+same-session window deltas. They require no extra inference, landmark traversal, per-frame log,
+image retention, network access or change to Face cadence, confidence defaults or thermal guards.
+Its small CPU cost and thermal impact remain unmeasured on a device.
+The physical one-person scene and visual landmark/head-turn review remain required.
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |

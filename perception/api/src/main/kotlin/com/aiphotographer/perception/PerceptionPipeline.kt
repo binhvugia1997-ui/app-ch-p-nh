@@ -13,6 +13,7 @@ data class PerceptionMetrics(
     val offered: Long = 0, val accepted: Long = 0, val busySkipped: Long = 0, val cadenceSkipped: Long = 0,
     val poseCompleted: Long = 0, val poseDetected: Long = 0, val faceCompleted: Long = 0, val faceDetected: Long = 0,
     val faceValid478: Long = 0,
+    val faceContinuityPairs: Long = 0, val faceDisjointPairs: Long = 0, val faceReacquisitions: Long = 0,
     val errors: Long = 0, val elapsedSeconds: Double = 0.0, val latencies: Map<String, LatencySummary> = emptyMap(),
     val degradationLevel: Int = 0,
 )

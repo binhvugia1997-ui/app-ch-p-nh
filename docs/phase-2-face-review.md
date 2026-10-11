@@ -495,3 +495,28 @@ NORMAL (0). Parent skin readings span 33.7-35.9 C; the largest parent rise withi
 +1.6 C, below the unchanged +2 C stop condition. The normal collector/app cleanup is recorded;
 thermal-abort cancellation, CameraX internal drops, native GPU placement, sustained optimized
 profile performance and long-run thermal behavior remain unverified.
+
+### Next single-face continuity verification preparation - 2026-10-11 (HOST ONLY)
+
+The previous 30.078 s run had high detection (283/290) and valid-result (283/283) rates, but
+its two-person scene and sparse screenshots leave identity-specific continuity UNKNOWN. Those
+rates measure different properties: detection is a Face result with an observation, valid478
+checks its landmark count/finite values, while continuity asks whether one selected face stays
+associated through time. Neither rate can establish the last property.
+
+For a future authorized 30-second one-person run, `faceContinuityPairs` counts successive
+detected Face outputs with comparable positive-area bounds. `faceDisjointPairs` counts those
+whose bounds do not overlap; any such pair requires inspection as a **possible** switch or
+tracking jump. `faceReacquisitions` counts detected -> missing -> detected episodes; identity
+across each gap is unknown. Zero disjoint pairs does not prove identity continuity because
+overlapping faces can exchange and missed outputs break the comparison. These are aggregate
+diagnostics, not calibrated pass/fail thresholds (`CALIBRATION_REQUIRED` for any future numeric
+acceptance rule). A reviewer must confirm a one-person scene, face framing, head-turn coverage
+and landmark alignment from retained visual samples; sparse samples still cannot prove every
+frame. The existing 30-second rate, latency, memory and thermal reports remain separate.
+
+The probe uses the Face bounds already produced by MediaPipe, with constant work per completed
+Face result. It adds three counters to the existing once-per-second log, and no per-frame log,
+new model pass or image storage. Its thermal impact remains unmeasured. Face options/cadence and all preflight,
+rapid-rise and cleanup guards remain unchanged. Older evidence lacks the new counters and must
+remain marked continuity UNKNOWN. No physical test was run in this preparation.

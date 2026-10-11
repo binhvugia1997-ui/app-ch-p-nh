@@ -45,6 +45,7 @@ internal class MediaPipePipeline(
     private var retry: ScheduledFuture<*>? = null
     private var cpuOnly = false
     private var lastFace: FaceFrameResult? = null
+    private val faceContinuity = FaceContinuityProbe()
     private var pixels = IntArray(0)
     private data class Batch(val frame: RgbFrame, val token: Long, val epoch: Long, val startNs: Long,
         val submitted: AtomicBoolean = AtomicBoolean(false), var outstanding: Int = 0,
@@ -181,8 +182,11 @@ internal class MediaPipePipeline(
                 if (result.timestampMs != frame.timestampMs) { failed(current, "FACE_TIMESTAMP_INVALID"); return@enqueue }
                 windows.getValue("face").record(SystemClock.elapsedRealtimeNanos() - faceStart)
                 lastFace = result
+                faceContinuity.observe(result.face?.bbox)
                 synchronized(this) { metrics = metrics.copy(faceCompleted = metrics.faceCompleted + 1, faceDetected = metrics.faceDetected + (if (result.face == null) 0 else 1),
-                    faceValid478 = metrics.faceValid478 + (if (result.face?.landmarks?.let(FaceLandmarkValidity::valid) == true) 1 else 0)) }
+                    faceValid478 = metrics.faceValid478 + (if (result.face?.landmarks?.let(FaceLandmarkValidity::valid) == true) 1 else 0),
+                    faceContinuityPairs = faceContinuity.comparablePairs, faceDisjointPairs = faceContinuity.disjointPairs,
+                    faceReacquisitions = faceContinuity.reacquisitions) }
                 completed(current)
             } }, { code -> enqueue { trace(current, "face", false); if (valid(current)) { faceSource.releaseImage(); failed(current, code) } } })
         }
@@ -210,7 +214,7 @@ internal class MediaPipePipeline(
         current.failed = true; completed(current)
     }
     private fun clearResults() {
-        assembler.reset(); lastFace = null; lastFaceMs = -1; windows.values.forEach { it.clear() }; summaries = emptyMap(); summariesNs = 0
+        assembler.reset(); lastFace = null; lastFaceMs = -1; faceContinuity.breakChain(); windows.values.forEach { it.clear() }; summaries = emptyMap(); summariesNs = 0
         synchronized(this) { mutableState.value = mutableState.value.copy(snapshot = null) }
     }
     private fun recover(current: Batch) {
@@ -285,7 +289,7 @@ internal class MediaPipePipeline(
                     recovery.reset(); cpuOnly = false
                     synchronized(this) {
                         lastPoseMs = -1; lastFaceMs = -1; lastTimestampMs = -1; schedule.resetObservations()
-                        startedNs = 0; metrics = PerceptionMetrics(sessionId = sessions.incrementAndGet())
+                        startedNs = 0; faceContinuity.reset(); metrics = PerceptionMetrics(sessionId = sessions.incrementAndGet())
                         mutableState.value = mutableState.value.copy(metrics = metrics)
                         scheduleOffered = 0; scheduleBusy = 0; scheduleWindowMs = -1; recentBusyRatio = 0.0
                     }
