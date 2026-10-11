@@ -589,6 +589,21 @@ This is diagnostic isolation, not a new product mode or model/threshold change. 
 is pending Ready, connected device and normal/stable thermal preflight. See
 [face verification review](phase-2-face-review.md).
 
+**ADR-024 - bounded external-camera availability before physical tests (2026-10-11).**
+Two camera-off observations found Samsung smartface camera ownership followed by empty-client
+snapshots within <1 s, without service intervention. Preflight now distinguishes occupied external
+camera state from unexpected project activation. Retain 30-second NORMAL-only thermal observation,
+record ownership throughout, abort immediately on project PID/client or unreadable telemetry;
+then wait up to 30 seconds for three consecutive zero-client/no-project samples at 2-second
+intervals. Busy samples reset the idle streak. Thermal monitor/checks stay active; the wait's
+monotonic deadline never resets. These are operational host timing seeds, not temperature limits
+or measured device safety guarantees. No external client is killed or considered idle while active.
+Strict zero-client checks remain at countdown/prelaunch/post-cleanup; no retry or launch is caused
+by waiting. Total preflight includes the original thermal observation plus the availability wait;
+ADB calls have existing bounded timeouts, so the deadline is not a hard real-time wall-clock cap.
+Normal user camera startup/CameraX/MediaPipe and Android thermal protections are unchanged.
+This refines ADR-022 for prelaunch readiness only. See [availability review](phase-2-camera-availability-review.md).
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |

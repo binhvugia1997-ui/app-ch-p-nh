@@ -648,3 +648,29 @@ rear-portrait 30-second face-only window remains pending, with no completed phys
 Stop here as requested. Next: keep project camera off; resolve/review intermittent external camera
 ownership without changing Samsung services, then separately request fresh preflight. Only after
 all checks pass request Ready; no automatic retry, merge, Phase 3 or acceptance claim.
+
+
+### Bounded camera availability preflight improvement - 2026-10-11
+Continued from b62b1b940bcea4064799b17e1974a1e44588c49d; clean branch/checkpoint verified.
+Reviewed both Samsung ownership journals: camera 1 smartface PID 31894/8505, project PID empty,
+next empty snapshot 0.743/0.630 s later without Samsung intervention. Exact occupancy duration
+and activation purpose unknown. Confirmed harness issue: strict single-sample assertion in
+readiness phase aborted the session on transient external ownership.
+Added CameraIdle.observe_preflight/wait_available: unexpected project activity or unreadable
+telemetry aborts immediately; external clients remain occupied until three consecutive empty
+samples two seconds apart. Availability wait has one non-resetting monotonic 30-second deadline.
+Original 30-second NORMAL-only thermal observation remains; external ownership is journaled
+there without declaring idle. Thermal monitor/rapid-rise/severe/critical guards remain active.
+Availability wait is additional to thermal observation (~60 s maximum plus bounded ADB calls),
+not a hard real-time 30-second total preflight cap. Countdown/prelaunch/post-cleanup zero-client
+checks remain strict; NORMAL required through countdown. No Samsung-specific bypass or service
+stop, no Android settings/thermal protection changes, no product/MediaPipe/CameraX changes.
+ADR-024 and docs/phase-2-camera-availability-review.md describe the scoped safety change.
+38 host Python tests passed including all requested scenarios and runner no-launch integration;
+Android debug/profile/release builds, lintDebug, geometry/perception/camera unit tests passed.
+Previous 384-file evidence hashes unchanged. Host validation log retained locally in
+availability-review-20261011/. No ADB/device test, camera launch, installation or inference run.
+No completed physical tests repeated; face-only 30-second physical verification still pending.
+READY FOR FACE-ONLY TEST: harness prepared, device readiness unmeasured; only after separate
+resume authorization, fresh verified SM-S918B normal/stable/available checks and explicit Ready.
+No automatic retry/test, merge, Phase 3, Premium UI or acceptance claim.

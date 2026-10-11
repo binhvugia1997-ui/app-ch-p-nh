@@ -42,4 +42,104 @@ class IdleTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'cleanup'):idle.stop_and_verify()
             self.assertEqual(4,len(sleeps))
 
+class AvailabilityTests(unittest.TestCase):
+    SAMSUNG = ACTIVE.replace('com.aiphotographer.app','com.samsung.android.smartface')
+
+    def setup_idle(self, directory, dumps, pid=''):
+        self.now = 0.0
+        self.stops = []
+        self.dumps = list(dumps)
+        def read():
+            if len(self.dumps) > 1:
+                return self.dumps.pop(0)
+            return self.dumps[0]
+        def sleep(seconds):
+            self.now += seconds
+        return CameraIdle(read,lambda:pid,lambda:self.stops.append(True),
+                          Path(directory)/'idle.jsonl',sleep)
+
+    def test_transient_samsung_releases_without_intervention(self):
+        with tempfile.TemporaryDirectory() as d:
+            idle=self.setup_idle(d,[self.SAMSUNG,EMPTY,EMPTY,EMPTY])
+            result=idle.wait_available(lambda:None,clock=lambda:self.now)
+            self.assertEqual([],result['clients'])
+            self.assertEqual(6,self.now)
+            self.assertEqual([],self.stops)
+            self.assertIn('smartface',(Path(d)/'idle.jsonl').read_text())
+
+    def test_persistent_owner_times_out_with_identity_and_without_killing(self):
+        with tempfile.TemporaryDirectory() as d:
+            idle=self.setup_idle(d,[self.SAMSUNG])
+            with self.assertRaisesRegex(RuntimeError,'timeout.*smartface'):
+                idle.wait_available(lambda:None,timeout=6,clock=lambda:self.now)
+            self.assertEqual(6,self.now)
+            self.assertEqual([],self.stops)
+
+    def test_non_samsung_owners_are_not_bypassed(self):
+        with tempfile.TemporaryDirectory() as d:
+            idle=self.setup_idle(d,[ACTIVE.replace('com.aiphotographer.app','other.camera')])
+            with self.assertRaisesRegex(RuntimeError,'timeout.*other.camera'):
+                idle.wait_available(lambda:None,timeout=6,clock=lambda:self.now)
+
+    def test_busy_sample_resets_idle_streak(self):
+        with tempfile.TemporaryDirectory() as d:
+            idle=self.setup_idle(d,[EMPTY,EMPTY,self.SAMSUNG,EMPTY,EMPTY,EMPTY])
+            idle.wait_available(lambda:None,clock=lambda:self.now)
+            self.assertEqual(10,self.now)
+
+    def test_stable_idle_needs_multiple_separated_samples(self):
+        with tempfile.TemporaryDirectory() as d:
+            idle=self.setup_idle(d,[EMPTY])
+            checks=[]
+            idle.wait_available(lambda:checks.append(self.now),clock=lambda:self.now)
+            self.assertEqual(4,self.now)
+            self.assertEqual(3,len((Path(d)/'idle.jsonl').read_text().splitlines()))
+            self.assertEqual(6,len(checks))
+
+    def test_project_process_or_project_camera_aborts_immediately(self):
+        for camera,pid in [(EMPTY,'6692'),(ACTIVE,''),(ACTIVE.replace('com.aiphotographer.app','com.aiphotographer.app.test'),'')]:
+            with tempfile.TemporaryDirectory() as d:
+                idle=self.setup_idle(d,[camera],pid)
+                with self.assertRaisesRegex(RuntimeError,'Unexpected project activity'):
+                    idle.wait_available(lambda:None,clock=lambda:self.now)
+                self.assertEqual(0,self.now)
+                self.assertEqual([],self.stops)
+
+    def test_thermal_guard_interrupts_busy_wait(self):
+        from phase2_thermal import ThermalGuard
+        from test_phase2_thermal import dump
+        for next_sample in [dump(3,35),dump(0,37),dump(1,35)]:
+            with tempfile.TemporaryDirectory() as d:
+                idle=self.setup_idle(d,[self.SAMSUNG])
+                readings=iter([dump(0,35),next_sample])
+                stops=[]
+                guard=ThermalGuard(lambda:next(readings),lambda:stops.append(True),
+                                   Path(d)/'thermal.json',clock=lambda:self.now)
+                def check():
+                    self.now += 1
+                    guard.poll(preflight=True)
+                with self.assertRaises(RuntimeError):
+                    idle.wait_available(check,clock=lambda:self.now)
+                self.assertEqual([True],stops)
+                self.assertEqual(2,self.now)
+                self.assertEqual([],self.stops)
+
+    def test_unreadable_ownership_fails_without_waiting(self):
+        with tempfile.TemporaryDirectory() as d:
+            idle=self.setup_idle(d,['Permission denied'])
+            with self.assertRaisesRegex(RuntimeError,'telemetry unavailable'):
+                idle.wait_available(lambda:None,clock=lambda:self.now)
+            self.assertEqual(0,self.now)
+
+    def test_slow_read_cannot_succeed_after_deadline(self):
+        with tempfile.TemporaryDirectory() as d:
+            idle=self.setup_idle(d,[EMPTY])
+            read=idle.read_camera
+            def slow():
+                self.now+=3
+                return read()
+            idle.read_camera=slow
+            with self.assertRaisesRegex(RuntimeError,'timeout'):
+                idle.wait_available(lambda:None,timeout=5,clock=lambda:self.now)
+
 if __name__ == '__main__':unittest.main()

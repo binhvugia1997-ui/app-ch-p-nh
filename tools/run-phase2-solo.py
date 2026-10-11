@@ -133,20 +133,26 @@ def main():
         if failures:
             raise RuntimeError('Project package stop failed: '+'; '.join(failures))
     idle = CameraIdle(lambda: adb('shell','dumpsys','media.camera'), project_pid,
-                      stop_project, output/'camera-idle.jsonl')
+                      stop_project, output/'camera-idle.jsonl', sleep=time.sleep)
     guard = ThermalGuard(lambda: adb('shell','dumpsys','thermalservice'),
                          stop_project, output/'thermal-guard.json')
+    def normal_preflight():
+        guard.check()
+        if any(sample['status'] != 0 for sample in guard.samples):
+            raise RuntimeError('Preflight requires normal thermal status throughout.')
+
     try:
-        idle.stop_and_verify()
+        stop_project()
         guard.start()
-        print('Camera remains stopped: 30-second normal-status cooldown preflight.', flush=True)
+        idle.observe_preflight()
+        print('Project camera remains stopped: 30-second normal-status observation, then bounded stable-idle wait.', flush=True)
         for _ in range(15):
             time.sleep(2)
-            idle.require_idle()
-            guard.check()
-            if any(sample['status'] != 0 for sample in guard.samples):
-                raise RuntimeError('Cooldown requires normal thermal status throughout.')
-        guard.check()
+            normal_preflight()
+            idle.observe_preflight()
+        print('Waiting up to 30 seconds for three consecutive camera-idle samples (2-second intervals).',flush=True)
+        idle.wait_available(normal_preflight, clock=time.monotonic)
+        normal_preflight()
         if args.idle_only:
             idle.require_idle()
             metadata['collectionStatus'] = 'IDLE_VERIFIED_NO_CAMERA_LAUNCH'
@@ -158,8 +164,8 @@ def main():
                     print(f'Camera starts in {left} s',flush=True)
                 time.sleep(1)
                 idle.require_idle()
-                guard.check()
-        guard.check()
+                normal_preflight()
+        normal_preflight()
         idle.require_idle()
         rotation_settings = {key: adb('shell','settings','get','system',key).strip()
                              for key in ('accelerometer_rotation','user_rotation')}

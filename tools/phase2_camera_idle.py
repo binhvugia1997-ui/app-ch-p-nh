@@ -29,6 +29,33 @@ class CameraIdle:
             f.write(json.dumps(state)+'\n')
         return state
 
+    def observe_preflight(self):
+        state = self.snapshot()
+        project_clients = [client for client in state['clients']
+                           if client['package'].startswith('com.aiphotographer.')]
+        if state['projectPid'] or project_clients:
+            raise RuntimeError('Unexpected project activity during camera-off preflight: '+json.dumps(state))
+        return state
+
+    def wait_available(self, check_thermal, timeout=30, consecutive=3, interval=2, clock=time.monotonic):
+        if timeout <= 0 or interval <= 0 or consecutive < 2:
+            raise ValueError('Availability wait requires positive bounds and at least two idle samples.')
+        deadline = clock() + timeout
+        streak = 0
+        state = None
+        while True:
+            check_thermal()
+            if clock() >= deadline:
+                raise RuntimeError('Camera availability timeout: '+json.dumps(state))
+            state = self.observe_preflight()
+            check_thermal()
+            if clock() >= deadline:
+                raise RuntimeError('Camera availability timeout: '+json.dumps(state))
+            streak = 0 if state['clients'] else streak + 1
+            if streak >= consecutive:
+                return state
+            self.sleep(min(interval, max(0, deadline-clock())))
+
     def require_idle(self):
         state = self.snapshot()
         if state['clients'] or state['projectPid']:

@@ -46,8 +46,21 @@ class FramingTests(unittest.TestCase):
     def test_face_only_portrait_request_landscape_display_also_aborts(self):
         self.run_framing(True, framing=False, face_only=True, orientation='portrait', mismatch=True)
 
-    def run_framing(self, supported, framing=True, unexpected=False, idle_only=False, stop_failure=False, face_only=False, orientation='landscape', mismatch=False):
+    def test_transient_samsung_owner_does_not_abort_preflight(self):
+        self.run_framing(True, framing=False, face_only=True, transient=True)
+
+    def test_persistent_samsung_owner_prevents_any_launch(self):
+        self.run_framing(True, framing=False, face_only=True, persistent=True)
+
+    def test_thermal_interruption_in_availability_wait_prevents_launch(self):
+        self.run_framing(True, framing=False, face_only=True, thermal_abort=True)
+
+    def run_framing(self, supported, framing=True, unexpected=False, idle_only=False, stop_failure=False, face_only=False, orientation='landscape', mismatch=False, transient=False, persistent=False, thermal_abort=False):
         calls = []
+        now = [0.0]
+        def sleep(seconds):
+            calls.append(['SLEEP',seconds])
+            now[0] += seconds
         xml = '<hierarchy><node bounds="[0,0][1544,720]"><node text="Framing preview (analysis off)" /></node></hierarchy>'
         if not supported:
             xml = '<hierarchy><node bounds="[0,0][1544,720]" /></hierarchy>'
@@ -65,6 +78,8 @@ class FramingTests(unittest.TestCase):
             elif 'media.camera' in args:
                 camera_reads += 1
                 value = 'Active Camera Clients:\n[]\nAllowed user IDs: 0'
+                if persistent or (transient and camera_reads in (2,18)):
+                    value = 'Active Camera Clients: [(Camera ID: 1, PID: 8505, Client Package Name: com.samsung.android.smartface,)]'
                 if unexpected and camera_reads == 2:
                     value = 'Active Camera Clients: [(Camera ID: 0, PID: 6692, Client Package Name: com.aiphotographer.app,)]'
 
@@ -79,7 +94,11 @@ class FramingTests(unittest.TestCase):
             samples = [{'status':0}]
             def __init__(self,*args): pass
             def start(self): pass
-            def check(self): pass
+            checks = 0
+            def check(self):
+                self.checks += 1
+                if thermal_abort and self.checks >= 17:
+                    raise RuntimeError('thermal interruption during availability wait')
             def close(self, **kwargs): calls.append(['GUARD_CLOSE'])
         with tempfile.TemporaryDirectory(dir=solo.ROOT/'device-evidence') as parent:
             output = Path(parent)/'new-framing'
@@ -96,14 +115,21 @@ class FramingTests(unittest.TestCase):
             if face_only:
                 argv.append('--face-only')
             with patch.object(solo.sys,'argv',argv), patch.object(solo.subprocess,'run',side_effect=run), \
-                 patch.object(solo,'ThermalGuard',Guard), patch.object(solo.time,'sleep',side_effect=lambda seconds: calls.append(['SLEEP',seconds])), \
+                 patch.object(solo,'ThermalGuard',Guard), patch.object(solo.time,'sleep',side_effect=sleep), \
+                 patch.object(solo.time,'monotonic',side_effect=lambda:now[0]), \
                  patch.object(solo.subprocess,'Popen') as popen:
                 popen.return_value.wait.return_value = 0
-                if stop_failure:
+                if persistent:
+                    with self.assertRaisesRegex(RuntimeError,'camera cleanup'):
+                        solo.main()
+                elif thermal_abort:
+                    with self.assertRaisesRegex(RuntimeError,'thermal interruption'):
+                        solo.main()
+                elif stop_failure:
                     with self.assertRaisesRegex(RuntimeError,'camera cleanup'):
                         solo.main()
                 elif unexpected:
-                    with self.assertRaisesRegex(RuntimeError,'invariant violated'):
+                    with self.assertRaisesRegex(RuntimeError,'Unexpected project activity'):
                         solo.main()
                 elif mismatch:
                     with self.assertRaisesRegex(RuntimeError,'startup inference may already have run'):
@@ -116,6 +142,15 @@ class FramingTests(unittest.TestCase):
                 else:
                     with self.assertRaisesRegex(RuntimeError, 'Preview-only mode not confirmed'):
                         solo.main()
+            if persistent or thermal_abort:
+                self.assertFalse(any('start' in c for c in calls))
+                popen.assert_not_called()
+                self.assertIn(['GUARD_CLOSE'],calls)
+                meta=json.loads((output/'session.json').read_text())
+                self.assertEqual('INCOMPLETE',meta['collectionStatus'])
+                self.assertIn('timeout' if persistent else 'thermal interruption',meta['failureReason'])
+                self.assertFalse(any('force-stop' in c and 'com.samsung.android.smartface' in c for c in calls))
+                return
             if stop_failure or idle_only:
                 self.assertFalse(any('start' in c for c in calls))
                 self.assertIn(['GUARD_CLOSE'],calls)
