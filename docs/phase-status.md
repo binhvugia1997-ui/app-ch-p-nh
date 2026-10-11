@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-11** by **Codex Local** (host-only collector lifecycle hardening; physical testing paused).
+Last updated: **2026-10-11** by **Codex Local** (SM-S918B post-install preflight stopped before Ready; Face test pending).
 
 ---
 
@@ -2351,3 +2351,40 @@ No device/ADB/emulator/camera/inference execution in this session. Main-thread d
 identified; no UI change without Android lifecycle regression. Old evidence preserved and physical
 acceptance pending. Host validation recorded in linked audit. No retry, merge or Phase 3.
 Final host validation: 56 Python tests, 37 Kotlin tests, debug/profile/release builds, lint and spec validation PASS. Original 384-file evidence inventory unchanged. Revised cleanup has no device result yet.
+
+
+### SM-S918B collector-cleanup preflight after 8ecf05f - 2026-10-11 (STOPPED BEFORE READY)
+Branch/checkpoint verified at 8ecf05f08ff0e6e49b6a1b8e415797a344afc110; working tree initially clean.
+ADB showed only serial R5CW40EE9QK, model SM-S918B, Android API 36. Initial read-only
+thermal NORMAL (0), SKIN 33.4 C and battery 31.8 C. First camera-off idle-only runner
+preflight completed: 22 thermal samples 33.3-33.4 C, all NORMAL; 22 camera snapshots with
+zero clients/project PIDs; no collector remained. No app or camera launch.
+
+Installed debug APK was the earlier 433055806bdda915289c0580ddf7cdd97165ba71a752ff56f527d01f5e34e989,
+not the host-built current 53241b20a527b5e370e81cee1bb7ed398c6534d5f3d9bec85a9efccc97f00ea1.
+Installed the current debug APK with ADB `install -r` on this device only (app data retained);
+verified installed SHA-256 matches current build and CAMERA permission remains granted.
+No activity or camera was launched by this action.
+
+Fresh post-install camera-off preflight returned IDLE_VERIFIED_NO_CAMERA_LAUNCH. All 22 thermal
+samples stayed Android NORMAL (0), but SKIN rose 34.3 -> maximum 36.2 C; maximum pairwise rise
+within 30 s was +1.9 C in 29.078 s, near the existing +2 C guard. Last preflight reading
+was 36.1 C. A later read-only sample was NORMAL / 35.5 C, battery 32.9 C. The unchanged
+guard correctly did not fire; the rising trend was judged insufficiently stable to ask for
+Ready or add camera/inference load. This is a conservative human stop, not a guard defect or
+claim that the installed APK caused the rise. No thermal threshold/protection was altered.
+
+Five early camera-off snapshots recorded external camera 1 owned by com.facebook.orca PID
+12672; it released without intervention before the required consecutive idle samples. No
+Samsung/Facebook service was killed, disabled or modified. Final read-only camera clients []
+and no project app/test PID. Host inventory found no Phase 2 collector/logcat process.
+No Face/Pose inference, collection, cancellation exercise or physical camera test ran; the
+revised collector cleanup is NOT_VERIFIED_ON_DEVICE. The pending single 30-second rear-portrait
+Face-only verification was not attempted; prior valid evidence and completed tests remain valid.
+Raw evidence is retained locally in ignored face-cleanup-preflight-after8ecf05f-20261011/
+and face-post-install-preflight-after8ecf05f-20261011/, with a separate preflight-review.json.
+Earlier 384-file preservation inventory rehashed with zero mismatches. No source changes or
+new host tests in this session; previous 56 Python / 37 Kotlin tests, builds, lint and spec
+validation remain applicable. Next safest action: keep camera off, allow natural cooldown,
+then run a separately authorized fresh NORMAL/stable trend and camera-idle preflight before
+requesting Ready. Do not auto retry, claim Phase 2 acceptance, merge PR #3 or start Phase 3.
