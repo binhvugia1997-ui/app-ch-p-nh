@@ -2542,3 +2542,24 @@ exists. The planned one-person rear-portrait Face-only 30-second verification re
 Resume only after the exact target reconnects, then perform fresh NORMAL/stable thermal and
 stable camera-idle preflight; request explicit Ready before one guarded camera launch. Keep
 existing thermal guards, no automatic retry, PR merge or Phase 3.
+
+### SM-S918B fresh Face-only preflight stopped on non-NORMAL thermal - 2026-10-11
+
+Continued from faaa5bbcaebeee83b210782551277eb7c30fcecf; branch and debug APK hash
+verified clean/unchanged. ADB listed only R5CW40EE9QK, and exact-target read-only queries
+confirmed serial R5CW40EE9QK, model SM-S918B, Android API 36. One camera-off `--idle-only`
+preflight was started for rear portrait. Its first thermal sample was Android LIGHT (1),
+SKIN 39.7 C, so the unchanged NORMAL-only guard failed immediately. No 30-second thermal
+trend or stable-idle wait completed. This is a safety stop, not a passed preflight.
+
+The runner stopped only project/test packages. Its two retained cleanup camera snapshots
+show no active clients or project PID. The final thermal guard check still failed because
+NORMAL was unavailable, so session.json correctly reports INCOMPLETE and a thermal cleanup
+error; no claim of normal thermal recovery is made. Evidence remains in ignored
+`device-evidence/phase2/physical/face-continuity-idle-afterfaaa5bb-20261011/` (session,
+thermal, camera-idle and command journals). No Ready was requested; no APK install, app/camera
+launch, Pose/Face inference, collector, 30-second window or automatic retry occurred.
+Detection rate, valid478, continuity, latency, memory and session thermal trend are
+NOT_MEASURED. The one-person scene could not be verified. Next attempt requires a separately
+initiated fresh NORMAL/stable thermal and camera-idle preflight on this exact device, followed
+by explicit Ready before camera launch. No guard change, PR merge or Phase 3.
