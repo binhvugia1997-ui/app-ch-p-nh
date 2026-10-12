@@ -2563,3 +2563,7 @@ Detection rate, valid478, continuity, latency, memory and session thermal trend 
 NOT_MEASURED. The one-person scene could not be verified. Next attempt requires a separately
 initiated fresh NORMAL/stable thermal and camera-idle preflight on this exact device, followed
 by explicit Ready before camera launch. No guard change, PR merge or Phase 3.
+
+### SM-S918B reconnect attempt stopped before preflight - 2026-10-12
+
+Continued from checkpoint 1b68cb3 on the unchanged Phase 2 branch. The prepared debug APK hash remains C0DF7538CF67D7F0E763FB5CD01D3F0E19834FBB40CAD390EC67947C9ED1D9E5. ADB was started and repeated `adb devices -l` checks listed no attached device, including after the owner reported a physical connection. The exact serial R5CW40EE9QK returned device-not-found, so model/API could not be freshly confirmed. The camera-off idle-only runner was not started. No fresh thermal status, 30-second NORMAL trend, camera-idle stability, permission or one-person scene could be verified. No Ready was requested; no APK install, app/camera launch, Pose/Face inference, collector, 30-second verification or automatic retry occurred. Earlier evidence remains locally preserved and unchanged. Resume only when ADB recognizes and authorizes the exact target; run a fresh guarded NORMAL/stable thermal and camera-idle preflight, then request explicit Ready before one Face-only window. PR #3 remains Draft; no merge or Phase 3.
