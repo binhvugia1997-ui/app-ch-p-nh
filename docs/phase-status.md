@@ -2726,3 +2726,37 @@ install/verify the exact optimized APK, repeat fresh NORMAL/stable-idle safety
 checks and 15-second camera-off countdown, then run at most one guarded Face-only
 30-second window with Pose off and continuity diagnostics. Do not merge PR #3,
 start Phase 3 or declare owner acceptance.
+
+### Post-install Phase 2 camera-off gate blocked after Ready - 2026-10-14
+
+PHASE: 2. STATUS: partial / INCOMPLETE before camera launch. The owner supplied
+a new `ready` after the successful earlier idle-only preflight. The clean Phase 2
+worktree was at `f104e2312311c624bde79f3979106758c7479ece`; ADB listed only
+R5CW40EE9QK, SM-S918B / API 36. A read-only pre-install sample was Android
+NORMAL (0), SKIN 35.7 C, with no camera client observed. The exact prepared
+YUV-optimized debug APK was installed with `-r` on this device only; installed
+SHA-256 matched
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`.
+CAMERA permission remained granted. No app launch occurred during install.
+
+The fresh post-install `--idle-only` runner completed its thermal observation:
+34 samples over 67.488 s, all NORMAL (0), SKIN 39.0 -> 39.7 C (range
+38.7-39.7 C), with no thermal guard trigger. The later bounded camera-idle
+availability wait timed out. All 35 snapshots over 67.494 s showed external
+`com.ss.android.ugc.trill` holding camera ID 1 (PID 28500), no project/test
+PID and no idle sample. Runner cleanup stopped only project packages and
+could not verify zero camera clients while the external owner remained.
+The pre-install 35.7 C and post-install thermal samples do not establish
+the cause of their temperature difference. No project camera, Face/Pose
+inference, 30-second Face collection, automatic retry, or thermal bypass.
+
+FILES: this handoff and `phase-2-physical-verification.md`. DEVICES TESTED:
+SM-S918B / API 36, installation and camera-off preflight only. MEASURED:
+thermal and camera samples above; no new-build FPS, Face latency, memory or
+on-camera thermal result. DEVIATIONS FROM SPEC: none. BLOCKER: external camera
+ownership. Raw evidence stays ignored locally at
+`device-evidence/phase2/physical/face-yuv-postinstall-idle-20261014-1/` in the
+Phase 2 worktree, with prior physical evidence preserved. NEXT PROPOSED: stop
+testing, do not alter the external app; only after a separately initiated full
+NORMAL/stable camera-off preflight and new owner confirmation may one guarded
+Face-only attempt run. PR #3 remains Draft; no merge, Phase 3 or owner acceptance.

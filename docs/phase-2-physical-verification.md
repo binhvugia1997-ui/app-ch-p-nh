@@ -1033,3 +1033,36 @@ camera-idle guards and its 15-second camera-off countdown; no automatic retry.
 Raw evidence remains ignored under
 `device-evidence/phase2/physical/face-yuv-idle-recheck-20261014-2/` in the Phase 2
 worktree. Prior physical evidence and all thresholds remain unchanged.
+
+## Ready received; post-install preflight blocked by external camera - 2026-10-14
+
+After the owner's new `ready`, the Phase 2 worktree was clean at
+`f104e2312311c624bde79f3979106758c7479ece`. ADB listed only target
+R5CW40EE9QK; model SM-S918B / API 36. A read-only pre-install sample was
+Android NORMAL (0), SKIN 35.7 C, and camera clients were not observed. The
+prepared YUV-optimized debug APK was installed with `adb install -r` on that
+target only. Its on-device SHA-256 matched the prepared
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`,
+and CAMERA permission remained granted. Installation did not launch the app.
+
+The required fresh post-install `--idle-only` runner completed its 30-second
+thermal observation but timed out during the bounded camera-availability wait.
+All 34 thermal samples over 67.488 s were NORMAL (0); SKIN 39.0 -> 39.7 C,
+range 38.7-39.7 C, with no thermal guard trigger. These observations do not
+attribute the temperature difference from the earlier pre-install sample to
+the APK or any particular activity. All 35 camera snapshots over 67.494 s
+showed camera ID 1 owned by external `com.ss.android.ugc.trill` (PID 28500),
+with zero project/test PID. There were no three consecutive idle samples.
+The runner stopped only project/test packages; its final zero-client cleanup
+check could not pass while the external client remained. It did not stop or
+modify the external application.
+
+`session.json` is INCOMPLETE with camera availability timeout. The project
+camera was never opened, Face/Pose inference and the 30-second Face collection
+did not run, and there was no retry. The prior camera-off preflight remains
+valid for its earlier sampled window only; it does not override this fresh
+post-install failure. Raw evidence is ignored locally under
+`device-evidence/phase2/physical/face-yuv-postinstall-idle-20261014-1/` in the
+Phase 2 worktree. Keep testing stopped; a separately initiated new
+NORMAL/stable camera-off preflight and new owner authorization are required
+before any future Face-only attempt. Existing guards and thresholds remain.
