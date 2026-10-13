@@ -2659,3 +2659,35 @@ thermal status, external camera owner, and old installed APK. NEXT PROPOSED: kee
 testing stopped; after the owner resolves external camera activity and the phone
 cools, a separately initiated fresh full camera-off preflight must pass before
 requesting a new Ready. No PR #3 merge, owner acceptance or Phase 3.
+
+### Phase 2 camera-off recheck after reported TikTok stop - 2026-10-14
+
+PHASE: 2. STATUS: partial / INCOMPLETE before Ready. Branch
+`codex/phase-2-pose-face-detection` was clean at
+`9474f3302ace9fdb4589fb0260789820298bcc6a`. ADB listed only serial
+R5CW40EE9QK; model SM-S918B, API 36. Prepared YUV-optimized debug APK SHA-256:
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`.
+Installed older APK SHA-256:
+`C0DF7538CF67D7F0E763FB5CD01D3F0E19834FBB40CAD390EC67947C9ED1D9E5`.
+No APK installation occurred.
+
+Exactly one new `--idle-only` preflight stopped on its first thermal reading:
+Android MODERATE (2), SKIN 40.6 C, failing the unchanged NORMAL (0) requirement.
+Two cleanup camera snapshots showed no active clients and no project/test PID;
+TikTok was not observed in those samples. The thermal 30-second observation and
+stable camera-idle wait did not complete, so camera availability and temperature
+stability are unverified. `session.json` reports INCOMPLETE and a latched thermal
+cleanup error; project camera/inference never launched, no Face collection ran,
+and there was no retry or Ready request. The earlier 42.6 C and current 40.6 C
+samples come from separate attempts and cannot establish a cooling trend.
+
+FILES: this handoff and `phase-2-physical-verification.md`. DEVICES TESTED:
+SM-S918B / API 36, camera-off preflight only. MEASURED: one 40.6 C SKIN sample at
+MODERATE (2); two zero-client/zero-project-PID cleanup snapshots; no valid new-build
+FPS, Face latency, memory or thermal trend. DEVIATIONS FROM SPEC: none. BLOCKER:
+non-NORMAL thermal status. Raw local evidence is ignored under
+`device-evidence/phase2/physical/face-yuv-idle-recheck-20261014-1/` in the Phase 2
+worktree. NEXT PROPOSED: keep testing stopped until a separately initiated fresh
+NORMAL/stable camera-off preflight fully passes; then request new owner confirmation
+before installing the optimized APK or running Face-only. No guard change, PR #3
+merge, Phase 3 or Phase 2 owner acceptance.

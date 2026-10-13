@@ -979,3 +979,30 @@ Phase 2 worktree. Preserve it and prior evidence. Before any future attempt, the
 must independently resolve the external camera use and let the phone return to NORMAL;
 only a separately initiated fresh, fully passing camera-off preflight may lead to a
 new Ready request. Thermal/ownership guards remain unchanged.
+
+## Camera-off recheck stopped on thermal status - 2026-10-14
+
+After the owner reported that TikTok camera use had ended, one new `--idle-only`
+preflight was attempted on the same Phase 2 branch at commit `9474f3302ace9fdb4589fb0260789820298bcc6a`.
+ADB listed only R5CW40EE9QK; the target reported SM-S918B / API 36. The prepared
+YUV-optimized debug APK remained
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`;
+the installed APK remained the older
+`C0DF7538CF67D7F0E763FB5CD01D3F0E19834FBB40CAD390EC67947C9ED1D9E5`.
+No install was authorized at this step or performed.
+
+The runner stopped on its first thermal sample: Android MODERATE (2), SKIN 40.6 C,
+still failing the required NORMAL (0) gate. Both saved cleanup camera snapshots
+reported zero active clients and zero project/test PID, so TikTok ownership was not
+observed at those instants. These two snapshots do not establish the required stable
+camera-idle window. The 30-second thermal observation and three-sample availability
+wait did not run. `session.json` is INCOMPLETE; its thermal cleanup error is the
+latched preflight failure. No project camera launch, Face/Pose inference, APK install,
+30-second Face collection or automatic retry occurred. No new Ready was requested.
+
+Raw evidence remains ignored under
+`device-evidence/phase2/physical/face-yuv-idle-recheck-20261014-1/` in the Phase 2
+worktree. The previous 42.6 C and this 40.6 C are isolated samples from separate
+attempts; they are not a valid continuous cooling trend or performance comparison.
+Only a separately initiated full NORMAL/stable camera-off preflight can establish
+readiness for a new owner confirmation. Guards and thresholds remain unchanged.
