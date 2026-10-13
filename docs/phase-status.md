@@ -2630,3 +2630,32 @@ NEXT PROPOSED: preserve the raw evidence and guards; only after separate owner
 authorization, new exact-device normal/stable idle preflight and explicit Ready may a
 controlled comparison or pending Face tracking check run. No automatic retry, PR #3
 merge, owner acceptance or Phase 3.
+
+### Post-YUV Phase 2 physical preflight stopped before Ready - 2026-10-14
+
+PHASE: 2. STATUS: partial / preflight blocked. At verified branch commit
+`bc154255f273a42e76c4a72a259ab95c4e9c7b2c`, ADB listed only serial
+R5CW40EE9QK; device identity was SM-S918B / API 36. The prepared debug APK SHA-256
+was `AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`;
+the installed older APK was
+`C0DF7538CF67D7F0E763FB5CD01D3F0E19834FBB40CAD390EC67947C9ED1D9E5`.
+No APK was installed because the initial camera-off gate failed.
+
+The existing `--idle-only` runner obtained one thermal sample: Android MODERATE (2),
+SKIN 42.6 C, failing its unchanged NORMAL (0) preflight condition. All six saved
+camera snapshots showed external `com.ss.android.ugc.trill` on camera ID 1 (PID
+20733), with no project/test PID. Project-only cleanup did not close that external
+camera, so camera-idle verification also failed. The required 30-second thermal
+observation and stable-idle window did not complete. Evidence is local and ignored at
+`device-evidence/phase2/physical/face-yuv-idle-before-install-20261014-1/` in the
+Phase 2 worktree; earlier raw evidence remains preserved. The runner did not open the
+project camera or start Face/Pose inference, and no retry or Ready request occurred.
+
+FILES: this handoff and `phase-2-physical-verification.md`. DEVICES TESTED: SM-S918B,
+Android API 36, camera-off preflight only. MEASURED: one SKIN sample 42.6 C at
+MODERATE (2); six external-camera snapshots; no valid Face/FPS/latency/memory or
+thermal trend from the new build. DEVIATIONS FROM SPEC: none. BLOCKERS: non-NORMAL
+thermal status, external camera owner, and old installed APK. NEXT PROPOSED: keep
+testing stopped; after the owner resolves external camera activity and the phone
+cools, a separately initiated fresh full camera-off preflight must pass before
+requesting a new Ready. No PR #3 merge, owner acceptance or Phase 3.

@@ -953,3 +953,29 @@ marked its partial window INCOMPLETE/invalid, and final camera-idle checks found
 clients or project/test PID. Preserve the raw local evidence and do not retry automatically.
 See [the detailed offline thermal review](phase-2-face-thermal-review-20261014.md) and
 [the handoff](phase-status.md) for measured workload, limitations and next steps.
+
+## Post-YUV camera-off preflight stopped - 2026-10-14
+
+At commit `bc154255f273a42e76c4a72a259ab95c4e9c7b2c`, ADB listed only the
+authorized serial R5CW40EE9QK; the target reported SM-S918B / API 36. The locally
+built debug APK SHA-256 was
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`.
+The installed APK SHA-256 was the older
+`C0DF7538CF67D7F0E763FB5CD01D3F0E19834FBB40CAD390EC67947C9ED1D9E5`.
+No installation was attempted.
+
+The existing runner's `--idle-only` preflight stopped on its first thermal sample:
+Android MODERATE (2), SKIN 42.6 C, failing the required NORMAL (0) gate. Its six
+camera snapshots all reported camera ID 1 owned by the external package
+`com.ss.android.ugc.trill` (PID 20733), while project/test PID was empty. Runner
+cleanup stopped only project/test packages; zero-camera idle could not be verified
+because that external client remained. No 30-second thermal trend or stable-idle
+window completed. This is `INCOMPLETE`, with no camera or inference launched by this
+task, no Face collection, and no retry. No Ready was requested.
+
+Raw local evidence is ignored under
+`device-evidence/phase2/physical/face-yuv-idle-before-install-20261014-1/` in the
+Phase 2 worktree. Preserve it and prior evidence. Before any future attempt, the owner
+must independently resolve the external camera use and let the phone return to NORMAL;
+only a separately initiated fresh, fully passing camera-off preflight may lead to a
+new Ready request. Thermal/ownership guards remain unchanged.
