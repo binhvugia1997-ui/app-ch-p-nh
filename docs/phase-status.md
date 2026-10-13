@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-11** by **Codex Local** (one guarded SM-S918B rear-portrait Face-only window completed; evidence review below).
+Last updated: **2026-10-13** by **Codex Local** (documentation-only Epose-inspired feature plan; Phase 2 safety and owner gates unchanged).
 
 ---
 
@@ -2571,3 +2571,7 @@ Continued from checkpoint 1b68cb3 on the unchanged Phase 2 branch. The prepared 
 ### SM-S918B Face-continuity readiness passed; awaiting Ready - 2026-10-12
 
 Continued from 2033bd6 on the Phase 2 branch. ADB verified only target serial R5CW40EE9QK, model SM-S918B, Android API 36. The initial camera-off preflight completed with 21 NORMAL (0) thermal samples, SKIN 35.3 -> 35.8 C (range 35.1-35.8 C), and 22 snapshots with zero active camera clients and zero project PIDs. The installed APK hash differed from the prepared Face-continuity debug build, so the exact prepared APK (SHA-256 C0DF7538CF67D7F0E763FB5CD01D3F0E19834FBB40CAD390EC67947C9ED1D9E5) was installed on this target only; its on-device hash matched and CAMERA permission remained granted. The fresh post-install idle-only preflight completed with 21 NORMAL (0) samples, SKIN 36.4 -> 36.1 C (range 36.1-36.4 C), and 22 snapshots with zero clients/PIDs. A subsequent read-only sample was NORMAL (0), SKIN 36.0 C, with no active camera client. Both sessions report IDLE_VERIFIED_NO_CAMERA_LAUNCH. Raw evidence remains locally in ignored face-continuity-idle-after2033bd6-20261012-1/ and face-continuity-postinstall-idle-after2033bd6-20261012-1/. Explicit Ready was requested for one person, one rear-portrait Face-only 30-second run with continuity counters and Pose off; no Ready reply or launch had occurred at this checkpoint. The runner must repeat fresh thermal and idle guards before its 15-second camera-off countdown. No automatic retry, merge, Phase 3, or owner acceptance.
+
+### Epose-inspired feature plan review - 2026-10-13 (HOST/DOCS ONLY)
+
+On documentation branch `codex/epose-inspired-plan-docs` from Phase 2 checkpoint 502eb07, reviewed AGENTS.md, roadmap, this handoff, pose/guidance/composition/taxonomy/test/licence documents and machine-readable spec contracts. Added `docs/epose-inspired-feature-plan.md` to map requested pose selection, camera guidance, matching/corrections, readiness/countdown/optional default-off auto-capture, and solo template/composition library work to the existing Phase 0-12 boundaries. It identifies already specified/implemented pieces, dependencies, acceptance tests, provenance/licence gates and deferred multi-person/ranking work without duplicating normative formulas, thresholds or IDs. This is planning only: no application code or schema change, no Phase 3 start, no physical camera test, no new measured performance result, no Phase 2 acceptance or guard relaxation. Prior Phase 2 evidence and the pending explicit Ready gate remain unchanged. Draft PR #3 is not merged or retargeted. Host-only validation: offline full spec validator 0 errors / 0 warnings; documentation diff whitespace check passed. No build or device test was run because application code and specs are unchanged.
