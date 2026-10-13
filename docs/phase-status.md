@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-11** by **Codex Local** (one guarded SM-S918B rear-portrait Face-only window completed; evidence review below).
+Last updated: **2026-10-14** by **Codex Local** (one post-YUV guarded SM-S918B rear-portrait Face-only counter window completed; tracking acceptance remains pending).
 
 ---
 
@@ -26,7 +26,7 @@ Historical Phase 1/2 measurements and known limitations remain unchanged.
 
 Latest resumable state: see the safe checkpoint at the end of this document.
 Current solo session: [phase-2-physical-verification.md](phase-2-physical-verification.md).
-**The owner separately authorized one guarded rear-portrait Face-only run after the prior pause. It completed on 2026-10-11. Other physical gates remain pending; no further camera run is authorized by that one-run instruction. Previous landscape attempt remains INCOMPLETE.**
+**The owner authorized one post-YUV rear-portrait Face-only run on 2026-10-14. Its 30-second counter window completed under the unchanged thermal guard; strict head-turn/continuity acceptance and other physical gates remain pending. No further camera run is authorized by this one-run Ready. Previous landscape attempt remains INCOMPLETE.**
 
 ---
 
@@ -2792,3 +2792,57 @@ in the Phase 2 worktree; prior evidence preserved. NEXT PROPOSED: after new
 and continuity diagnostics, subject to fresh NORMAL/stable camera-idle checks,
 the 15-second camera-off countdown, and all unchanged stop guards. No PR #3
 merge, Phase 3 or Phase 2 owner acceptance.
+
+### Post-YUV SM-S918B Face-only collection completed after Ready - 2026-10-14
+
+PHASE: 2. STATUS: partial; one guarded 30-second Face-only numeric collection
+COMPLETE, strict tracking/owner acceptance pending. The owner gave a new
+`ready`; the clean Phase 2 branch was at
+`fcd2e962c050b8003a93d45fcc95523799f00864`. The installed optimized
+debug APK on only R5CW40EE9QK / SM-S918B / API 36 matched SHA-256
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`.
+The existing runner passed a fresh NORMAL/stable camera-idle preflight and
+15-second camera-off countdown, then made exactly one rear-portrait 480p
+4:3 Face-only launch. Displayed orientation was portrait/rotation 0; the
+same PID log showed Face READY/configured GPU, Pose STOPPED/disabled_face_only.
+
+The collector completed a valid 30.035 s counter window (30.836 s wall):
+290 Face completions, 270 detections and 270 valid478, 260 continuity pairs,
+zero disjoint pairs, 10 reacquisitions, zero Pose completions and errors,
+one busy skip and 610 cadence skips. Face completion rate 9.655 Hz;
+detection 93.1% of completions, validity 100% of detections. Last rolling
+Face task-to-callback p50/p95 39.281/49.632 ms and batch 68.540/84.131 ms;
+these percentiles are not isolated to the 30-second counter window. Last
+cumulative Phase1 app record: 1,132 delivered frames/38.453 s, reported
+preview capture/analysis about 29.438 Hz, delivered 640x480/upright crop
+480x640, rolling YUV/RGB rotation p50/p95 28.764/39.017 ms. Display FPS,
+CameraX internal drops, native GPU placement and CPU/power were not measured.
+Four same-PID memory samples: PSS 248,600-278,366 KiB, RSS
+347,132-374,856 KiB; no peak or long-run stability claim.
+
+All 50 parent thermal samples over 101.452 s were NORMAL (0), SKIN 34.5 ->
+36.8 C (range 34.5-36.8 C). Maximum observed rise in an eligible <=30 s
+parent-guard pair was +1.6 C/28.944 s; the unchanged +2 C/30 s guard did
+not trip. The child collector recorded 16 NORMAL samples over 30.775 s,
+SKIN 34.7 -> 36.8 C. Host launch-to-first force-stop command interval was
+40.386 s, not measured hardware camera-on time. Runner/collector exited;
+all 37 camera-idle snapshots including final cleanup showed zero clients
+and project/test PIDs. No retry or thermal override.
+
+Four local screenshots show one face with a Face landmark overlay at sampled
+moments. The intended 50-100 cm distance, full gentle head-turn coverage,
+uninterrupted identity/landmark alignment and numerical tracking accuracy
+remain unverified; 10 reacquisitions mean detection gaps. The earlier
+interrupted run was INCOMPLETE at +2.1 C/28.861 s. This completed run does
+not prove the YUV edit improved FPS, latency or thermal behavior because
+initial conditions, scene and rolling measurement windows differ.
+
+FILES: this handoff and `phase-2-physical-verification.md`. DEVICES TESTED:
+SM-S918B, Android API 36, debug build above. MEASURED: window rates,
+rolling latency, sampled memory and thermal as above. DEVIATIONS FROM SPEC:
+none established. BLOCKERS: strict single-person/head-turn tracking proof
+and remaining Phase 2 physical gates. Raw evidence remains local and ignored
+under `device-evidence/phase2/physical/face-yuv-guarded-one-20261014-1/` in
+the Phase 2 worktree; all previous evidence preserved. NEXT PROPOSED:
+camera-off evidence review and separately authorized targeted checks only
+if needed; no automatic rerun, owner acceptance, PR #3 merge or Phase 3.

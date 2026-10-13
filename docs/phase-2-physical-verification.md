@@ -1092,3 +1092,60 @@ fresh thermal/camera-idle checks and 15-second camera-off countdown then; no
 automatic retry. Raw evidence stays ignored locally at
 `device-evidence/phase2/physical/face-yuv-idle-after-tiktok-stop-20261014-1/`
 in the Phase 2 worktree. All existing thresholds and prior evidence remain.
+
+## One post-YUV rear-portrait Face-only window completed - 2026-10-14
+
+After a new owner `ready`, the clean Phase 2 worktree at
+`fcd2e962c050b8003a93d45fcc95523799f00864` and the installed APK SHA-256
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`
+were reconfirmed on only R5CW40EE9QK / SM-S918B / API 36. Exactly one
+`--configuration rear-portrait --face-only --seconds 30` runner invocation
+repeated the fresh NORMAL/camera-idle preflight and 15-second camera-off
+countdown. UI rotation was 0 and displayed orientation portrait. The current
+app PID's mode log confirmed Face READY/configured GPU and Pose STOPPED with
+`disabled_face_only`; native GPU execution placement was not measured.
+
+The collector returned COMPLETE for a 30.035 s counter window (30.836 s wall
+collection). Window deltas: 901 offered, 290 accepted/Face completed, 270
+detected and valid478 (93.1% of completions, 100% of detections), 260
+continuity pairs, zero disjoint pairs, 10 reacquisitions, one busy skip,
+610 cadence skips, zero Pose completions and zero pipeline errors. Face
+completion rate was 9.655 Hz. Last rolling task-to-callback Face p50/p95 was
+39.281/49.632 ms and batch p50/p95 68.540/84.131 ms; rolling percentiles
+include samples before the isolated 30-second counter window. The last
+cumulative Phase1 log reported 1,132 delivered analysis frames over 38.453 s,
+app-reported preview capture/analysis about 29.438 Hz, 640x480 delivered
+with upright crop 480x640, and YUV/RGB rotation rolling p50/p95
+28.764/39.017 ms. This is not display FPS, CameraX internal drops, or a
+controlled before/after timing comparison. Four same-PID memory samples:
+PSS 248,600-278,366 KiB; RSS 347,132-374,856 KiB; peaks between samples
+are unknown.
+
+The runner's 50 thermal samples over 101.452 s were all NORMAL (0), SKIN
+34.5 -> 36.8 C (range 34.5-36.8 C). The largest observed rise in any
+eligible <=30 s parent-guard pair was +1.6 C in 28.944 s, below the
+unchanged +2 C/30 s stop. The child collector's 16 samples over 30.775 s
+were also NORMAL (0), SKIN 34.7 -> 36.8 C. These histories have different
+windows and must not be mixed. The host app-launch to first force-stop
+command interval was 40.386 s; actual hardware camera-on duration was not
+measured. Runner exited normally. All 37 camera-idle journal snapshots,
+including final cleanup, had zero clients and zero project/test PID. No
+automatic retry or guard override occurred.
+
+Four saved local preview screenshots show one visible face and Face landmark
+overlay at sampled moments. Sparse stills and aggregate counters do not prove
+the requested 50-100 cm distance, complete gentle left/right head-turn
+coverage, uninterrupted tracking/identity, or numerical landmark alignment;
+10 reacquisitions indicate detection gaps. Thus the guarded numeric 30-second
+collection **completed**, but the strict Face continuity/tracking acceptance
+gate and broader Phase 2 physical gates remain pending. The previous
+interrupted session triggered at +2.1 C/28.861 s and was INCOMPLETE; this
+session did not trigger the guard. Different initial/scene conditions and
+rolling windows do not establish that the YUV edit improved speed or heat.
+
+Raw logs, summaries, memory/thermal samples and screenshots stay ignored
+locally under
+`device-evidence/phase2/physical/face-yuv-guarded-one-20261014-1/` in the
+Phase 2 worktree. No further camera run is authorized by this one-run Ready.
+Preserve all thresholds, prior evidence, Draft PR status and Phase 2 owner
+acceptance boundary.
