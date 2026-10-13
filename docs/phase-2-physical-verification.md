@@ -1066,3 +1066,29 @@ post-install failure. Raw evidence is ignored locally under
 Phase 2 worktree. Keep testing stopped; a separately initiated new
 NORMAL/stable camera-off preflight and new owner authorization are required
 before any future Face-only attempt. Existing guards and thresholds remain.
+
+## Fresh camera-off preflight passed after owner stopped TikTok - 2026-10-14
+
+At a new owner request, the Phase 2 worktree was clean at
+`ab00960f8d14bb9d8d7a560e9b10cc6428c44529`. ADB listed only serial
+R5CW40EE9QK; the device reported SM-S918B / Android API 36. The installed
+debug APK SHA-256 matched the prepared YUV-optimized build:
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`.
+No reinstall was needed.
+
+Exactly one new `--idle-only` runner session returned
+`IDLE_VERIFIED_NO_CAMERA_LAUNCH`. All 21 thermal samples over 40.804 s were
+Android NORMAL (0); SKIN 34.7 -> 34.9 C, range 34.7-34.9 C, with no rapid-rise
+guard trigger. The required 30-second observation and three-sample stable
+camera-availability check completed. All 22 camera snapshots over 40.835 s had
+zero active clients and zero project/test PID, including final cleanup. No
+TikTok or other camera owner was observed throughout this sampled window.
+
+This is a camera-off readiness result for the sampled interval, not a Face,
+FPS, latency or thermal-performance result for the optimized APK. No app/camera
+launch, inference or 30-second Face collection occurred. Await a NEW explicit
+owner `Ready` before one guarded Face-only attempt. The runner must repeat its
+fresh thermal/camera-idle checks and 15-second camera-off countdown then; no
+automatic retry. Raw evidence stays ignored locally at
+`device-evidence/phase2/physical/face-yuv-idle-after-tiktok-stop-20261014-1/`
+in the Phase 2 worktree. All existing thresholds and prior evidence remain.

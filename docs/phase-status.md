@@ -2760,3 +2760,35 @@ Phase 2 worktree, with prior physical evidence preserved. NEXT PROPOSED: stop
 testing, do not alter the external app; only after a separately initiated full
 NORMAL/stable camera-off preflight and new owner confirmation may one guarded
 Face-only attempt run. PR #3 remains Draft; no merge, Phase 3 or owner acceptance.
+
+### Fresh SM-S918B camera-off preflight passed; awaiting new Ready - 2026-10-14
+
+PHASE: 2. STATUS: partial / camera-off preflight READY, Face verification
+pending. The owner reported TikTok had been force-stopped and initiated this
+new preflight. The clean Phase 2 branch was at
+`ab00960f8d14bb9d8d7a560e9b10cc6428c44529`. ADB listed only target serial
+R5CW40EE9QK; model SM-S918B / API 36. Installed APK SHA-256 matched the
+prepared YUV-optimized debug APK:
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`.
+No install was needed or performed.
+
+One `--idle-only` runner completed as `IDLE_VERIFIED_NO_CAMERA_LAUNCH`.
+All 21 thermal samples over 40.804 s were NORMAL (0), SKIN 34.7 -> 34.9 C
+(range 34.7-34.9 C), with no rapid-rise guard trigger. The documented
+30-second thermal observation and three-sample stable camera availability
+check completed. All 22 camera snapshots over 40.835 s showed zero active
+clients and zero project/test PID, including final cleanup. No external camera
+owner was observed in the sampled interval. No project camera/inference,
+30-second Face run or automatic retry occurred.
+
+FILES: this handoff and `phase-2-physical-verification.md`. DEVICES TESTED:
+SM-S918B / API 36, camera-off preflight only. MEASURED: thermal and camera
+samples above; no new-build FPS, Face latency, memory or on-camera thermal
+result. DEVIATIONS FROM SPEC: none. BLOCKERS: new explicit owner `Ready` and
+remaining Face/Phase 2 physical gates. Raw evidence remains ignored locally
+under `device-evidence/phase2/physical/face-yuv-idle-after-tiktok-stop-20261014-1/`
+in the Phase 2 worktree; prior evidence preserved. NEXT PROPOSED: after new
+`Ready`, run at most one rear-portrait Face-only 30-second window with Pose off
+and continuity diagnostics, subject to fresh NORMAL/stable camera-idle checks,
+the 15-second camera-off countdown, and all unchanged stop guards. No PR #3
+merge, Phase 3 or Phase 2 owner acceptance.
