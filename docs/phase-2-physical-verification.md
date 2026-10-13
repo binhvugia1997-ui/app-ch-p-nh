@@ -943,3 +943,13 @@ This completed numeric Face collection does not close other Phase 2 physical gat
 owner acceptance. Raw evidence stays ignored under face-ready-preflight-after9a411d8-20261011/
 and face-ready-one-after9a411d8-20261011/; see [phase status](phase-status.md) for measured
 details. No further physical test is authorized by this one-run instruction.
+
+## Latest Face-only interruption - 2026-10-14
+
+After a separately confirmed Ready, one rear-portrait Face-only attempt on SM-S918B was
+stopped by the unchanged rapid-rise guard. The exact parent comparison was SKIN 35.2 ->
+37.3 C in 28.861 s; all Android thermal status samples were NORMAL (0). The collector
+marked its partial window INCOMPLETE/invalid, and final camera-idle checks found no active
+clients or project/test PID. Preserve the raw local evidence and do not retry automatically.
+See [the detailed offline thermal review](phase-2-face-thermal-review-20261014.md) and
+[the handoff](phase-status.md) for measured workload, limitations and next steps.

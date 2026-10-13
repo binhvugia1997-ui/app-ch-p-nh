@@ -2571,3 +2571,62 @@ Continued from checkpoint 1b68cb3 on the unchanged Phase 2 branch. The prepared 
 ### SM-S918B Face-continuity readiness passed; awaiting Ready - 2026-10-12
 
 Continued from 2033bd6 on the Phase 2 branch. ADB verified only target serial R5CW40EE9QK, model SM-S918B, Android API 36. The initial camera-off preflight completed with 21 NORMAL (0) thermal samples, SKIN 35.3 -> 35.8 C (range 35.1-35.8 C), and 22 snapshots with zero active camera clients and zero project PIDs. The installed APK hash differed from the prepared Face-continuity debug build, so the exact prepared APK (SHA-256 C0DF7538CF67D7F0E763FB5CD01D3F0E19834FBB40CAD390EC67947C9ED1D9E5) was installed on this target only; its on-device hash matched and CAMERA permission remained granted. The fresh post-install idle-only preflight completed with 21 NORMAL (0) samples, SKIN 36.4 -> 36.1 C (range 36.1-36.4 C), and 22 snapshots with zero clients/PIDs. A subsequent read-only sample was NORMAL (0), SKIN 36.0 C, with no active camera client. Both sessions report IDLE_VERIFIED_NO_CAMERA_LAUNCH. Raw evidence remains locally in ignored face-continuity-idle-after2033bd6-20261012-1/ and face-continuity-postinstall-idle-after2033bd6-20261012-1/. Explicit Ready was requested for one person, one rear-portrait Face-only 30-second run with continuity counters and Pose off; no Ready reply or launch had occurred at this checkpoint. The runner must repeat fresh thermal and idle guards before its 15-second camera-off countdown. No automatic retry, merge, Phase 3, or owner acceptance.
+
+### SM-S918B Face-only thermal interruption - 2026-10-14
+
+The owner requested a camera-off preflight, then separately confirmed Ready. Exact serial
+R5CW40EE9QK, model SM-S918B and Android API 36 were verified. The idle-only preflight
+recorded 21 NORMAL (0) thermal samples at SKIN 34.1-34.2 C and 22 camera snapshots with
+zero active clients and project/test PIDs. A fresh runner preflight, stable-idle wait and
+15-second camera-off countdown preceded exactly one rear-portrait Face-only launch. Pose
+was STOPPED/disabled_face_only; Face was READY/configured GPU, with native placement not
+measured. The independent rapid-rise guard stopped the app at SKIN 37.3 C versus its
+selected 35.2 C sample 28.861 s earlier. Android remained NORMAL (0). The collector
+ended at 23.675 s wall time, INCOMPLETE/counterWindowInvalid; cumulative Face counters
+and rolling latencies are diagnostic only, not a completed 30-second window. Final camera
+snapshots found zero clients/PIDs and no automatic retry occurred. Local raw evidence:
+`device-evidence/phase2/physical/face-continuity-idle-preflight-20261014-0441/` and
+`device-evidence/phase2/physical/face-continuity-ready-20261014-0445/` (ignored).
+[The offline thermal review](phase-2-face-thermal-review-20261014.md) records exact guard
+reconstruction, CPU/GPU/Face/frame/memory limitations and safe follow-up. It found no
+established causal heat source or thermal fix. No further physical run is authorized;
+Phase 2 acceptance and the controlled Face tracking gate remain pending. No PR merge or
+Phase 3.
+
+### Development-machine-only Phase 2 performance review - 2026-10-14
+
+PHASE: 2. STATUS: partial; host code review and validation complete, physical acceptance
+pending. Work was isolated on branch `codex/phase-2-pose-face-detection`; uncommitted
+documentation on the separate `codex/epose-inspired-plan-docs` checkout was preserved.
+See [the review](phase-2-development-performance-review-20261014.md) and the imported
+[latest thermal analysis](phase-2-face-thermal-review-20261014.md).
+
+FILES: `feature/camera/src/main/kotlin/com/aiphotographer/camera/ImagePlanes.kt`,
+`feature/camera/src/test/kotlin/com/aiphotographer/camera/ImagePlanesTest.kt`, this
+handoff, `phase-2-physical-verification.md`, and the two linked reviews. One bounded
+change reuses U/V samples for adjacent pixels with the same chroma X in each row. For
+an even aligned 640x480 crop, source-level chroma buffer reads per conversion fall
+from 614,400 to 307,200; no device speed, FPS, memory or thermal improvement is claimed.
+Exact scalar-reference tests now cover crop widths 3-6, origins 0-2, pixel strides
+1-2 and all four rotations. CameraX binding/backpressure, buffer ownership, Face/Pose
+schedule/delegates, debug diagnostics, Android permissions and all thermal/ownership
+guards remain unchanged. No architecture boundary changed.
+
+HOST VALIDATION: targeted camera unit tests passed; full offline debug/profile/release
+APK builds, Gradle `test`, app debug/profile/release lint and camera debug lint passed
+(322 actionable tasks: 299 executed, 23 up to date). XML reports: 41 Kotlin tests,
+zero failures/errors. Built debug APK SHA-256:
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`.
+Phase 2 Python tests: 59 passed after creating the fresh
+worktree's empty ignored `device-evidence/` test-temp directory; the first invocation
+had 19 setup errors solely because that directory did not exist. Full cached offline
+spec validation: 0 errors/0 warnings; diff whitespace check passed. DEVICES TESTED:
+none in this review. MEASURED for new build: no device latency/FPS/memory/thermal
+measurements. Earlier SM-S918B/Android 16 evidence belongs to the previous APK.
+
+DEVIATIONS FROM SPEC: none established. BLOCKERS: on-device benefit, thermal cause and
+remaining Face/Phase 2 physical gates are unverified under the host-only restriction.
+NEXT PROPOSED: preserve the raw evidence and guards; only after separate owner
+authorization, new exact-device normal/stable idle preflight and explicit Ready may a
+controlled comparison or pending Face tracking check run. No automatic retry, PR #3
+merge, owner acceptance or Phase 3.
