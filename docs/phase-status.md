@@ -2691,3 +2691,38 @@ worktree. NEXT PROPOSED: keep testing stopped until a separately initiated fresh
 NORMAL/stable camera-off preflight fully passes; then request new owner confirmation
 before installing the optimized APK or running Face-only. No guard change, PR #3
 merge, Phase 3 or Phase 2 owner acceptance.
+
+### SM-S918B camera-off preflight passed; awaiting new Ready - 2026-10-14
+
+PHASE: 2. STATUS: partial / preflight READY, physical Face test pending. On a new
+owner request, the Phase 2 branch was clean at
+`d1f6c9a8d7246bf5bcee80b8b8f978b33b5bc65f`. ADB listed only target serial
+R5CW40EE9QK; model SM-S918B, API 36. Prepared YUV-optimized debug APK SHA-256:
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`.
+Installed older APK SHA-256:
+`C0DF7538CF67D7F0E763FB5CD01D3F0E19834FBB40CAD390EC67947C9ED1D9E5`.
+No installation yet.
+
+Exactly one new `--idle-only` preflight completed as
+`IDLE_VERIFIED_NO_CAMERA_LAUNCH`: 21 NORMAL (0) thermal samples over 40.334 s,
+SKIN 34.8 -> 34.5 C (range 34.5-34.8 C), no rapid-rise guard trigger. The
+documented 30-second thermal observation and three-sample stable camera-idle
+availability wait completed. All 22 camera snapshots over 40.301 s showed zero
+clients and zero project/test PID, including final cleanup. No TikTok or other
+camera owner was seen during that sampled window. No app/camera launch, Face/Pose
+inference, 30-second Face test, install, or retry occurred. Evidence remains local
+and ignored at
+`device-evidence/phase2/physical/face-yuv-idle-recheck-20261014-2/` in the
+Phase 2 worktree.
+
+FILES: this handoff and `phase-2-physical-verification.md`. DEVICES TESTED:
+SM-S918B / API 36, camera-off preflight only. MEASURED: thermal/idle samples above;
+new-build FPS, Face latency, memory and on-camera thermal behavior not measured.
+DEVIATIONS FROM SPEC: none. BLOCKERS: explicit new owner Ready, optimized APK
+installation, fresh runner preflight, and pending Face/Phase 2 physical gates.
+NEXT PROPOSED: prepare exactly one person with a clearly visible face 50-100 cm
+from the rear camera in portrait orientation; after the owner's new `Ready`,
+install/verify the exact optimized APK, repeat fresh NORMAL/stable-idle safety
+checks and 15-second camera-off countdown, then run at most one guarded Face-only
+30-second window with Pose off and continuity diagnostics. Do not merge PR #3,
+start Phase 3 or declare owner acceptance.

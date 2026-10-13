@@ -1006,3 +1006,30 @@ worktree. The previous 42.6 C and this 40.6 C are isolated samples from separate
 attempts; they are not a valid continuous cooling trend or performance comparison.
 Only a separately initiated full NORMAL/stable camera-off preflight can establish
 readiness for a new owner confirmation. Guards and thresholds remain unchanged.
+
+## Post-YUV camera-off preflight passed; awaiting new Ready - 2026-10-14
+
+On a new owner request, the Phase 2 branch was clean at
+`d1f6c9a8d7246bf5bcee80b8b8f978b33b5bc65f`. ADB listed only authorized
+serial R5CW40EE9QK; model SM-S918B, Android API 36. The prepared YUV-optimized
+debug APK SHA-256 remained
+`AD16C2385972309D08D5E60B59DE060D1B2F7FA314DABE08A7B55AA8FC9FF2BC`.
+The installed APK remained the older
+`C0DF7538CF67D7F0E763FB5CD01D3F0E19834FBB40CAD390EC67947C9ED1D9E5`.
+
+One new `--idle-only` runner session completed with
+`IDLE_VERIFIED_NO_CAMERA_LAUNCH`. Its 21 thermal samples over 40.334 s were all
+NORMAL (0); SKIN 34.8 -> 34.5 C, range 34.5-34.8 C, with no upward rapid-rise
+guard trigger. The required 30-second observation and three consecutive idle
+availability samples completed. All 22 camera snapshots over 40.301 s had zero
+active clients and zero project/test PID. No TikTok or other camera owner was
+observed in that sampled interval. Final runner cleanup also verified camera idle.
+
+The preflight passed for its observed window only. The optimized APK was not
+installed, the project camera was not opened, and Face/Pose inference and the
+30-second Face collection were not run. A new explicit owner `Ready` is required
+before installation or test. After Ready, the runner must repeat fresh thermal and
+camera-idle guards and its 15-second camera-off countdown; no automatic retry.
+Raw evidence remains ignored under
+`device-evidence/phase2/physical/face-yuv-idle-recheck-20261014-2/` in the Phase 2
+worktree. Prior physical evidence and all thresholds remain unchanged.
