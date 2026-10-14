@@ -2846,3 +2846,33 @@ under `device-evidence/phase2/physical/face-yuv-guarded-one-20261014-1/` in
 the Phase 2 worktree; all previous evidence preserved. NEXT PROPOSED:
 camera-off evidence review and separately authorized targeted checks only
 if needed; no automatic rerun, owner acceptance, PR #3 merge or Phase 3.
+
+### Offline Face continuity and physical acceptance review - 2026-10-14
+
+PHASE: 2. STATUS: partial; no ADB, camera, inference, APK or physical test run.
+Reviewed the existing latest completed Face-only logs, continuity implementation,
+roadmap, test plan, thermal review and physical protocol. The valid 30.035 s
+counter window has 290 Face completions, 270 detections/valid478, 20 null-Face
+callbacks, 260 adjacent comparable detected pairs, zero disjoint pairs,
+10 detected -> missing -> detected episodes and zero reported pipeline errors.
+Once-per-second logs bound the 10 reacquisitions to eight app-elapsed intervals
+between 10.634 and 35.489 s; they cannot give exact gap duration or distinguish
+MediaPipe internal tracking resets/confidence decisions from framing, motion or
+lighting. Zero disjoint pairs does not prove subject identity across a gap.
+Four sparse stills cannot prove uninterrupted one-person/head-turn tracking.
+The numeric collection is complete, but Face continuity acceptance remains
+INCOMPLETE; no defect or YUV performance improvement is established.
+
+FILES: `docs/phase-2-physical-acceptance-checklist-20261014.md`, this handoff,
+`docs/phase-2-physical-verification.md`. DEVICES TESTED: none in this session;
+retained evidence is SM-S918B/API 36. MEASURED: no new device measurements;
+existing log intervals and counters only. DEVIATIONS FROM SPEC: none established.
+BLOCKERS: missing controlled Face motion/identity evidence, unobstructed full-body
+rear-landscape and front-camera setups, actual 720p comparison, combined-mode
+performance/CPU/GPU and sustained thermal evidence, remaining lifecycle/capture/
+offline checks, and owner acceptance. NEXT PROPOSED: review retained footage and
+automated records offline first; if still insufficient, request fresh NORMAL/stable
+camera-off preflight and a new explicit Ready for one targeted guarded Face check.
+Then complete missing setups and profile/soak in the checklist's safe order.
+All thermal thresholds/guards, previous raw evidence and Draft PR #3 remain
+unchanged; no Phase 3 or merge.

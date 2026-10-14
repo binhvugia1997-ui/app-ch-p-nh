@@ -1,10 +1,16 @@
 # Phase 2 — consolidated solo physical verification
 
-Status: **ONE GUARDED FACE-ONLY WINDOW COMPLETED**, 2026-10-11.
+Status: **ONE POST-YUV GUARDED FACE-ONLY WINDOW COMPLETED**, 2026-10-14; strict Face tracking and Phase 2 acceptance remain pending.
 The owner separately authorized that single run after the earlier pause. The four-setup matrix
 below and remaining gates are still PENDING_PHYSICAL_VERIFICATION; no owner acceptance.
 Reference device: Samsung SM-S918B / Android 16 / API 36 only. Do not generalize its results.
 This is the single current physical session plan; historical measurements remain in phase-status.md.
+The current gate-by-gate status, offline reacquisition analysis, and safe next order are in
+[the Phase 2 physical acceptance checklist](phase-2-physical-acceptance-checklist-20261014.md).
+During thermal recovery, the runner accepts only one 30–60 s window per invocation and
+rejects `--debug-matrix` and `--lifecycle`; the older batch example below is historical,
+not an executable current command. Each new camera run needs a fresh camera-off preflight
+and a new explicit owner Ready. Preserve all existing guards and cooldown requirements.
 
 ## Preparation before the owner returns
 
