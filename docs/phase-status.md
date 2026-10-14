@@ -2876,3 +2876,44 @@ camera-off preflight and a new explicit Ready for one targeted guarded Face chec
 Then complete missing setups and profile/soak in the checklist's safe order.
 All thermal thresholds/guards, previous raw evidence and Draft PR #3 remain
 unchanged; no Phase 3 or merge.
+
+### Offline review of retained Face-only images and logs - 2026-10-14
+
+PHASE: 2. STATUS: partial; Face continuity INCOMPLETE. On the clean Phase 2
+branch at `fb5bc9b0e345d2f3a790b8111986085d047c890a`, inspected the
+ignored local evidence of the latest completed 30.035 s Face-only window
+without ADB, device contact, camera, inference or a new physical test. The
+session directory contains 27 files: four PNG preview snapshots, one app log,
+six JSON, two JSONL, 13 TXT and one XML; no video/continuous frame sequence or
+Perfetto trace. Collector sample starts were at 0.056, 10.861, 21.672 and
+30.001 s. Each snapshot shows Face landmarks on the principal visible face;
+face position/tilt and framing differ. A partial figure appears at the left
+edge of later snapshots, but another visible face or target switch is not
+established. No snapshot captures a confirmed Face disappearance/occlusion.
+The main repository's separate 2026-10-07 physical-evidence directory has
+rear-portrait/rear-landscape videos; its rear-portrait 80-frame contact sheet
+was inspected. It depicts an earlier Pose/full-body session, not the latest
+Face-only run, and cannot explain or validate these 10 reacquisitions.
+
+The app's once-per-second records still bound 10 reacquisitions to eight
+roughly one-second intervals; screenshot and log clocks have separate elapsed
+origins and no retained per-frame tie, so the images cannot narrow an episode
+or measure its duration. Exactly 20 of 290 completed callbacks had no Face;
+270 detected/valid478 and zero reported errors remain valid numeric evidence.
+These records do not prove continuous identity, full gentle head turns,
+one-person scene throughout, or the cause of any loss. No new threshold or
+implementation defect is inferred. The full inventory, observations, limits
+and missing evidence are in
+`docs/phase-2-physical-acceptance-checklist-20261014.md`.
+
+FILES: this handoff and the Phase 2 physical acceptance checklist only.
+DEVICES TESTED: none this session; retained evidence is SM-S918B/API 36.
+MEASURED: no new device measurements; existing counters and collector sample
+times reviewed. DEVIATIONS FROM SPEC: none established. BLOCKERS: no continuous,
+time-aligned single-person Face motion/landmark evidence in this worktree;
+other physical gates and owner acceptance remain pending. NEXT PROPOSED:
+ask the owner to supply any separately retained recording of the latest run
+for offline review; if none exists, later request a fresh safe preflight and
+explicit Ready for a single targeted guarded check. The original evidence, thermal
+guards/thresholds and Face/Pose configuration remain untouched. No automatic
+retry, PR #3 merge or Phase 3.
