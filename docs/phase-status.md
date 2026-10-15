@@ -3,7 +3,7 @@
 > **This is the live handoff document.** Whichever agent finishes work updates it. If it disagrees with
 > reality, it is a bug.
 
-Last updated: **2026-10-14** by **Codex Local** (one post-YUV guarded SM-S918B rear-portrait Face-only counter window completed; tracking acceptance remains pending).
+Last updated: **2026-10-15** by **Codex Local** (camera-screen Pose/Face overlay automated validation passed; physical acceptance pending).
 
 ---
 
@@ -2917,3 +2917,29 @@ for offline review; if none exists, later request a fresh safe preflight and
 explicit Ready for a single targeted guarded check. The original evidence, thermal
 guards/thresholds and Face/Pose configuration remain untouched. No automatic
 retry, PR #3 merge or Phase 3.
+
+### Camera-screen Pose/Face overlay implementation — 2026-10-15
+
+PHASE: 2. STATUS: code complete, automated tests passed, physical tests and
+owner acceptance pending. The existing 33-point Pose and 478-point Face
+pipelines remain unchanged. The Pose skeleton and Face points now render on
+the normal camera preview, using delivered upright analysis dimensions,
+preview center crop and front-camera mirroring. Stale or unassociated results
+are hidden; Face-only diagnostics remain visible when Pose is disabled.
+Projection tests cover rear/front, portrait/landscape, 4:3/16:9 crop,
+staleness and Face-only freshness.
+
+FILES: `app/src/main/kotlin/com/aiphotographer/app/MainActivity.kt`,
+`app/src/main/kotlin/com/aiphotographer/app/PerceptionOverlay.kt`,
+`app/src/debug/kotlin/com/aiphotographer/app/DeveloperPanel.kt`,
+`app/src/test/kotlin/com/aiphotographer/app/PerceptionOverlayProjectionTest.kt`,
+`app/build.gradle.kts`, this handoff. AUTOMATED: Gradle `test`, debug/release/
+profile APK builds, app debug/release/profile lint and camera debug lint PASS;
+spec validator 0 errors, 0 warnings. DEVICES TESTED: none in this session.
+MEASURED: no new device performance or thermal numbers. DEVIATIONS FROM SPEC:
+none established. BLOCKERS: physical alignment, full-body and Face continuity,
+combined performance, lifecycle/capture/offline and guarded thermal evidence
+listed in the acceptance checklist. NEXT PROPOSED: consolidated physical
+verification on SM-S918B only after fresh preflight and a new explicit Ready;
+300-second soak requires a separately reviewed safe procedure. Draft PR #3
+remains unmerged; Phase 3 has not started.

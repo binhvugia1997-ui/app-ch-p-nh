@@ -141,6 +141,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.compose)
+    testImplementation(libs.junit)
     androidTestImplementation(libs.android.test.runner)
     androidTestImplementation(libs.android.test.junit)
 }

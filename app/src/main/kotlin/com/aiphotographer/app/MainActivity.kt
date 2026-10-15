@@ -130,6 +130,7 @@ class MainActivity : ComponentActivity() {
                 }
                 AndroidView(factory = { preview.apply { doOnLayout { camera.start() } } }, modifier = Modifier.fillMaxSize())
                 if (!framingOnly) {
+                    PerceptionOverlay(camera)
                     DeveloperOverlay(camera)
                     PerceptionStatus(camera)
                 }

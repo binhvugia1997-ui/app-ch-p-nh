@@ -18,10 +18,6 @@ import com.aiphotographer.model.AnalysisResolution
 import kotlinx.coroutines.delay
 import java.util.Locale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.geometry.Offset
-import com.aiphotographer.geometry.Coordinates
-import com.aiphotographer.model.LandmarkUsability
-import com.aiphotographer.model.PoseLandmarks
 
 @Composable internal fun DeveloperOverlay(camera: CameraSession) {
     val snapshot by camera.router.snapshot.collectAsStateWithLifecycle()
@@ -40,36 +36,6 @@ import com.aiphotographer.model.PoseLandmarks
     Canvas(Modifier.fillMaxSize()) {
         snapshot?.analysis?.frame?.let { frame ->
             drawIntoCanvas { CrosshairRenderer.draw(it.nativeCanvas, size.width.toInt(), size.height.toInt(), frame) }
-            if (snapshot?.analysis?.quality?.sources?.get("pose")?.stale != true) {
-                snapshot?.analysis?.subjects?.firstOrNull()?.let { subject ->
-                    val points = subject.landmarks.associateBy { it.id }
-                    fun point(id: String): Offset? = points[id]?.takeIf(LandmarkUsability::measurable)?.let { l ->
-                        Coordinates.analysisToPreview(com.aiphotographer.geometry.Point(l.x, l.y), frame.width, frame.height,
-                            size.width.toInt(), size.height.toInt(), frame.isMirrored)?.let { Offset(it.x.toFloat(), it.y.toFloat()) }
-                    }
-                    PoseLandmarks.bones.forEach { (a, b) ->
-                        val from = point(PoseLandmarks.ids[a]); val to = point(PoseLandmarks.ids[b])
-                        if (from != null && to != null) drawLine(Color.Green, from, to, strokeWidth = 2.dp.toPx())
-                    }
-                    points.keys.forEach { point(it)?.let { p -> drawCircle(Color.Yellow, 3.dp.toPx(), p) } }
-                    subject.face?.takeIf { snapshot?.analysis?.quality?.sources?.get("face")?.stale != true }?.landmarks?.forEach { l ->
-                        Coordinates.analysisToPreview(com.aiphotographer.geometry.Point(l.x, l.y), frame.width, frame.height,
-                            size.width.toInt(), size.height.toInt(), frame.isMirrored)?.let { p ->
-                            drawCircle(Color.Cyan, 1.dp.toPx(), Offset(p.x.toFloat(), p.y.toFloat()))
-                        }
-                    }
-                }
-            }
-            val diagnostic = perception?.snapshot
-            if (diagnostic?.frame == frame && snapshot?.analysis?.quality?.sources?.get("face")?.stale == false &&
-                snapshot?.analysis?.subjects?.firstOrNull()?.face == null) {
-                diagnostic.faceDiagnostic?.landmarks?.forEach { l ->
-                    Coordinates.analysisToPreview(com.aiphotographer.geometry.Point(l.x, l.y), frame.width, frame.height,
-                        size.width.toInt(), size.height.toInt(), frame.isMirrored)?.let { p ->
-                        drawCircle(Color.Cyan, 1.dp.toPx(), Offset(p.x.toFloat(), p.y.toFloat()))
-                    }
-                }
-            }
         }
     }
     var visible by remember { mutableStateOf(false) }
