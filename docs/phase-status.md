@@ -3087,3 +3087,49 @@ targeted physical acceptance only with a fresh camera-off preflight and
 new explicit owner Ready for each authorized run. No 300-second soak was
 authorized in this task. Phase 2 acceptance, PR merge and Phase 3 remain
 pending.
+
+### Optimized-build guarded device run interrupted by foreground loss — 2026-10-15
+
+PHASE: 2. STATUS: partial / performance comparison invalid. Worktree and
+remote branch were verified at `39a730c0d6ebf814c600643357b37790bb46bf04`.
+The debug APK SHA-256 was
+`C60FB4159C786A210B2C7A47B38FCB120354C67D0A6C7EBE0BA1139F930C16F4`.
+One pre-install and one post-install camera-off preflight passed on the
+SM-S918B: all 42 thermal samples were NORMAL (0), SKIN stayed within
+35.7-36.1 C, and all 44 camera snapshots showed zero active clients and
+zero project/test PIDs. The installed `base.apk` hash matched the build.
+After the owner's new `ready`, exactly one guarded rear-camera portrait
+480p 4:3 run was started. There was no automatic retry and no thermal-limit
+change.
+
+The requested 60-second session cannot be used as a valid performance
+comparison because the camera app left the foreground during collection.
+The screenshot at approximately 33.45 s already shows the Android home/app
+screen, and later screenshots show another application. Phase 2 metric logs
+cover only a 26.886 s counter window (approximately 6.94-33.83 s after
+session start), then stop. Within that incomplete window there were 206 Pose
+completions (203 detections, 7.662 Hz), 50 Face completions (34 detections,
+1.860 Hz), 13 busy skips, 586 cadence skips, six Face reacquisitions and
+zero pipeline errors. The scheduler reached level 5 because early measured
+busy pressure crossed its capacity threshold. These partial figures do not
+establish an FPS improvement or regression. The abrupt later memory drop
+also reflects backgrounding/model release and is not an optimization result.
+
+All 64 parent thermal samples remained NORMAL (0), with SKIN 35.2-37.7 C;
+all 31 child samples were NORMAL, with SKIN up to 37.7 C. Final cleanup
+verified zero active camera clients and zero project/test PIDs. Initial
+screenshots confirm Pose and Face overlays were visible before foreground
+loss, but this interrupted session does not close overlay accuracy,
+continuity, lifecycle, sustained performance or thermal acceptance gates.
+
+FILES: this handoff only; ignored raw evidence remains under
+`device-evidence/phase2/physical/perf-camera-post39a730c-preinstall-idle-20261015-1/`,
+`perf-camera-post39a730c-postinstall-idle-20261015-1/` and
+`perf-camera-post39a730c-guarded-one-20261015-1/`. DEVICES TESTED: Samsung
+SM-S918B / Android 16 API 36 / debug APK. DEVIATIONS FROM SPEC: no code
+defect established; foreground continuity was not maintained for the full
+measurement. BLOCKERS: a later valid uninterrupted performance run and the
+remaining Phase 2 physical gates. NEXT PROPOSED: do not reuse this
+authorization; any later camera run requires a fresh camera-off preflight
+and a new explicit owner Ready. Draft PR #3 remains unmerged and Phase 3
+has not started.
