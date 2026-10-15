@@ -91,6 +91,7 @@ class CameraSession(
     private var capture: ImageCapture? = null
     private var camera: Camera? = null
     private var cameraStateObserver: Observer<CameraState>? = null
+    private var observedCameraInfo: CameraInfo? = null
     private var closed = false
     private var firstFrame = false
     private var started = false
@@ -116,6 +117,11 @@ class CameraSession(
         val rotation = previewView.display?.rotation ?: return
         if (boundRotation != rotation) bind()
     }
+    private fun clearCameraObserver() {
+        cameraStateObserver?.let { observer -> observedCameraInfo?.cameraState?.removeObserver(observer) }
+        cameraStateObserver = null
+        observedCameraInfo = null
+    }
     private fun bind() {
         if (closed || previewView.width == 0 || previewView.height == 0) return
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -125,7 +131,7 @@ class CameraSession(
         if (!provider.hasCamera(selector)) { fail(IllegalArgumentException("Camera unavailable")); return }
         router.resetSessionWindow()
         analysis?.clearAnalyzer()
-        cameraStateObserver?.let { camera?.cameraInfo?.cameraState?.removeObserver(it) }
+        clearCameraObserver()
         boundSession?.let(provider::unbind)
         val rotation = previewView.display?.rotation ?: android.view.Surface.ROTATION_0
         val previewBuilder = Preview.Builder().setTargetRotation(rotation)
@@ -164,6 +170,7 @@ class CameraSession(
                 capture = if (mode in listOf(SessionMode.ANALYSIS_ONLY, SessionMode.PREVIEW_ONLY)) null else imageCapture
                 if (camera!!.cameraInfo.hasFlashUnit()) camera!!.cameraControl.enableTorch(false)
                 mutableState.value = SessionState(mode, report, attempts.toList())
+                val cameraInfo = camera!!.cameraInfo
                 cameraStateObserver = Observer<CameraState> { cameraState ->
                     if (!closed && cameraState.error != null) {
                         Log.e("Phase1Camera", "Camera state error: ${cameraState.error}")
@@ -171,7 +178,8 @@ class CameraSession(
                     } else if (!closed && cameraState.type == CameraState.Type.OPEN) {
                         mutableState.value = mutableState.value.copy(mode = mode)
                     }
-                }.also { camera!!.cameraInfo.cameraState.observe(owner, it) }
+                }.also { cameraInfo.cameraState.observe(owner, it) }
+                observedCameraInfo = cameraInfo
                 Log.i("Phase1Capability", mutableState.value.toString())
                 true
             } catch (error: IllegalArgumentException) {
@@ -208,6 +216,8 @@ class CameraSession(
         if (closed || previewOnly || mutableState.value.capture == CaptureStatus.SAVING) return
         if (mutableState.value.mode == SessionMode.ANALYSIS_ONLY) {
             analysis?.clearAnalyzer()
+            router.resetSessionWindow()
+            clearCameraObserver()
             boundSession?.let { provider?.unbind(it) }
             val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
             val newCapture = ImageCapture.Builder().setTargetRotation(previewView.display?.rotation ?: android.view.Surface.ROTATION_0).build()
@@ -285,7 +295,7 @@ class CameraSession(
         perceptionScope.cancel()
         perception?.close()
         analysis?.clearAnalyzer()
-        cameraStateObserver?.let { camera?.cameraInfo?.cameraState?.removeObserver(it) }
+        clearCameraObserver()
         boundSession?.let { provider?.unbind(it) }
         monitor.stop()
         executor.shutdown()

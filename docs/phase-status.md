@@ -3059,7 +3059,10 @@ The camera session now rebinds when the same display changes rotation
 without a portrait/landscape configuration change, clearing stale overlay
 state and deferring the rebind while a photo is saving. Capture handles a
 synchronous `takePicture` exception and restores analysis/error state after
-fallback failure. Hidden debug diagnostics no longer poll `/proc` every
+fallback failure. The Analysis-only capture fallback detaches its camera
+state observer from the original `CameraInfo` before rebinding and clears
+the old overlay snapshot; restoration and close also remove the observer
+from its actual owner. Hidden debug diagnostics no longer poll `/proc` every
 second on the main thread; visible diagnostics sample on an IO dispatcher.
 Front mirroring, preview center crop, camera switching, saved-image path,
 permission UI, ImageProxy close and existing thermal protections retain

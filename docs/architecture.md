@@ -635,6 +635,8 @@ and checks again on completion or error. This closes the 0°→180° and 90°→
 necessarily change Compose's portrait/landscape key. No new module, network access, model, camera
 mode, capture destination or user-visible product choice is introduced. Device alignment and
 capture rotation still require physical verification.
+The Analysis-only capture fallback also detaches camera-state observation from the original
+`CameraInfo` before its temporary rebind, so restoration cannot leave an observer on an old camera.
 
 ## 13. Risks owned by the architecture
 
