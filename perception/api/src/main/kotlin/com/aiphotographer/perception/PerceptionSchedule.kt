@@ -16,11 +16,21 @@ class PerceptionSchedule(private val tier: DeviceTier) {
     val useLite: Boolean get() = tier == DeviceTier.LOW || level >= 4
     val recommend480p: Boolean get() = level >= 6
     fun observe(timestampMs: Long, thermal: ThermalStatus, busyRatio: Double, poseP95Ms: Double?, frame: List<Landmark>?) {
-        val pressure = (thermal != ThermalStatus.UNKNOWN && thermal >= ThermalStatus.MODERATE) || busyRatio > .15 || (poseP95Ms ?: 0.0) > 40
+        val capacityPressure = (thermal != ThermalStatus.UNKNOWN && thermal >= ThermalStatus.MODERATE) || busyRatio > .15
+        val latencyPressure = (poseP95Ms ?: 0.0) > 40
+        val pressure = capacityPressure || latencyPressure
         if (pressure) {
             recoverySince = null
             val since = overloadedSince ?: timestampMs.also { overloadedSince = it }
-            if (timestampMs - since >= 3000) { level = if (level < 3) 3 else (level + 1).coerceAtMost(6); overloadedSince = timestampMs }
+            if (timestampMs - since >= 3000) {
+                level = when {
+                    level < 3 -> 3
+                    level == 3 -> 4
+                    capacityPressure -> (level + 1).coerceAtMost(6)
+                    else -> level
+                }
+                overloadedSince = timestampMs
+            }
         } else {
             overloadedSince = null
             val since = recoverySince ?: timestampMs.also { recoverySince = it }

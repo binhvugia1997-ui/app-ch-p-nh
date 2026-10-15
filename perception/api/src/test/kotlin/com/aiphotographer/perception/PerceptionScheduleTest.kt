@@ -14,7 +14,7 @@ class PerceptionScheduleTest {
         assertEquals(3, schedule.level); assertEquals(500L, schedule.facePeriodMs)
         schedule.observe(6000, ThermalStatus.NONE, .2, 10.0, null)
         assertTrue(schedule.useLite)
-        schedule.observe(9000, ThermalStatus.NONE, 0.0, 50.0, null)
+        schedule.observe(9000, ThermalStatus.NONE, .2, 50.0, null)
         assertEquals(125.0, schedule.posePeriodMs, 0.0)
         schedule.observe(12000, ThermalStatus.NONE, .2, 10.0, null)
         assertTrue(schedule.recommend480p)
@@ -23,6 +23,28 @@ class PerceptionScheduleTest {
         assertEquals(6, schedule.level)
         schedule.observe(28000, ThermalStatus.NONE, 0.0, 10.0, null)
         assertEquals(5, schedule.level)
+    }
+    @Test fun poseLatencyAloneKeepsLiteModelWithoutThrottlingPoseCadence() {
+        val schedule = PerceptionSchedule(DeviceTier.MEDIUM)
+        for (time in listOf(0L, 3000L, 6000L, 9000L, 12000L, 15000L)) {
+            schedule.observe(time, ThermalStatus.NONE, 0.0, 47.0, null)
+        }
+        assertEquals(4, schedule.level)
+        assertTrue(schedule.useLite)
+        assertEquals(1000.0 / 15, schedule.posePeriodMs, 1e-6)
+        assertFalse(schedule.recommend480p)
+        schedule.observe(18000L, ThermalStatus.NONE, .2, 47.0, null)
+        assertEquals(5, schedule.level)
+        assertEquals(125.0, schedule.posePeriodMs, 0.0)
+    }
+    @Test fun sustainedModerateThermalPressureStillReachesResolutionDegradation() {
+        val schedule = PerceptionSchedule(DeviceTier.MEDIUM)
+        for (time in listOf(0L, 3000L, 6000L, 9000L, 12000L)) {
+            schedule.observe(time, ThermalStatus.MODERATE, 0.0, 10.0, null)
+        }
+        assertEquals(6, schedule.level)
+        assertTrue(schedule.recommend480p)
+        assertEquals(125.0, schedule.posePeriodMs, 0.0)
     }
     @Test fun staticCadenceAndMotionRecovery() {
         val schedule = PerceptionSchedule(DeviceTier.LOW)

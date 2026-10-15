@@ -619,6 +619,23 @@ image retention, network access or change to Face cadence, confidence defaults o
 Its small CPU cost and thermal impact remain unmeasured on a device.
 The physical one-person scene and visual landmark/head-turn review remain required.
 
+**ADR-026 - Phase 2 latency response and display-rotation rebinding (2026-10-15).**
+The 2026-10-15 guarded debug run showed Pose 7.548 Hz at scheduler level 6 despite Android thermal
+status NORMAL, three busy skips in 1,792 offered frames and Pose callback p95 near 47 ms. Level 6
+explicitly caps Pose at 8 Hz. A callback latency above the 2× design budget now reduces Face cadence
+and selects Pose lite; deeper cadence/resolution reduction requires busy-skip or thermal pressure.
+Hysteresis and host thermal guards remain unchanged. This removes a self-imposed rate cap under the
+measured conditions but does not establish a new device FPS or thermal result. See the single policy
+definition in [performance strategy](performance-strategy.md) §5.
+
+CameraX's bound ViewPort and use cases retain the display rotation used at bind time. The camera
+session now listens for same-display rotation changes and rebinds its existing Preview, Analysis
+and Capture set after clearing stale overlay snapshots. It defers rebinding while a save is active
+and checks again on completion or error. This closes the 0°→180° and 90°→270° path that does not
+necessarily change Compose's portrait/landscape key. No new module, network access, model, camera
+mode, capture destination or user-visible product choice is introduced. Device alignment and
+capture rotation still require physical verification.
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |

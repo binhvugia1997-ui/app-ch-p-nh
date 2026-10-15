@@ -16,6 +16,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aiphotographer.camera.CameraSession
 import com.aiphotographer.model.AnalysisResolution
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.Locale
 import androidx.compose.ui.res.stringResource
 
@@ -24,12 +26,17 @@ import androidx.compose.ui.res.stringResource
     val metrics by camera.router.metrics.collectAsStateWithLifecycle()
     val state by camera.state.collectAsStateWithLifecycle()
     val perception = camera.perception?.state?.collectAsStateWithLifecycle()?.value
+    var visible by remember { mutableStateOf(false) }
     var rss by remember { mutableStateOf<String?>(null) }
     var thermal by remember { mutableStateOf(camera.monitor.thermal()) }
-    LaunchedEffect(camera) {
-        while (true) {
-            rss = runCatching { java.io.File("/proc/self/status").useLines { lines -> lines.firstOrNull { it.startsWith("VmRSS:") } } }.getOrNull()
-            thermal = camera.monitor.thermal()
+    LaunchedEffect(camera, visible) {
+        while (visible) {
+            val sample = withContext(Dispatchers.IO) {
+                val memory = runCatching { java.io.File("/proc/self/status").useLines { lines -> lines.firstOrNull { it.startsWith("VmRSS:") } } }.getOrNull()
+                memory to camera.monitor.thermal()
+            }
+            rss = sample.first
+            thermal = sample.second
             delay(1000)
         }
     }
@@ -38,7 +45,6 @@ import androidx.compose.ui.res.stringResource
             drawIntoCanvas { CrosshairRenderer.draw(it.nativeCanvas, size.width.toInt(), size.height.toInt(), frame) }
         }
     }
-    var visible by remember { mutableStateOf(false) }
     Column(Modifier.padding(8.dp).background(Color.Black.copy(alpha = .7f)).widthIn(max = 340.dp)) {
         TextButton(onClick = { visible = !visible }) { Text(stringResource(R.string.phase2_diagnostics)) }
         if (visible) {

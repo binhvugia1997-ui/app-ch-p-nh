@@ -2943,3 +2943,144 @@ listed in the acceptance checklist. NEXT PROPOSED: consolidated physical
 verification on SM-S918B only after fresh preflight and a new explicit Ready;
 300-second soak requires a separately reviewed safe procedure. Draft PR #3
 remains unmerged; Phase 3 has not started.
+
+### SM-S918B overlay camera-off readiness — 2026-10-15
+
+PHASE: 2. STATUS: partial / camera-off preflight passed; new owner `Ready`
+pending before any camera launch. Verified worktree
+`I:\AI-Photographer\.tools\phase2-review`, branch
+`codex/phase-2-pose-face-detection`, HEAD
+`e9ea504e0cdee2cc340d833a6d7f6d823f5b3e46`; Git was clean before
+this handoff update. ADB listed only R5CW40EE9QK, SM-S918B / Android 16
+(API 36). `:app:assembleDebug --offline` passed. The debug APK SHA-256 is
+`EDD676C5099CBF8561390A5ED1E064AD5EA11C44E2EC2A02FC63C3B6E3EAD479`.
+
+One pre-install `--idle-only` preflight passed: 21 thermal samples, all
+NORMAL (0), SKIN 35.2 C throughout; 22 camera snapshots over 41.163 s
+had zero active clients and zero project/test PIDs. The APK was installed
+with `adb install -r` on this target only, without launching the app.
+On-device `base.apk` SHA-256 matched the build; CAMERA permission remained
+granted. One post-install `--idle-only` preflight passed: 21 thermal samples,
+all NORMAL (0), SKIN 35.5 -> 35.6 C (range 35.5-35.6 C) over 41.093 s;
+22 camera snapshots over 41.067 s had zero active clients and zero
+project/test PIDs. Both sessions reported
+`IDLE_VERIFIED_NO_CAMERA_LAUNCH`. No Pose/Face inference, capture, camera
+launch, automatic test retry, or thermal-limit change occurred.
+
+FILES: this handoff only; ignored raw evidence under
+`device-evidence/phase2/physical/overlay-preinstall-idle-20261015-1/` and
+`overlay-postinstall-idle-20261015-1/`. DEVICES TESTED: SM-S918B / Android
+16 API 36, installation and camera-off checks only. MEASURED: thermal and
+camera samples above; overlay alignment, FPS, latency, memory and on-camera
+thermal behavior not measured. DEVIATIONS FROM SPEC: none established.
+BLOCKERS: new explicit owner `Ready` and remaining Phase 2 physical gates.
+NEXT PROPOSED: after new `Ready`, repeat fresh NORMAL/stable camera-idle
+checks and the unchanged camera-off countdown, then run at most one guarded
+rear-portrait Pose/Face overlay check; stop on any guard, review evidence,
+and do not automatically rerun. Draft PR #3 remains unmerged; no Phase 3 or
+owner acceptance.
+
+### SM-S918B guarded Pose/Face overlay collection after new Ready — 2026-10-15
+
+PHASE: 2. STATUS: partial / one rear-portrait combined Pose/Face collection
+complete; physical overlay and Phase 2 owner acceptance remain pending. The
+owner supplied a new `ready` after the camera-off preflight above. The
+unchanged runner performed another NORMAL-status observation, bounded
+stable camera-idle check and 15-second camera-off countdown before exactly
+one 480p 4:3 camera launch. One preflight camera snapshot at +31.127 s
+showed `com.samsung.android.smartface` on camera ID 1; the runner waited
+for three consecutive empty samples. The external client was not stopped.
+All countdown and immediately prelaunch snapshots were empty. Displayed
+orientation was portrait / rotation 0. App log recorded delivered analysis
+`640x480; crop 480x640`. No automatic retry occurred.
+
+The collector completed a 59.748 s counter window (60.984 s collector wall):
+451 Pose completions/detections at 7.548 Hz; 112 Face completions at
+1.875 Hz, 52 detected/valid-478 outputs, 37 comparable continuity pairs,
+zero disjoint pairs, 14 reacquisitions and zero pipeline errors. Three busy
+skips and 1,338 cadence skips were recorded. The last rolling batch latency
+was p50 78.082 ms / p95 104.933 ms; these are task-to-callback values,
+not combined guidance latency. Seven local screenshots were reviewed.
+Sampled full-body stills show Pose joints/skeleton qualitatively on the
+visible subject, including arms and feet. Five sampled stills show Face
+points on the face; the first has the face partly off-frame and the last
+shows a side turn without Face points. Sparse stills and aggregate counters
+do not prove continuous alignment, identity or Face tracking through turns;
+14 loss/return episodes require scene-linked review. Front-camera mirroring,
+landscape and quantitative reprojection remain unverified. The observed
+Pose completion rate is below the documented 10/15 Hz targets; device tier
+and full performance gate are not yet resolved.
+
+All 65 parent thermal samples over 131.719 s were NORMAL (0), SKIN 35.4
+-> 38.7 C (range 35.3-38.7 C); maximum sampled rise within 30 s was
+1.4 C. The 31 child samples during collection were NORMAL (0), SKIN 37.5
+-> 38.7 C over 60.890 s. Sampled total PSS ranged 459,175-492,103 KiB;
+total RSS 551,148-584,416 KiB. The existing thermal guard did not stop
+the run. Final cleanup force-stopped only project/test packages; two final
+camera snapshots showed zero active clients and zero project/test PIDs.
+`session.json` reports `COMPLETE_REQUIRES_EVIDENCE_REVIEW`, not physical
+acceptance.
+
+FILES: this handoff only; raw images/logs remain ignored locally at
+`device-evidence/phase2/physical/overlay-pose-face-guarded-one-20261015-1/`.
+DEVICES TESTED: SM-S918B / Android 16 API 36 / debug APK, one guarded
+rear-portrait 480p 4:3 run. MEASURED: counters, latency, memory and thermal
+above. DEVIATIONS FROM SPEC: no overlay geometry defect established from
+the sampled stills; Pose rate and Face continuity need further review.
+BLOCKERS: strict Face continuity, other camera/orientation setups, combined
+guidance latency/performance and remaining Phase 2 physical gates. NEXT
+PROPOSED: review existing evidence and classify the measured limitations
+offline before any separately authorized camera run. A new preflight and
+new Ready are required for any later run. No thermal limit change, Phase 3,
+PR merge or owner acceptance.
+
+### Phase 2 performance and camera experience code pass — 2026-10-15
+
+PHASE: 2. STATUS: implementation updated, host validation passed, physical
+acceptance pending. The worktree remains on `codex/phase-2-pose-face-detection`;
+remote branch HEAD was verified as `e9ea504e0cdee2cc340d833a6d7f6d823f5b3e46`
+before these edits. Existing ignored device evidence was preserved. No ADB,
+camera launch, installation or new physical test occurred in this code pass.
+
+The latest guarded debug run measured 7.548 Hz Pose at scheduler level 6,
+where the code explicitly sets an 8 Hz period. Its three busy skips in
+1,792 offered frames and NORMAL thermal status did not support persistent
+capacity pressure; Pose callback p95 near 47 ms alone drove repeated
+escalation beyond the lite-model step. The scheduler now caps latency-only
+degradation at level 4, while busy-skip or MODERATE thermal pressure still
+advances through levels 5 and 6. A new pure test covers both paths. This
+removes a code-imposed limit under the recorded conditions; new FPS/thermal
+effects are NOT_MEASURED. The YUV conversion reuses chroma contributions
+across adjacent pixels; the existing randomized reference test confirms
+identical output across rotations, crops and strides. No model or image
+resolution was changed.
+
+The camera session now rebinds when the same display changes rotation
+without a portrait/landscape configuration change, clearing stale overlay
+state and deferring the rebind while a photo is saving. Capture handles a
+synchronous `takePicture` exception and restores analysis/error state after
+fallback failure. Hidden debug diagnostics no longer poll `/proc` every
+second on the main thread; visible diagnostics sample on an IO dispatcher.
+Front mirroring, preview center crop, camera switching, saved-image path,
+permission UI, ImageProxy close and existing thermal protections retain
+their previous contracts. These camera changes have host compile coverage;
+device behavior is not claimed from unit tests.
+
+FILES: `perception/api/src/main/kotlin/com/aiphotographer/perception/PerceptionSchedule.kt`,
+its unit test, `feature/camera/src/main/kotlin/com/aiphotographer/camera/ImagePlanes.kt`,
+`feature/camera/src/main/kotlin/com/aiphotographer/camera/CameraSession.kt`,
+`app/src/debug/kotlin/com/aiphotographer/app/DeveloperPanel.kt`,
+`docs/architecture.md`, `docs/performance-strategy.md`, this handoff.
+AUTOMATED: Gradle `test`, debug/profile/release builds, app debug/profile/
+release lint and camera debug lint passed offline; spec validation passed
+with 0 errors and 0 warnings. DEVICES TESTED: none in this code pass.
+MEASURED: no new device FPS, latency, memory or thermal numbers.
+DEVIATIONS FROM SPEC: none established. BLOCKERS: physical checks of the
+updated build, including FPS/guidance latency, Face continuity, overlay
+alignment and mirroring in both cameras/orientations, actual 480p/720p
+full-body comparison, capture/lifecycle/offline behavior and guarded
+five-minute thermal record. NEXT PROPOSED: after code delivery, perform
+targeted physical acceptance only with a fresh camera-off preflight and
+new explicit owner Ready for each authorized run. No 300-second soak was
+authorized in this task. Phase 2 acceptance, PR merge and Phase 3 remain
+pending.

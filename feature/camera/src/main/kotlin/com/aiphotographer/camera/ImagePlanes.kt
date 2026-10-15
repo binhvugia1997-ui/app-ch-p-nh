@@ -48,19 +48,24 @@ object ImagePlanes {
             }
             val step = when (rotation) { 90 -> width; 180 -> -1; 270 -> -width; else -> 1 }
             var lastChromaX = -1
-            var uu = 0
-            var vv = 0
+            var redBias = 0
+            var greenBias = 0
+            var blueBias = 0
             for (sx in 0 until crop.width) {
                 val chromaX = (crop.left + sx) / 2
                 val yy = ((y.buffer.get(yRow + sx * y.pixelStride).toInt() and 255) - 16).coerceAtLeast(0)
                 if (chromaX != lastChromaX) {
-                    uu = (u.buffer.get(uRow + chromaX * u.pixelStride).toInt() and 255) - 128
-                    vv = (v.buffer.get(vRow + chromaX * v.pixelStride).toInt() and 255) - 128
+                    val uu = (u.buffer.get(uRow + chromaX * u.pixelStride).toInt() and 255) - 128
+                    val vv = (v.buffer.get(vRow + chromaX * v.pixelStride).toInt() and 255) - 128
+                    redBias = 409 * vv
+                    greenBias = -100 * uu - 208 * vv
+                    blueBias = 516 * uu
                     lastChromaX = chromaX
                 }
-                val r = ((298 * yy + 409 * vv + 128) shr 8).coerceIn(0, 255)
-                val g = ((298 * yy - 100 * uu - 208 * vv + 128) shr 8).coerceIn(0, 255)
-                val b = ((298 * yy + 516 * uu + 128) shr 8).coerceIn(0, 255)
+                val luminance = 298 * yy + 128
+                val r = ((luminance + redBias) shr 8).coerceIn(0, 255)
+                val g = ((luminance + greenBias) shr 8).coerceIn(0, 255)
+                val b = ((luminance + blueBias) shr 8).coerceIn(0, 255)
                 output[destination] = (255 shl 24) or (r shl 16) or (g shl 8) or b
                 destination += step
             }
