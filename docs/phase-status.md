@@ -3173,3 +3173,22 @@ NEXT PROPOSED: prepare the next physical performance run only after the normal
 fresh camera-off preflight and new owner Ready; keep the device untouched
 during collection. The strengthened collector will stop on sampled foreground
 loss. Draft PR #3 remains unmerged; Phase 3 has not started.
+
+### Shutdown checkpoint saved — 2026-10-17
+
+PHASE: 2. STATUS: partial / safely checkpointed. The clean worktree was
+verified at `8089d0e32ae2e27cc78b091e9bd0ceda64f3a7cc` on
+`codex/phase-2-pose-face-detection` before creating
+`docs/phase-2-checkpoint.md`. The checkpoint consolidates completed code and
+validation, physical evidence, limitations, unchanged thermal safeguards,
+remaining acceptance gates and the exact resume procedure. No production code,
+ADB, build, camera launch or physical test was involved. Raw ignored evidence
+was preserved.
+
+FILES: `docs/phase-2-checkpoint.md`, this handoff. DEVICES TESTED: none in this
+documentation session. MEASURED: no new measurements. DEVIATIONS FROM SPEC:
+none. BLOCKERS: optimized-build performance and remaining physical acceptance
+gates. NEXT PROPOSED: resume from the checkpoint and prepare one guarded,
+uninterrupted rear-portrait 480p 4:3 60-second Pose/Face measurement; require a
+fresh camera-off preflight and new explicit owner Ready before launch. PR #3
+must remain Draft and unmerged; do not begin Phase 3.
