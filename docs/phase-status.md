@@ -3133,3 +3133,43 @@ remaining Phase 2 physical gates. NEXT PROPOSED: do not reuse this
 authorization; any later camera run requires a fresh camera-off preflight
 and a new explicit owner Ready. Draft PR #3 remains unmerged and Phase 3
 has not started.
+
+### Foreground interruption investigation — 2026-10-17
+
+PHASE: 2. STATUS: external foreground transition established; exact initiator
+not recorded. The worktree was clean at checkpoint
+`613cd1276c704c7e8f53bf27ef1771db18e48236` before this investigation. No
+ADB, camera launch, installation or physical retry occurred. Existing raw
+evidence was preserved.
+
+The 21.890 s preview sample still shows AI Photographer with Pose and Face
+overlays. The 33.453 s sample shows the Samsung app screen, and the 44.593 s
+and 55.468 s samples show a Facebook video. The AI Photographer process kept
+the same PID 17123 in all seven samples through 60 s; its PSS/RSS fell after
+backgrounding. Phase 1/2 processing logs stop after the transition with zero
+pipeline errors, and the captured `AndroidRuntime:E` stream contains no fatal
+exception. The runner command journal contains no HOME/keyevent, tap, swipe,
+launcher or Facebook command during collection; the collector only sampled
+screenshot, thermal, memory and PID state. This establishes that another app
+took foreground and AI Photographer followed the normal background lifecycle.
+It does not identify whether a person, separate device-control client or an
+unrecorded system/service action initiated the navigation. Existing evidence
+contains no ActivityTaskManager transition log or input-event provenance, so
+that narrower attribution must remain unknown. There is no evidence supporting
+an app crash, ANR or Android background restriction, and no production defect
+is confirmed.
+
+The host collector now records Android's resumed activity at every diagnostic
+sample and immediately marks the collection INCOMPLETE, preserves evidence and
+performs existing project cleanup if AI Photographer loses foreground. Focused
+tests cover Samsung-style resumed-activity parsing and the external-app
+interruption path. Production Android code and thermal guards are unchanged.
+
+FILES: `tools/collect-phase2-device.py`, `tools/test_phase2_cleanup.py`, this
+handoff. DEVICES TESTED: none; offline evidence review only. MEASURED: no new
+device measurements. DEVIATIONS FROM SPEC: none. BLOCKERS: the existing
+evidence cannot attribute the external navigation to a particular actor.
+NEXT PROPOSED: prepare the next physical performance run only after the normal
+fresh camera-off preflight and new owner Ready; keep the device untouched
+during collection. The strengthened collector will stop on sampled foreground
+loss. Draft PR #3 remains unmerged; Phase 3 has not started.

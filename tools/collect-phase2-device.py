@@ -21,6 +21,17 @@ COUNTERS = ('offered', 'accepted', 'busySkipped', 'cadenceSkipped', 'poseComplet
             'poseDetected', 'faceCompleted', 'faceDetected', 'errors')
 FACE_OPTIONAL = ('faceValid478', 'faceContinuityPairs', 'faceDisjointPairs',
                  'faceReacquisitions')
+APP_PACKAGE = 'com.aiphotographer.app'
+
+
+def resumed_package(text):
+    """Return the package of Android's resumed activity, if reported."""
+    match = re.search(
+        r'(?:topResumedActivity|mResumedActivity|ResumedActivity)[^\n]*?\s'
+        r'([A-Za-z0-9._]+)/[A-Za-z0-9._$]+',
+        text,
+    )
+    return match.group(1) if match else None
 
 
 def metric_report(text, samples, complete):
@@ -187,6 +198,20 @@ def main():
                 check_running()
                 elapsed = time.monotonic() - started
                 sample = {'elapsedSeconds': elapsed}
+                activities = adb('shell', 'dumpsys', 'activity', 'activities')
+                (output / f'{len(samples):03}-foreground.txt').write_text(activities, encoding='utf-8')
+                sample['foregroundPackage'] = resumed_package(activities)
+                if sample['foregroundPackage'] is None:
+                    samples.append(sample)
+                    (output / 'samples.json').write_text(json.dumps(samples, indent=2), encoding='utf-8')
+                    raise RuntimeError('Foreground telemetry unavailable. Collection incomplete.')
+                if sample['foregroundPackage'] != APP_PACKAGE:
+                    samples.append(sample)
+                    (output / 'samples.json').write_text(json.dumps(samples, indent=2), encoding='utf-8')
+                    raise RuntimeError(
+                        'AI Photographer lost foreground; resumed package=' +
+                        repr(sample['foregroundPackage']) + '. Collection incomplete.'
+                    )
                 if args.preview_samples:
                     screenshot = subprocess.run(command + ['exec-out', 'screencap', '-p'],
                                                 capture_output=True, timeout=20, check=True).stdout

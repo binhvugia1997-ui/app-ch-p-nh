@@ -94,17 +94,24 @@ class ProcessTests(unittest.TestCase):
 
 
 class CollectorTests(unittest.TestCase):
-    def run_collector(self, cancel=False, log_failure=False, trace=False, bad_duration=False, log_exit=False):
+    def run_collector(self, cancel=False, log_failure=False, trace=False, bad_duration=False,
+                      log_exit=False, foreground_loss=False):
         now = [0.0]
         with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[1]/'device-evidence') as folder:
             base = Path(folder); output = base/'new'; token = base/'cancel.json'
             calls = []
+            activity_samples = [0]
             def run(args, **kwargs):
                 calls.append(args)
                 if 'thermalservice' in args:
                     value = b'Thermal Status: 0\nTemperature{mValue=35, mType=3, mName=SKIN, mStatus=0}'
                 elif 'media.camera' in args: value = b'Active Camera Clients: []'
                 elif 'pidof' in args: value = b'' if len(args)>6 else b'123'
+                elif 'activity' in args and 'activities' in args:
+                    package = ('com.facebook.katana' if foreground_loss and activity_samples[0] else
+                               'com.aiphotographer.app')
+                    activity_samples[0] += 1
+                    value = f'mResumedActivity: ActivityRecord{{abc u0 {package}/.MainActivity t1}}'.encode()
                 elif 'perfetto' in args: value = b'123'
                 else: value = b''
                 return SimpleNamespace(stdout=value,stderr=b'',returncode=0)
@@ -131,11 +138,11 @@ class CollectorTests(unittest.TestCase):
                  patch.object(collector.time,'sleep',side_effect=sleep), \
                  patch.object(collector,'stop_logcat',side_effect=RuntimeError('log cleanup failed') if log_failure else None) as stop_log, \
                  patch.object(collector,'stop_trace') as stop_trace:
-                if cancel or log_failure or bad_duration or log_exit:
+                if cancel or log_failure or bad_duration or log_exit or foreground_loss:
                     with self.assertRaises(RuntimeError): collector.main()
                 else: collector.main()
             report = json.loads((output/'summary.json').read_text())
-            self.assertEqual('INCOMPLETE' if cancel or log_failure or bad_duration or log_exit else 'COMPLETE',report['measurementStatus'])
+            self.assertEqual('INCOMPLETE' if cancel or log_failure or bad_duration or log_exit or foreground_loss else 'COMPLETE',report['measurementStatus'])
             stop_log.assert_called_once_with(log)
             if cancel:
                 self.assertLess(now[0],1)
@@ -145,7 +152,7 @@ class CollectorTests(unittest.TestCase):
                 stop_trace.assert_called_once()
             if bad_duration:
                 self.assertFalse(any('push' in c for c in calls))
-            if cancel or log_failure or bad_duration or log_exit:
+            if cancel or log_failure or bad_duration or log_exit or foreground_loss:
                 self.assertTrue(any('force-stop' in c for c in calls))
                 self.assertTrue((output/'cleanup-camera-idle.jsonl').exists())
             return report
@@ -155,6 +162,16 @@ class CollectorTests(unittest.TestCase):
     def test_logcat_cleanup_failure_does_not_skip_trace_or_summary(self): self.run_collector(log_failure=True,trace=True)
     def test_unbounded_trace_config_rejected_before_push_or_start(self): self.run_collector(trace=True,bad_duration=True)
     def test_early_logcat_exit_marks_window_incomplete_and_stops_project(self): self.run_collector(log_exit=True)
+    def test_foreground_loss_marks_window_incomplete_and_stops_project(self):
+        report = self.run_collector(foreground_loss=True)
+        self.assertIn('lost foreground', report['interruption'])
+
+    def test_resumed_package_parser(self):
+        self.assertEqual('com.aiphotographer.app', collector.resumed_package(
+            'mResumedActivity: ActivityRecord{abc u0 com.aiphotographer.app/.MainActivity t1}'))
+        self.assertEqual('com.facebook.katana', collector.resumed_package(
+            'topResumedActivity=ActivityRecord{abc u0 com.facebook.katana/.MainActivity t2}'))
+        self.assertIsNone(collector.resumed_package('mResumedActivity: null'))
 
 
 if __name__ == '__main__': unittest.main()
