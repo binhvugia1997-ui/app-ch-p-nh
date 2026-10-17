@@ -1,0 +1,22 @@
+MediaPipe local model bundles — Google / The MediaPipe Authors
+Redistribution: Apache License 2.0; full text in MediaPipe-LICENSE.txt.
+All three bundles are unmodified official version-1 float16 task assets.
+No runtime download, cloud inference, recognition of identity, or upload is configured.
+
+Pose Landmarker Lite:
+https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task
+SHA256 59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a
+Pose Landmarker Full:
+https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task
+SHA256 5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1
+Face Landmarker:
+https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+SHA256 64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff
+
+Official Apache-2.0 model cards: BlazePose GHUM 3D, BlazeFace Short Range,
+MediaPipe Face Mesh V2 and Blendshape V2. Blendshape output is disabled, but the
+unmodified Face task bundle includes those weights.
+https://storage.googleapis.com/mediapipe-assets/Model%20Card%20BlazePose%20GHUM%203D.pdf
+https://storage.googleapis.com/mediapipe-assets/MediaPipe%20BlazeFace%20Model%20Card%20(Short%20Range).pdf
+https://storage.googleapis.com/mediapipe-assets/Model%20Card%20MediaPipe%20Face%20Mesh%20V2.pdf
+https://storage.googleapis.com/mediapipe-assets/Model%20Card%20Blendshape%20V2.pdf

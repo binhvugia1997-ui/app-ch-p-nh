@@ -1,0 +1,102 @@
+"""Deterministic evidence-window tests; no ADB or human required."""
+import importlib.util
+from pathlib import Path
+import sys
+import unittest
+
+TOOLS = Path(__file__).resolve().parent
+spec = importlib.util.spec_from_file_location('collector', TOOLS / 'collect-phase2-device.py')
+collector = importlib.util.module_from_spec(spec)
+sys.path.insert(0, str(TOOLS))
+try:
+    spec.loader.exec_module(collector)
+finally:
+    sys.path.pop(0)
+
+
+def line(t, count, session=1, pid=123):
+    counters = ', '.join(f'{k}={count}' for k in collector.COUNTERS)
+    return f' 12345.123 {pid} 124 I Phase2Baseline: PerceptionMetrics({counters}, elapsedSeconds={t}, sessionId={session})'
+
+
+class CollectionTests(unittest.TestCase):
+    def test_same_session_rates_and_exact_integer_counters(self):
+        n = 2**53 + 1
+        result = collector.metric_report(line(1,n)+'\n'+line(3,n+10), [{'pid':'123'}], True)
+        self.assertEqual(n,result['first']['offered'])
+        self.assertEqual(5,result['ratesHz']['poseCompleted'])
+
+    def test_restart_reset_missing_pid_and_interruption_reject_window(self):
+        pairs = [(line(1,1),line(3,2,session=2)), (line(1,1),line(3,2,pid=456)),
+                 (line(3,2),line(1,1)), (line(1,2),line(3,1))]
+        for a,b in pairs:
+            self.assertTrue(collector.metric_report(a+'\n'+b,[{'pid':'123'}],True)['counterWindowInvalid'])
+        for samples,complete in [([{'pid':''}],True),([{'pid':'123'}],False),([],True)]:
+            r=collector.metric_report(line(1,1)+'\n'+line(3,2),samples,complete)
+            self.assertTrue(r['counterWindowInvalid'])
+            self.assertNotIn('ratesHz',r)
+
+    def test_valid_face478_counter_is_optional_for_older_evidence(self):
+        a=line(1,1)+', faceValid478=2'
+        b=line(3,5)+', faceValid478=6'
+        r=collector.metric_report(a+'\n'+b,[{'pid':'123'}],True)
+        self.assertEqual(4,r['counterDeltas']['faceValid478'])
+        old=collector.metric_report(line(1,1)+'\n'+line(3,5),[{'pid':'123'}],True)
+        self.assertNotIn('faceValid478',old['counterDeltas'])
+        bad=collector.metric_report(a+'\n'+b.replace('faceValid478=6','faceValid478=1'),[{'pid':'123'}],True)
+        self.assertTrue(bad['counterWindowInvalid'])
+        self.assertNotIn('ratesHz',bad)
+
+    def test_latency_percentiles_are_retained_not_averaged(self):
+        text=line(1,1)+', pose=LatencySummary(count=3, p50Ms=10.0, p95Ms=12.0)'
+        r=collector.metric_report(text,[{'pid':'123'}],True)
+        self.assertEqual(12,r['last']['latencies']['pose']['p95Ms'])
+        self.assertTrue(r['counterWindowInvalid'])
+
+    def test_face_continuity_window_and_legacy_evidence(self):
+        keys = collector.FACE_OPTIONAL
+        first = line(1, 10) + ''.join(f', {k}={v}' for k, v in zip(keys, (8, 5, 1, 1)))
+        last = line(3, 20) + ''.join(f', {k}={v}' for k, v in zip(keys, (17, 12, 2, 3)))
+        result = collector.metric_report(first+'\n'+last, [{'pid':'123'}], True)
+        self.assertEqual(7, result['counterDeltas']['faceContinuityPairs'])
+        self.assertEqual(1, result['counterDeltas']['faceDisjointPairs'])
+        self.assertEqual(2, result['counterDeltas']['faceReacquisitions'])
+        old = collector.metric_report(line(1, 10)+'\n'+line(3, 20), [{'pid':'123'}], True)
+        self.assertNotIn('faceContinuityPairs', old['counterDeltas'])
+
+    def test_partial_or_impossible_continuity_counters_reject_window(self):
+        base = line(1, 10)
+        for first, last in [
+            (base, line(3, 20)+', faceContinuityPairs=1'),
+            (base+', faceContinuityPairs=1', line(3, 20)+', faceContinuityPairs=2'),
+            (base+', faceContinuityPairs=3, faceDisjointPairs=1, faceReacquisitions=0',
+             line(3, 20)+', faceContinuityPairs=4, faceDisjointPairs=3, faceReacquisitions=0'),
+        ]:
+            result = collector.metric_report(first+'\n'+last, [{'pid':'123'}], True)
+            self.assertTrue(result['counterWindowInvalid'])
+            self.assertNotIn('ratesHz', result)
+
+    def test_realistic_metrics_log_keeps_face_counts_separate(self):
+        def record(t, completed, detected, valid, pairs, disjoint, reacquired):
+            counters = ', '.join(f'{key}=0' for key in collector.COUNTERS if key not in
+                                 ('faceCompleted', 'faceDetected'))
+            return (f' 12345.123 123 124 I Phase2Baseline: PerceptionMetrics(sessionId=7, '
+                    f'{counters}, faceCompleted={completed}, faceDetected={detected}, '
+                    f'faceValid478={valid}, faceContinuityPairs={pairs}, '
+                    f'faceDisjointPairs={disjoint}, faceReacquisitions={reacquired}, '
+                    f'elapsedSeconds={t}, latencies={{face=LatencySummary(count={completed}, '
+                    f'p50Ms=38.0, p95Ms=52.0)}})')
+        log = '\n'.join((record(2, 20, 18, 18, 16, 0, 1),
+                         record(32, 310, 301, 301, 290, 1, 3)))
+        result = collector.metric_report(log, [{'pid': '123'}], True)
+        self.assertNotIn('counterWindowInvalid', result)
+        self.assertEqual(290, result['counterDeltas']['faceCompleted'])
+        self.assertEqual(283, result['counterDeltas']['faceDetected'])
+        self.assertEqual(283, result['counterDeltas']['faceValid478'])
+        self.assertEqual(274, result['counterDeltas']['faceContinuityPairs'])
+        self.assertEqual(1, result['counterDeltas']['faceDisjointPairs'])
+        self.assertEqual(2, result['counterDeltas']['faceReacquisitions'])
+
+
+if __name__ == '__main__':
+    unittest.main()

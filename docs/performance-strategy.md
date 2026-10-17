@@ -127,6 +127,12 @@ or measured stage latency exceeding 2× the budget.
 Recovery is the reverse order with **hysteresis** (recover only after 15 s of stable headroom above the
 threshold) to prevent oscillation. Every change is logged with the trigger and reported in the dev screen.
 
+For the Phase 2 pose/face scheduler, pose callback p95 above the 2× budget first reduces Face cadence
+and selects Pose lite. That latency signal alone does not prove queue saturation, so further Pose-cadence
+and resolution reductions require measured busy-skip pressure or Android thermal status at least MODERATE.
+The existing 3 s escalation and 15 s recovery windows remain `CALIBRATION_REQUIRED`; the separate
+host thermal stop guards are unchanged. Device FPS and heat effects of this policy require new measurements.
+
 Non-negotiable at every tier: the app keeps giving *framing* and *pose* guidance, and it never shows
 stale guidance as if it were live (the UI shows a "low confidence" state instead).
 
