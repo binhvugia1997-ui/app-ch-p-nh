@@ -638,6 +638,17 @@ capture rotation still require physical verification.
 The Analysis-only capture fallback also detaches camera-state observation from the original
 `CameraInfo` before its temporary rebind, so restoration cannot leave an observer on an old camera.
 
+**ADR-027 - Phase 5 Smart Framing lives in `:core:photography`, and `:app` may depend on it (2026-10-29).**
+The framing engine (`CompositionEngine`, `FramingStrategySelector`, `FramingTargetTracker`,
+`GuidanceArbiter`, `ReadinessMachine`, `SmartFramingSession`) is pure Kotlin with JVM tests, so it belongs
+in the existing pure module rather than a new one: `:core:guidance` and `:feature:settings` stay deferred
+(AGENTS.md rule 14 — a module needs a boundary reason, and "we will need it later" is not one).
+*Consequences:* exactly one new graph edge, `:app` → `:core:photography`, matching the design document's
+"the UI calls the engine and draws" rule; `:feature:camera` and `:perception:*` are untouched, so the
+Phase 2 camera/perception measurements remain comparable. `:core:photography` still must not depend on
+Android (enforced by `ModuleGraphTest`), and the engine keeps emitting message ids, never text.
+*Status:* accepted (Phase 5 implementation).
+
 ## 13. Risks owned by the architecture
 
 | # | Risk | Mitigation already designed in |

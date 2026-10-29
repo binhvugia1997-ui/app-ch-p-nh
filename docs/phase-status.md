@@ -3240,3 +3240,52 @@ was verified by compile, R8 and bytecode inspection only. Not measured: any late
 NEXT PROPOSED: none for the landmark fix. The remaining Phase 2 work is still the single guarded
 rear-portrait Face-only continuity measurement, which needs separate owner authorization, a fresh
 camera-off preflight and a new explicit Ready. PR #3 stays Draft and unmerged.
+
+---
+### Phase 5 (partial) — Smart Framing functional backend and engine, 2026-10-29
+
+STATUS: implemented and unit tested on the JVM; **not device tested**; Phase 2 acceptance still open.
+
+Branch `codex/phase-5-smart-framing-engine`, worktree `.tools/phase5-framing`, branched from the Phase 2
+commit `6ecc863` because that is the only base that contains the C1 fix and the Phase 2 perception code.
+AGENTS.md phase ordering is deliberately not satisfied here: the owner instructed this implementation to
+proceed while Phase 2 acceptance is still pending, and no Phase 2 evidence was reinterpreted to justify it.
+
+FILES (all new unless noted):
+`:core:photography/src/main/kotlin/com/aiphotographer/photography/` — `FramingModel.kt`,
+`Thresholds.kt`, `ShotTypeEstimator.kt` (extended, Phase 2 cheap path unchanged), `HeadTopEstimator.kt`,
+`FramingStrategy.kt`, `FramingMeasurement.kt`, `FramingRules.kt`, `CompositionEngine.kt`,
+`GuidanceArbiter.kt`, `Readiness.kt`, `SmartFramingSession.kt`.
+`:core:photography/src/test/kotlin/.../` — `Fixtures.kt`, `ShotTypeAndHeadTopTest.kt`,
+`CompositionEngineTest.kt`, `GuidanceArbiterTest.kt`, `ReadinessAndSessionTest.kt`, `SpecSyncTest.kt`,
+`EngineBudgetTest.kt`.
+`:app/src/main/kotlin/com/aiphotographer/app/framing/` — `SmartFramingSettings.kt`,
+`SmartFramingUiState.kt`, `SmartFramingController.kt`.
+Modified: `app/build.gradle.kts` (one module dependency + coroutines), `app/src/main/kotlin/.../MainActivity.kt`
+(creates/disposes the controller; no UI drawn), `specs/i18n/messages.json`,
+`specs/schemas/message-catalog.schema.json`, `specs/validation/validate_specs.py` (C5 `label.*` namespace,
+ported verbatim from `e41f6f5` because the Phase 2 base predates it), `docs/architecture.md` (ADR-027),
+new `docs/ui-integration-contract.md`.
+
+DECISIONS APPLIED: D1 (`FRAME_*` only; `COMP_*` and `USER_OFF_CENTER` do not exist in the code),
+D2 (feature on by default, engine selects the strategy itself), D3 (toggle off stops the engine, clears the
+overlay state and never locks capture), D4/D5 (no landmark drawing anywhere in the new code),
+D6 (no new model, no new Gradle module, `:feature:camera` and `:perception:*` untouched),
+D7 (every budget in code and docs is a target; no device number is claimed), D8 (composition criteria are
+excluded from readiness when off and readiness is recomputed from a fresh machine).
+
+MEASURED: JVM only. `:core:photography:test` = 72 tests, 0 failures; `EngineBudgetTest` runs 10 000
+synthetic frames after 2 000 warm-up frames. No latency, FPS, memory or thermal number was taken on any
+device; the 0.2 ms/frame engine budget in the design document remains `[TGT]`.
+
+NOT IMPLEMENTED, stated so it is not mistaken for done: `FRAME_BRIGHT_BLOB_BEHIND_HEAD` (open question Q9
+— dev-first evaluation, deliberately not wired), `COMP_*` (Phase 6 by D1), the visible overlay and toggle
+button (UI model's scope), shot-type calibration (`T_*` are still proposals), and any physical validation.
+
+DEVIATIONS FROM SPEC, each documented in code: joint-crop uses the `d_joint` half of the specified rule
+because `LandmarkUsability.measurable` drops out-of-frame landmarks, so the segment parameter `t` cannot be
+computed; `composition-engine.md` §9.3's "10 000 frames < 2 ms" is enforced as "< 2 ms per frame" because the
+literal reading (200 ns/frame) is not physically meaningful.
+
+BLOCKERS: none technical. Product/acceptance blockers unchanged: the guarded 30-second Face-only physical
+gate, the owner's calibration protocol for every `CALIBRATION_REQUIRED` constant, and PR #3 still Draft.
