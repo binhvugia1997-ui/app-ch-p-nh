@@ -280,6 +280,38 @@ As in §5.3.
 | composition advisory rules (`COMP_*`) | **never gate** | advisory by policy |
 | aesthetic score | does not exist | — |
 
+### 7.1.1 Composition criteria when composition guidance is disabled (owner decision 2026-10-29)
+
+The user can turn composition (Smart Framing) guidance off. When it is off, **no composition
+criterion may contribute to readiness** — neither as a required criterion, nor as a recommendation,
+nor as a reason shown in the "why?" sheet. "Tắt" must mean the feature is absent, not merely quieter.
+
+| Criterion row | Disabled behaviour | Why |
+| --- | --- | --- |
+| subject present (no subject at all) | **kept** | Operability check, not composition: with nobody in frame there is nothing to capture and the app must say so |
+| subject inside edge margin | **dropped** (the margin part only) | The margin is a framing decision; presence is not. This presence/margin split is the one interpretive line in this rule and is stated here so it can be audited |
+| framing: subject size within band | **dropped** | Pure composition |
+| headroom within band | **dropped** | Pure composition (already optional) |
+| composition advisory rules (`COMP_*`) | **already never gate**; also not reported | Advisory by policy |
+| pose score ≥ band (template active) | **kept** | Pose matching is a separate feature and is not composition guidance |
+| subject stable, camera stable (IMU) | **kept** | Capture-quality and safety checks |
+| face visible & unobstructed | **kept** | Same reason as pose |
+| lighting: severe underexposure / blown highlights | **kept** | Safety/quality, `CALIBRATION_REQUIRED`, unchanged |
+
+Further requirements when disabled:
+
+* `ReadinessState` is computed from the remaining criteria only; the dropped rows must not be able to
+  hold the state below `READY` or emit a composition reason.
+* Capture stays available: no composition criterion may disable the capture control in either state
+  (`composition-engine.md` §2.2 already forbids a score; this forbids a gate).
+* Toggling in either direction resets the composition temporal state (engine state, hysteresis latches,
+  `FramingTargetTracker`); readiness must be recomputed from scratch rather than inheriting a state
+  produced under the other setting.
+* Because status is configuration-dependent, any recorded readiness evidence must state whether
+  composition guidance was on or off for that run.
+* Nothing here changes a threshold. The gate values, `readyHoldMs`, thermal guards and camera
+  lifecycle are untouched.
+
 ### 7.2 Duration and stability
 
 * Required criteria must hold **continuously** for `readyHoldMs`. Any violation resets the timer

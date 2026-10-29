@@ -1,9 +1,10 @@
 # AI Smart Framing — thiết kế tính năng (documentation only)
 
-> **Trạng thái: THIẾT KẾ — ĐÃ CHỐT 7 QUYẾT ĐỊNH (D1–D7) VÀ ĐÃ XỬ LÝ C1–C5 (29/10/2026) / CHƯA ĐƯỢC CẤP PHÉP TRIỂN KHAI TÍNH NĂNG.**
+> **Trạng thái: THIẾT KẾ — ĐÃ CHỐT 8 QUYẾT ĐỊNH (D1–D8), ĐÃ XỬ LÝ C1–C5 VÀ R2 (29/10/2026) / CHƯA ĐƯỢC CẤP PHÉP TRIỂN KHAI TÍNH NĂNG.**
 > Tài liệu này là bản thiết kế, không phải đặc tả chuẩn (normative), không phải uỷ quyền phase.
-> Bảy quyết định D1–D7 ở §0.4 là **đã duyệt**; C1–C5 ở §11 đã **đóng** (xem cột trạng thái và §12.1),
-> trong đó **chỉ C1 và C5 là thay đổi có thật trên đĩa** — C1 là mã Phase 2, C5 là khoá chuỗi trong spec.
+> Tám quyết định D1–D8 ở §0.4 là **đã duyệt**; C1–C5 ở §11 và R2 đã **đóng** (xem cột trạng thái và §12.1),
+> trong đó **chỉ C1 và C5 là thay đổi mã/spec trên đĩa** — C1 là mã Phase 2, C5 là khoá chuỗi trong spec;
+> D8 là thay đổi tài liệu (hành vi readiness). R5 **không** dẫn tới commit nào: xem §14.
 > Mọi câu hỏi còn lại ở §10.2 và các mục **còn mở** của §10.3 vẫn là **chưa duyệt**.
 > Việc duyệt thiết kế không mở Phase 3, không mở Phase 5, không thay đổi trạng thái PR #3.
 > Khi có xung đột, các nguồn sau **thắng**: `docs/roadmap.md` (ranh giới phase),
@@ -65,7 +66,7 @@ không chuyển vào Phase 5. Hệ quả có hiệu lực:
 4. Từ nay **không cần** sửa JSON hay roadmap cho mâu thuẫn này — JSON đã đúng; chỉ còn một điểm
    cần lưu ý khi đọc `composition-engine.md` (§3.1 bước 9 và ví dụ §6 có nhắc `COMP_*`) — xem §11 C4.
 
-### 0.4 Bảy quyết định đã được chủ dự án phê duyệt (29/10/2026)
+### 0.4 Tám quyết định đã được chủ dự án phê duyệt (29/10/2026)
 
 | ID | Nội dung quyết định | Hệ quả bắt buộc trong thiết kế |
 | --- | --- | --- |
@@ -76,6 +77,8 @@ không chuyển vào Phase 5. Hệ quả có hiệu lực:
 | **D5** | Overlay release **không được** lộ landmark Pose/Face debug | Danh sách cấm tuyệt đối trong §6.1; kiểm tra hiện trạng Phase 2 phát hiện vi phạm tiềm ẩn (§11 C1) |
 | **D6** | Tái dùng Pose/Face và kiến trúc guidance hiện có | Không model mới, không máy trạng thái thứ hai, không module mới (§1, §2, §5) |
 | **D7** | Mọi ngân sách hiệu năng vẫn là **mục tiêu đề xuất** cho tới khi đo độc lập | Mọi số ở §7 mang nhãn `[TGT]`; không câu nào trong tài liệu được đọc như số đo (§7) |
+| **D8** (đóng **R2**) | Khi Smart Framing **tắt**, tiêu chí bố cục **không được** góp vào readiness | Bảng tiêu chí mới ở `guidance-engine.md` §7.1.1; §3.3, §5.3, §10.3 R2 của tài liệu này |
+| **R5** (đã rà soát, **không** commit) | Ba file tài liệu còn treo của Codex ở main worktree | **Không** commit: chúng là ảnh chụp cũ của lịch sử Phase 2 đã có đầy đủ trên nhánh Phase 2, một file trùng byte-đệt. Chi tiết và bằng chứng ở §14 |
 
 Nguyên tắc suy ra (không phải quyết định mới, chỉ là hệ quả logic của D2+D3+D4+D5):
 
@@ -247,13 +250,63 @@ lỗi khách quan trong bất kỳ trạng thái nào.
 | Chỉ dẫn (`GuidanceState.primary`) | Có, tối đa 1 chính + 1 phụ khác actor | **Không có** chỉ dẫn bố cục nào |
 | Hộp mục tiêu / hộp chủ thể / nhãn band | Vẽ (§6.1) | **Không vẽ** |
 | Chi phí tính toán engine | ~0,2 ms/khung pose `[TGT]` | **0** — bỏ hẳn lời gọi engine, không tính rồi vứt |
-| Readiness | Có tiêu chí bố cục theo §5 | Xem **R2** (§10) — đề xuất loại tiêu chí bố cục khỏi readiness |
+| Readiness | Có tiêu chí bố cục theo §5 | **Loại hẳn** tiêu chí bố cục khỏi readiness (**D8/R2**, đã duyệt) — xem `guidance-engine.md` §7.1.1 |
 | Chụp thủ công | Luôn khả dụng | Luôn khả dụng |
 | Trạng thái nhiệt | Không đổi guard | Không đổi guard |
 
 Yêu cầu kỹ thuật: công tắc là **một nguồn sự thật duy nhất** trong lớp preference; engine thuần **không**
-biết tới công tắc (nó chỉ không được gọi). Đặt công tắc ở đâu là **R1** (§10) vì hiện chưa có
-`:feature:settings` trong `settings.gradle.kts`.
+biết tới công tắc (nó chỉ không được gọi). Vị trí đặt công tắc đã chốt ở **§3.4** (R1 đóng): ngay trên
+màn hình camera + `SharedPreferences`, **không** mở `:feature:settings` cho một toggle.
+
+**Readiness khi tắt (D8/R2, đã duyệt).** Tiêu chí bố cục bị **loại khỏi** phép tính readiness, không
+phải "vẫn tính nhưng không hiện". Ranh giới chính xác nằm ở một chỗ duy nhất — bảng tiêu chí
+`guidance-engine.md` **§7.1.1** — và điều đáng lưu ý nhất trong đó là: **hiện diện** của chủ thể vẫn
+là tiêu chí bắt buộc (không có người thì không có gì để chụp), còn **lề mép** bị bỏ (đó là quyết định
+bố cục). Tài liệu này không chép lại bảng đó để tránh hai nguồn sự thật.
+
+Ba hệ quả bắt buộc khi tắt, lặp lại ở đây vì chúng dễ bị bỏ sót khi triển khai:
+
+* `ReadinessState` phải được **tính lại từ đầu** sau khi đổi công tắc; không được thừa hưởng trạng thái
+  `READY` đã sinh ra dưới thiết lập kia.
+* `readinessReasons` **không** được chứa lý do bố cục (kể cả lý do cũ còn lưu): sheet "vì sao?" mà giải
+  thích một tiêu chí đã bị gỡ là lỗi hiển thị.
+* Không tiêu chí bố cục nào được **khoá nút chụp** ở bất kỳ chế độ nào.
+
+### 3.4 Công tắc bật/tắt — thiết kế chốt (C2, không cần module mới)
+
+**Đặt ở đâu.** Ngay trên màn hình camera, cùng hàng với các nút đã có (`switch_camera`, `capture`),
+dạng `TextButton` nhãn ngắn (`Bố cục: Bật` / `Bố cục: Tắt`). Không có màn hình settings, không có luồng
+onboarding. Lý do: `settings.gradle.kts` hiện chỉ include 7 module và **không có** `:feature:settings`;
+`architecture.md` ghi module này vẫn deferred, và AGENTS.md điều 14 cấm tạo module chỉ vì "sẽ cần sau".
+Một toggle không đủ biện minh cho một module.
+
+**Lưu ở đâu.** `SharedPreferences` cục bộ của `:app`, một khoá boolean duy nhất
+(`smart_framing_enabled_v1`, mặc định `true` theo **D2**). Không dùng DataStore, không thêm dependency;
+không có dữ liệu nào rời thiết bị (bất biến local-first ở §0.2).
+
+**Trạng thái khi khởi động.** Đọc preference một lần khi tạo `CameraSession`; giá trị này *không* phụ
+thuộc camera facing hay aspect. Đổi camera không đổi công tắc; đổi công tắc **có** reset lớp bố cục
+(§5.3).
+
+**Vòng đời của một lần bật/tắt.**
+
+| Sự kiện | Hành vi bắt buộc |
+| --- | --- |
+| Bật | Dựng `CompositionEngineState` mới (latch/hysteresis/EMA trống), chờ khung phân tích kế tiếp; **không** phát chỉ dẫn từ trạng thái cũ |
+| Tắt | Ngừng gọi engine, bỏ target đang giữ, không vẽ gì ở khung kế tiếp (không để "hộp ma" một khung) |
+| Tắt rồi bật trong < 1 s | Vẫn là lần bật mới: không khôi phục latch, không khôi phục target |
+| Đổi camera / aspect / resolution / lifecycle STOP→START | Giữ nguyên công tắc, reset lớp bố cục (đã có ở §5.2 mục 5) |
+
+**Chi phí khi tắt.** Không cấp phát, không đọc cảm biến cho bố cục, không thêm timer. Pipeline Pose/Face
+vẫn chạy theo lịch riêng của Phase 2 (nó phục vụ cả pose guidance và chẩn đoán) — tắt Smart Framing
+**không** được phép tắt perception, vì như vậy là thay đổi hành vi Phase 2 đã được đo.
+
+**Điều công tắc này KHÔNG được làm.** Không đổi ngưỡng, không đổi guard nhiệt, không đổi cadence,
+không tắt MediaPipe, không chặn nút chụp. Nó chỉ gate *lớp bố cục* (engine + overlay bố cục).
+
+**Phạm vi triển khai.** Việc này thuộc Phase 5 (khi engine bố cục tồn tại). Trong tác vụ này **không**
+có mã công tắc nào được viết; đây là thiết kế để Phase 5 làm đúng ngay lần đầu, không phải là một
+module settings mới.
 
 ---
 
@@ -406,44 +459,11 @@ năng bật. Khi người dùng tắt:
   không thừa hưởng trạng thái cũ.
 * Chụp ảnh, chuyển camera, khoá phơi sáng và mọi hành vi khác không đổi.
 
-Hệ quả lên readiness khi tắt vẫn là câu hỏi **R2** (§10.3) — thiết kế đề xuất loại tiêu chí bố cục khỏi
-readiness trong trạng thái tắt, nhưng đó là thay đổi ngữ nghĩa nên cần chủ dự án chốt.
-
-### 3.4 Công tắc bật/tắt — thiết kế chốt (C2, không cần module mới)
-
-**Đặt ở đâu.** Ngay trên màn hình camera, cùng hàng với các nút đã có (`switch_camera`, `capture`),
-dạng `TextButton` nhãn ngắn (`Bố cục: Bật` / `Bố cục: Tắt`). Không có màn hình settings, không có luồng
-onboarding. Lý do: `settings.gradle.kts` hiện chỉ include 7 module và **không có** `:feature:settings`;
-`architecture.md` ghi module này vẫn deferred, và AGENTS.md điều 14 cấm tạo module chỉ vì "sẽ cần sau".
-Một toggle không đủ biện minh cho một module.
-
-**Lưu ở đâu.** `SharedPreferences` cục bộ của `:app`, một khoá boolean duy nhất
-(`smart_framing_enabled_v1`, mặc định `true` theo **D2**). Không dùng DataStore, không thêm dependency;
-không có dữ liệu nào rời thiết bị (bất biến local-first ở §0.2).
-
-**Trạng thái khi khởi động.** Đọc preference một lần khi tạo `CameraSession`; giá trị này *không* phụ
-thuộc camera facing hay aspect. Đổi camera không đổi công tắc; đổi công tắc **có** reset lớp bố cục
-(§5.3).
-
-**Vòng đời của một lần bật/tắt.**
-
-| Sự kiện | Hành vi bắt buộc |
-| --- | --- |
-| Bật | Dựng `CompositionEngineState` mới (latch/hysteresis/EMA trống), chờ khung phân tích kế tiếp; **không** phát chỉ dẫn từ trạng thái cũ |
-| Tắt | Ngừng gọi engine, bỏ target đang giữ, không vẽ gì ở khung kế tiếp (không để "hộp ma" một khung) |
-| Tắt rồi bật trong < 1 s | Vẫn là lần bật mới: không khôi phục latch, không khôi phục target |
-| Đổi camera / aspect / resolution / lifecycle STOP→START | Giữ nguyên công tắc, reset lớp bố cục (đã có ở §5.2 mục 5) |
-
-**Chi phí khi tắt.** Không cấp phát, không đọc cảm biến cho bố cục, không thêm timer. Pipeline Pose/Face
-vẫn chạy theo lịch riêng của Phase 2 (nó phục vụ cả pose guidance và chẩn đoán) — tắt Smart Framing
-**không** được phép tắt perception, vì như vậy là thay đổi hành vi Phase 2 đã được đo.
-
-**Điều công tắc này KHÔNG được làm.** Không đổi ngưỡng, không đổi guard nhiệt, không đổi cadence,
-không tắt MediaPipe, không chặn nút chụp. Nó chỉ gate *lớp bố cục* (engine + overlay bố cục).
-
-**Phạm vi triển khai.** Việc này thuộc Phase 5 (khi engine bố cục tồn tại). Trong tác vụ này **không**
-có mã công tắc nào được viết; đây là thiết kế để Phase 5 làm đúng ngay lần đầu, không phải là một
-module settings mới.
+Hệ quả lên readiness khi tắt đã được chủ dự án chốt (**D8**, đóng **R2**): tiêu chí bố cục bị **loại
+khỏi** phép tính readiness, không phải chỉ ẩn đi. Bảng tiêu chí chi tiết ở `guidance-engine.md` §7.1.1;
+ba hệ quả bắt buộc (tính lại từ đầu, không lý do bố cục trong `readinessReasons`, không khoá nút chụp)
+ở §3.3. Vì vậy `DISABLED` vẫn không phải một trạng thái của máy trạng thái — nó là điều kiện *bên ngoài*
+máy trạng thái, quyết định máy trạng thái có được cấp tiêu chí bố cục hay không.
 
 ---
 
@@ -641,10 +661,10 @@ Vẫn giữ nguyên bảng dưới đây ở dạng **chưa duyệt**; không c�
 | # | Câu hỏi | Vì sao cần quyết | Đề xuất |
 | --- | --- | --- | --- |
 | **R1** | Công tắc bật/tắt (D3) đặt ở đâu, lưu ở đâu? | `settings.gradle.kts` **không có** `:feature:settings`; `architecture.md` ghi module này vẫn deferred | **ĐÓNG (C2)** — công tắc trên màn hình camera + `SharedPreferences` cục bộ, không module mới; chi tiết chốt ở §3.4 |
-| **R2** | Khi tắt hướng dẫn, tiêu chí bố cục có bị loại khỏi readiness không? | Nếu vẫn gate readiness thì "tắt" là không thật | **CÒN MỞ.** Đề xuất: loại tiêu chí bố cục khỏi readiness khi tắt; chụp tay luôn khả dụng. Đây là thay đổi ngữ nghĩa nên cần chủ dự án chốt |
+| **R2** | Khi tắt hướng dẫn, tiêu chí bố cục có bị loại khỏi readiness không? | Nếu vẫn gate readiness thì "tắt" là không thật | **ĐÓNG (D8)** — loại hẳn tiêu chí bố cục khỏi readiness; bảng tiêu chí ở `guidance-engine.md` §7.1.1; chỉ tài liệu, chưa viết mã |
 | **R3** | Xử lý `PerceptionOverlay` lộ landmark (C1) ở đâu: trong PR #3 hay để Phase 5? | D5 là bất biến đã duyệt | **ĐÓNG VÀ ĐÃ LÀM (C1)** — sửa trong nhánh Phase 2, có test; xem §6.2 và §12.1 |
 | **R4** | Đo G-P4 khi overlay bật hay tắt? | Overlay cũng tiêu CPU/GPU → số đo phải nói rõ trạng thái | **CÒN MỞ.** Đo cả hai trạng thái, báo cáo tách riêng, không trung bình gộp |
-| **R5** | Ai ghi D1–D7 vào `docs/phase-status.md`? | AGENTS.md yêu cầu cập nhật phase-status cuối phiên, nhưng file đang có sửa đổi chưa commit của Codex | **CÒN MỞ.** Không trộn hai tác giả trong một hunk của file đó |
+| **R5** | Ai ghi D1–D8 vào `docs/phase-status.md`? | AGENTS.md yêu cầu cập nhật phase-status cuối phiên, nhưng file đang có sửa đổi chưa commit của Codex | **ĐÃ RÀ SOÁT — KHÔNG COMMIT (xem §14).** Ba file của Codex là ảnh chụp cũ của lịch sử Phase 2 đã nằm đầy đủ trên nhánh `codex/phase-2-pose-face-detection`; một file trùng byte-đệt, hai file có nội dung đã bị vượt qua. Ghi checkpoint Phase 2 ở nhánh Phase 2, không ở nhánh tài liệu |
 | **R6** | Nhãn `GOOD / ACCEPTABLE / NEEDS_WORK` hiển thị thế nào khi **chưa có khoá chuỗi**? | Trước đây `specs/i18n/messages.json` không có khoá band nào | **ĐÓNG (C5)** — đã thêm `label.band.good` / `label.band.acceptable` / `label.band.needs_work` (vi+en); validator phải xanh |
 
 ---
@@ -701,6 +721,8 @@ thành mã là C1 — và C1 là **sửa lỗi Phase 2**, không phải triển 
 | C3 — hợp đồng confidence/staleness | **DOCUMENTED** | `docs/composition-engine.md` §3.2 (mới), §3 sửa dòng cổng | Không đổi ngưỡng production nào |
 | C4 — chủ sở hữu phase | **DOCUMENTED** | `docs/composition-engine.md` §3.1 + §6, `docs/roadmap.md` Phase 5/Phase 6 | Validator 0 lỗi |
 | C5 — nhãn band | **IMPLEMENTED** (spec) | `specs/i18n/messages.json` (3 khoá + notes), `specs/schemas/message-catalog.schema.json` (mô tả namespace), `specs/validation/validate_specs.py` (tách `label.*`), `docs/composition-engine.md` §2.2 | Validator 0 lỗi / 0 cảnh báo với 90 message |
+| R2 — readiness khi tắt | **DOCUMENTED** (D8) | `docs/guidance-engine.md` §7.1.1 (mới), §3.3/§5.3/§10.3 của tài liệu này | Không đổi ngưỡng, không đổi `readyHoldMs`; validator 0 lỗi |
+| R5 — rà soát 3 file Codex | **REVIEWED, KHÔNG COMMIT** | Không file nào bị sửa; kết luận + bằng chứng ở **§14** | `sha256` trùng byte-đệt; so sánh tiêu đề/tình trạng với nhánh Phase 2 |
 
 ---
 
@@ -730,6 +752,7 @@ thành mã là C1 — và C1 là **sửa lỗi Phase 2**, không phải triển 
 | **D5** (không landmark ở release) | §6.1 cấm tuyệt đối, §6.2, §11 C1, §12 |
 | **D6** (tái dùng kiến trúc) | §1, §2, §5 |
 | **D7** (ngân sách là mục tiêu) | §7, `[TGT]` trên mọi số |
+| **D8** (R2: tắt thì bỏ tiêu chí bố cục khỏi readiness) | §0.4, §3.3, §5.3, §10.3 R2, `guidance-engine.md` §7.1.1 |
 
 ---
 
@@ -757,7 +780,36 @@ thành mã là C1 — và C1 là **sửa lỗi Phase 2**, không phải triển 
 
 ---
 
-*Tài liệu này chủ yếu là thiết kế. Trong phiên 29/10/2026 chỉ có hai thay đổi có thật trên đĩa: sửa lỗi C1
-(mã Phase 2, gate landmark vào bản debug) và thêm khoá `label.band.*` (spec). Không có mã Smart Framing
-nào được viết. Không chạy ADB trên thiết bị thật, không chạy camera thật, không đổi guard nhiệt, không
-merge PR #3, không bắt đầu Phase 3/Phase 5. Mọi số hiệu năng vẫn là `[TGT]` cho đến khi có phép đo độc lập.*
+## 14. R5 — rà soát ba file tài liệu còn treo của Codex (kết luận: **KHÔNG** commit)
+
+Chủ dự án duyệt R5 với điều kiện: nếu nội dung nhất quán thì commit riêng; nếu có xung đột thật thì
+**không đoán, không ghi đè**, báo rõ mục xung đột và để nguyên file. Kết quả rà soát là trường hợp thứ hai.
+Ba file ở main worktree (`codex/epose-inspired-plan-docs`) là **ảnh chụp cũ** của lịch sử Phase 2 mà
+nhánh `codex/phase-2-pose-face-detection` đã có đầy đủ hơn. Bằng chứng cụ thể:
+
+| File | Phát hiện | Hệ quả nếu commit |
+| --- | --- | --- |
+| `docs/phase-2-face-thermal-review-20261014.md` (untracked) | **Trùng byte-đệt** với bản đã commit trên nhánh Phase 2: `sha256 = 9bbd171f699cbadab5ab0b4b06c9a1ea325458d88c7c6b90567e8a2878186e93` sau khi chuẩn hoá CRLF | Thêm một file đã tồn tại trong lịch sử repo → xung đột `add/add` không tránh được khi merge, không thêm thông tin nào |
+| `docs/phase-status.md` | Dòng đầu: main ghi **"Last updated: 2026-10-13"**, nhánh Phase 2 ghi **"2026-10-15"**. Dòng tình trạng: main ghi "one guarded rear-portrait Face-only run ... completed on **2026-10-11**", Phase 2 ghi "one **post-YUV** ... on **2026-10-14** ... 30-second counter window completed". Main thêm **3** mục ngày 10-14; Phase 2 đã có **15** mục đến 10-17 | Lùi mốc handoff và **mâu thuẫn trực tiếp** về kết quả: mục "ONE Face-only attempt after Ready; thermal abort" kết luận "the controlled 30-second Face-only/continuity gate remains pending", trong khi Phase 2 ghi "Post-YUV SM-S918B Face-only collection completed after Ready - 2026-10-14" |
+| `docs/phase-2-physical-verification.md` | Tiêu đề tình trạng: main "ONE GUARDED FACE-ONLY WINDOW COMPLETED, **2026-10-11**" vs Phase 2 "ONE **POST-YUV** GUARDED FACE-ONLY WINDOW COMPLETED, **2026-10-14**". Đoạn 10-14 giống nội dung nhưng **khác tiêu đề** ("Latest Face-only interruption and offline review" vs "Latest Face-only interruption"). Phase 2 còn 4 mục main không có (tham chiếu checklist, quy tắc cửa sổ 30–60 s, preflight post-YUV dừng ở **42,6 °C MODERATE**) | Tạo hai mục gần trùng cho cùng một sự kiện, và làm mất/thụt các mục 10-14 → 10-17 đang là bản ghi mới nhất |
+
+**Kiểm tra mất mát dữ liệu:** mọi con số nằm trong hunk chưa commit của Codex (`291 Face completions`,
+`268 detections`, `266` cặp continuity, PSS `247,513` KiB, p50/p95 `39.242/49.487 ms`) đều **đã có**
+trong file `phase-2-face-thermal-review-20261014.md` đã commit trên nhánh Phase 2. Vì vậy quyết định
+không commit **không làm mất bằng chứng nào**.
+
+**Kết luận và việc còn lại (không tự quyết):**
+
+* Ba file được **giữ nguyên** trạng thái chưa commit ở main worktree; không bị sửa, không bị xoá.
+* Chúng chỉ nên được xử lý bởi người **merge nhánh Phase 2 vào `main`** (lúc đó bản của Phase 2 thắng vì
+  mới hơn và đầy đủ hơn), hoặc bởi Codex nếu muốn chuẩn hoá lại. Ghi chúng vào nhánh tài liệu là sai chỗ.
+* Checkpoint của phiên 29/10/2026 được ghi ở `docs/phase-status.md` **trên nhánh Phase 2**
+  (commit `6ecc863`), không phải ở nhánh tài liệu — đó là cách tránh trộn hai tác giả trong một hunk.
+
+---
+
+*Tài liệu này chủ yếu là thiết kế. Trong phiên 29/10/2026 có ba nhóm thay đổi có thật trên đĩa: sửa lỗi C1
+(mã Phase 2, gate landmark vào bản debug), thêm khoá `label.band.*` (spec) và ghi hành vi readiness khi
+tắt (D8/R2, tài liệu). Không có mã Smart Framing nào được viết. Không chạy ADB trên thiết bị thật, không
+chạy camera thật, không đổi guard nhiệt, không merge PR #3, không bắt đầu Phase 3/Phase 5. Mọi số hiệu
+năng vẫn là `[TGT]` cho đến khi có phép đo độc lập.*
