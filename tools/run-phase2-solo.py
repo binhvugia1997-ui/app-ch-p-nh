@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 from phase2_thermal import ThermalGuard
 from phase2_camera_idle import CameraIdle
 from phase2_process import wait_collector
+from phase2_tasks import ProjectTasks, await_quiescence
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = 'com.aiphotographer.app'
@@ -124,8 +125,16 @@ def main():
                 failures.append(str(error))
         if failures:
             raise RuntimeError('Project package stop failed: '+'; '.join(failures))
+    # `am force-stop` leaves the package task behind; see docs/phase-2-physical-verification.md
+    # (2026-10-29). Only exact project packages are cleaned and each removal is verified.
+    tasks = ProjectTasks(lambda: adb('shell','dumpsys','activity','activities'),
+                         lambda *parts: adb('shell','am',*parts),
+                         output/'project-tasks.jsonl', PROJECT_PACKAGES, sleep=time.sleep)
+    def stop_project_and_reset():
+        stop_project()
+        tasks.clean()
     idle = CameraIdle(lambda: adb('shell','dumpsys','media.camera'), project_pid,
-                      stop_project, output/'camera-idle.jsonl', sleep=time.sleep)
+                      stop_project_and_reset, output/'camera-idle.jsonl', sleep=time.sleep)
     guard = ThermalGuard(lambda: adb('shell','dumpsys','thermalservice'),
                          stop_project, output/'thermal-guard.json')
     def normal_preflight():
@@ -135,9 +144,13 @@ def main():
 
     try:
         stop_project()
+        tasks.clean()
         guard.start()
+        # Cleaned, but not trusted: a task or process the platform recreates is a hard stop.
+        await_quiescence(normal_preflight, tasks.inventory, project_pid, sleep=time.sleep)
         idle.observe_preflight()
-        print('Project camera remains stopped: 30-second normal-status observation, then bounded stable-idle wait.', flush=True)
+        print('Project camera remains stopped: two clean post-cleanup samples, 30-second normal-status '
+              'observation, then bounded stable-idle wait.', flush=True)
         for _ in range(15):
             time.sleep(2)
             normal_preflight()
@@ -147,6 +160,7 @@ def main():
         normal_preflight()
         if args.idle_only:
             idle.require_idle()
+            tasks.require_clean()
             metadata['collectionStatus'] = 'IDLE_VERIFIED_NO_CAMERA_LAUNCH'
             return
         if not args.framing_only:
@@ -159,6 +173,7 @@ def main():
                 normal_preflight()
         normal_preflight()
         idle.require_idle()
+        tasks.require_clean()
         rotation_settings = {key: adb('shell','settings','get','system',key).strip()
                              for key in ('accelerometer_rotation','user_rotation')}
         (output/'rotation-settings-before-launch.json').write_text(json.dumps(rotation_settings,indent=2),encoding='utf-8')
