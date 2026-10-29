@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/binhvugia1997-ui/app-ch-p-nh/specs/schemas/message-catalog.schema.json",
   "title": "MessageCatalog",
-  "description": "The localization contract of the guidance layer. `actions` maps every GuidanceInstruction id to its actor and its allowed message keys; `messages` holds the vi (primary) and en (future) text for every key. Engines emit ids and keys only — never text (AGENTS.md, architecture.md ADR-009). Cross-file validation lives in specs/validation/validate_specs.py.",
+  "description": "The localization contract of the guidance layer. `actions` maps every GuidanceInstruction id to its actor and its allowed message keys; `messages` holds the vi (primary) and en (future) text for every key, both instruction keys (`guidance.*`) and display-only labels (`label.*`). Engines emit ids and keys only — never text (AGENTS.md, architecture.md ADR-009). Cross-file validation lives in specs/validation/validate_specs.py.",
   "type": "object",
   "required": [
     "version",
@@ -66,7 +66,7 @@
     },
     "messages": {
       "type": "object",
-      "description": "Key = message key. Vietnamese is the primary MVP language; English is authored now so that localization survives (owner decision 2026-10-03).",
+      "description": "Key = message key. Vietnamese is the primary MVP language; English is authored now so that localization survives (owner decision 2026-10-03). Instruction keys use `guidance.<domain>.<action>[.<variant>]`; `label.<group>.<value>` is the display-only namespace (e.g. composition band labels) that is never emitted as an instruction and is exempt from the action-reachability check.",
       "minProperties": 1,
       "additionalProperties": {
         "type": "object",

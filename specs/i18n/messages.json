@@ -8,6 +8,7 @@
     "A rule may only suggest actions listed here for it; specs/validation/validate_specs.py enforces the whole chain rule -> action -> message key -> text.",
     "Wording policy: describe the physical fix, never judge the person; no 'error', 'wrong', 'bad'. Lighting wording must stay relative (lighting-engine.md).",
     "Key convention: `guidance.<domain>.<action>[.<variant>]` — the variant (side, direction) is the final segment, never a suffix on the action name.",
+    "Second namespace: `label.<group>.<value>` holds display-only labels (e.g. the composition band of composition-engine.md §2.2) that are never emitted as a GuidanceInstruction. `label.*` keys must not be referenced by `actions` or `explanations`, and are exempt from the action-reachability check because no instruction can trigger them.",
     "`explanations` maps every rule id to the message key shown in the 'why?' sheet; it is not an instruction and never appears in the primary banner (guidance-engine.md §1)."
   ],
   "actions": {
@@ -672,6 +673,18 @@
     "guidance.capture.hold_camera_steady": {
       "vi": "Giữ máy ảnh thật chắc",
       "en": "Hold the camera steady"
+    },
+    "label.band.good": {
+      "vi": "Đạt",
+      "en": "Good"
+    },
+    "label.band.acceptable": {
+      "vi": "Tạm ổn",
+      "en": "Acceptable"
+    },
+    "label.band.needs_work": {
+      "vi": "Cần chỉnh một chút",
+      "en": "A small adjustment would help"
     }
   },
   "explanations": {

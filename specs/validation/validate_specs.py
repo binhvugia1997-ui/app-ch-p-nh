@@ -161,7 +161,15 @@ def check_guidance_chain(root: Path) -> None:
             error(f"explanation for {rid} points at message key '{key}' with no text")
         used_keys.add(key)
 
-    orphan_keys = set(messages) - used_keys
+    # `label.*` is the display-only namespace (messages.json notes; composition-engine.md §2.2).
+    # It can never be emitted by a rule, so it is excluded from reachability and instead must
+    # stay strictly disjoint from instruction/explanation usage.
+    label_keys = {k for k in messages if k.startswith("label.")}
+    misused = used_keys & label_keys
+    if misused:
+        error(f"label.* keys are display-only and must not be emitted by an action or explanation: {sorted(misused)}")
+
+    orphan_keys = set(messages) - used_keys - label_keys
     if orphan_keys:
         warn(f"message keys defined but not reachable from any action: {sorted(orphan_keys)}")
 
