@@ -5,11 +5,14 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.ImageFormat
+import android.hardware.display.DisplayManager
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.TotalCaptureResult
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.provider.MediaStore
 import android.util.Log
@@ -32,8 +35,12 @@ import java.io.File
 import java.util.concurrent.Executors
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.*
+import com.aiphotographer.perception.PerceptionPipeline
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
-enum class SessionMode { STARTING, FULL, ANALYSIS_ONLY, CAPTURE_ONLY, ERROR }
+enum class SessionMode { STARTING, FULL, ANALYSIS_ONLY, CAPTURE_ONLY, PREVIEW_ONLY, ERROR }
 enum class CaptureStatus { IDLE, SAVING, SAVED, ERROR }
 data class SessionState(
     val mode: SessionMode = SessionMode.STARTING, val capability: CapabilityReport,
@@ -51,10 +58,31 @@ class CameraSession(
     private val resolution: AnalysisResolution,
     benchmarkRgb: Boolean,
     private val launchNs: Long,
+    val perception: PerceptionPipeline? = null,
+    private val previewOnly: Boolean = false,
 ) {
-    val router = FrameRouter(facing, resolution, monitor::state, benchmarkRgb)
+    val router = FrameRouter(facing, resolution, monitor::state, benchmarkRgb, perception)
+    private val perceptionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val perceptionLifecycle = LifecycleEventObserver { _, event ->
+        if (event == Lifecycle.Event.ON_START) { perception?.setActive(true); refreshRotation() }
+        if (event == Lifecycle.Event.ON_STOP) perception?.setActive(false)
+    }
+    init {
+        require(!previewOnly || perception == null)
+        owner.lifecycle.addObserver(perceptionLifecycle)
+        perception?.setActive(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+        if (perception != null) perceptionScope.launch { perception.state.collect { router.perceptionResult(it.snapshot) } }
+    }
     private val executor = Executors.newSingleThreadExecutor { Thread(it, "Phase1FrameRouter") }
     private val mainExecutor = ContextCompat.getMainExecutor(context)
+    private val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+    private val displayListener = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) = Unit
+        override fun onDisplayRemoved(displayId: Int) = Unit
+        override fun onDisplayChanged(displayId: Int) {
+            if (previewView.display?.displayId == displayId) refreshRotation()
+        }
+    }
     private val mutableState = MutableStateFlow(SessionState(capability = monitor.capability))
     val state = mutableState.asStateFlow()
     private var provider: ProcessCameraProvider? = null
@@ -63,19 +91,36 @@ class CameraSession(
     private var capture: ImageCapture? = null
     private var camera: Camera? = null
     private var cameraStateObserver: Observer<CameraState>? = null
+    private var observedCameraInfo: CameraInfo? = null
     private var closed = false
     private var firstFrame = false
+    private var started = false
+    private var boundRotation: Int? = null
     private val selector = if (facing == CameraFacing.FRONT) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
 
     fun start() {
-        if (closed) return
-        monitor.start()
+        if (closed || started) return
+        started = true
+        displayManager.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
+        if (!previewOnly) monitor.start()
         val future = ProcessCameraProvider.getInstance(context)
         future.addListener({
             if (closed) return@addListener
             try { provider = future.get(); bind() }
             catch (error: Exception) { fail(error) }
         }, mainExecutor)
+    }
+    private fun refreshRotation() {
+        if (closed || !started || provider == null ||
+            !owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) ||
+            mutableState.value.capture == CaptureStatus.SAVING) return
+        val rotation = previewView.display?.rotation ?: return
+        if (boundRotation != rotation) bind()
+    }
+    private fun clearCameraObserver() {
+        cameraStateObserver?.let { observer -> observedCameraInfo?.cameraState?.removeObserver(observer) }
+        cameraStateObserver = null
+        observedCameraInfo = null
     }
     private fun bind() {
         if (closed || previewView.width == 0 || previewView.height == 0) return
@@ -84,12 +129,13 @@ class CameraSession(
         }
         val provider = provider ?: return
         if (!provider.hasCamera(selector)) { fail(IllegalArgumentException("Camera unavailable")); return }
+        router.resetSessionWindow()
         analysis?.clearAnalyzer()
-        cameraStateObserver?.let { camera?.cameraInfo?.cameraState?.removeObserver(it) }
+        clearCameraObserver()
         boundSession?.let(provider::unbind)
         val rotation = previewView.display?.rotation ?: android.view.Surface.ROTATION_0
         val previewBuilder = Preview.Builder().setTargetRotation(rotation)
-        Camera2Interop.Extender(previewBuilder).setSessionCaptureCallback(object : CameraCaptureSession.CaptureCallback() {
+        if (!previewOnly) Camera2Interop.Extender(previewBuilder).setSessionCaptureCallback(object : CameraCaptureSession.CaptureCallback() {
             override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
                 router.onPreviewCapture()
             }
@@ -108,6 +154,7 @@ class CameraSession(
             val uses = when (mode) {
                 SessionMode.FULL -> listOf(preview, imageAnalysis!!, imageCapture)
                 SessionMode.ANALYSIS_ONLY -> listOf(preview, imageAnalysis!!)
+                SessionMode.PREVIEW_ONLY -> listOf(preview)
                 else -> listOf(preview, imageCapture)
             }
             val config = SessionConfig(useCases = uses, viewPort = previewView.getViewPort(rotation))
@@ -118,10 +165,12 @@ class CameraSession(
             return try {
                 camera = provider.bindToLifecycle(owner, selector, config)
                 boundSession = config
+                boundRotation = rotation
                 analysis = imageAnalysis
-                capture = if (mode == SessionMode.ANALYSIS_ONLY) null else imageCapture
+                capture = if (mode in listOf(SessionMode.ANALYSIS_ONLY, SessionMode.PREVIEW_ONLY)) null else imageCapture
                 if (camera!!.cameraInfo.hasFlashUnit()) camera!!.cameraControl.enableTorch(false)
                 mutableState.value = SessionState(mode, report, attempts.toList())
+                val cameraInfo = camera!!.cameraInfo
                 cameraStateObserver = Observer<CameraState> { cameraState ->
                     if (!closed && cameraState.error != null) {
                         Log.e("Phase1Camera", "Camera state error: ${cameraState.error}")
@@ -129,12 +178,17 @@ class CameraSession(
                     } else if (!closed && cameraState.type == CameraState.Type.OPEN) {
                         mutableState.value = mutableState.value.copy(mode = mode)
                     }
-                }.also { camera!!.cameraInfo.cameraState.observe(owner, it) }
+                }.also { cameraInfo.cameraState.observe(owner, it) }
+                observedCameraInfo = cameraInfo
                 Log.i("Phase1Capability", mutableState.value.toString())
                 true
             } catch (error: IllegalArgumentException) {
                 Log.w("Phase1Capability", "Combination rejected", error); false
             }
+        }
+        if (previewOnly) {
+            if (!tryBind(SessionMode.PREVIEW_ONLY, null)) fail(IllegalStateException("Preview-only binding rejected"))
+            return
         }
         for (size in sizes) {
             val analyzer = ImageAnalysis.Builder().setTargetRotation(rotation)
@@ -159,9 +213,11 @@ class CameraSession(
     }
     /** Serial capture in analysis-only fallback, then restore the analysis binding. */
     fun takePhoto() {
-        if (closed || mutableState.value.capture == CaptureStatus.SAVING) return
+        if (closed || previewOnly || mutableState.value.capture == CaptureStatus.SAVING) return
         if (mutableState.value.mode == SessionMode.ANALYSIS_ONLY) {
             analysis?.clearAnalyzer()
+            router.resetSessionWindow()
+            clearCameraObserver()
             boundSession?.let { provider?.unbind(it) }
             val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
             val newCapture = ImageCapture.Builder().setTargetRotation(previewView.display?.rotation ?: android.view.Surface.ROTATION_0).build()
@@ -188,26 +244,37 @@ class CameraSession(
             ImageCapture.OutputFileOptions.Builder(context.contentResolver, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values).build()
         } else privateOptions()
         val restoreAnalysis = mutableState.value.mode == SessionMode.ANALYSIS_ONLY
+        fun markSaveError() {
+            if (closed) return
+            if (restoreAnalysis || previewView.display?.let { it.rotation != boundRotation } == true) bind()
+            mutableState.value = mutableState.value.copy(capture = CaptureStatus.ERROR)
+        }
         fun save(output: ImageCapture.OutputFileOptions, allowPrivateFallback: Boolean) {
-          target.takePicture(output, mainExecutor, object : ImageCapture.OnImageSavedCallback {
-            override fun onImageSaved(result: ImageCapture.OutputFileResults) {
+            fun failed(error: Exception) {
                 if (closed) return
-                val location = result.savedUri?.toString() ?: "${context.filesDir}/Pictures/AI Photographer/$name"
-                if (restoreAnalysis) bind()
-                mutableState.value = mutableState.value.copy(capture = CaptureStatus.SAVED, savedLocation = location)
-                Log.i("Phase1Capture", location)
-            }
-            override fun onError(exception: ImageCaptureException) {
-                if (closed) return
-                Log.e("Phase1Capture", "Save failed", exception)
+                Log.e("Phase1Capture", "Save failed", error)
                 if (allowPrivateFallback && Build.VERSION.SDK_INT >= 29) {
-                    save(privateOptions(), false)
-                    return
-                }
-                if (restoreAnalysis) bind()
-                mutableState.value = mutableState.value.copy(capture = CaptureStatus.ERROR)
+                    try { save(privateOptions(), false) }
+                    catch (fallbackError: Exception) {
+                        Log.e("Phase1Capture", "Private save unavailable", fallbackError)
+                        markSaveError()
+                    }
+                } else markSaveError()
             }
-          })
+            try {
+                target.takePicture(output, mainExecutor, object : ImageCapture.OnImageSavedCallback {
+                    override fun onImageSaved(result: ImageCapture.OutputFileResults) {
+                        if (closed) return
+                        val location = result.savedUri?.toString() ?: "${context.filesDir}/Pictures/AI Photographer/$name"
+                        if (restoreAnalysis || previewView.display?.let { it.rotation != boundRotation } == true) bind()
+                        mutableState.value = mutableState.value.copy(capture = CaptureStatus.SAVED, savedLocation = location)
+                        Log.i("Phase1Capture", location)
+                    }
+                    override fun onError(exception: ImageCaptureException) = failed(exception)
+                })
+            } catch (error: Exception) {
+                failed(error)
+            }
         }
         save(options, Build.VERSION.SDK_INT >= 29)
     }
@@ -223,8 +290,12 @@ class CameraSession(
     }
     fun close() {
         closed = true
+        if (started) displayManager.unregisterDisplayListener(displayListener)
+        owner.lifecycle.removeObserver(perceptionLifecycle)
+        perceptionScope.cancel()
+        perception?.close()
         analysis?.clearAnalyzer()
-        cameraStateObserver?.let { camera?.cameraInfo?.cameraState?.removeObserver(it) }
+        clearCameraObserver()
         boundSession?.let { provider?.unbind(it) }
         monitor.stop()
         executor.shutdown()

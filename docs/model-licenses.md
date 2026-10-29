@@ -174,3 +174,39 @@ Do not interpret this inventory as approval for future versions/components or mo
 CameraX camera-view transitively brings camera-video and Media3 common/container utilities. No video or
 network feature is called. The unused Media3 `ACCESS_NETWORK_STATE` permission is explicitly removed by
 manifest merge; no INTERNET permission exists. Runtime frames/photos remain on the device.
+
+## 8. Phase 2 artifact audit checkpoint (2026-10-06)
+
+Official version-1 float16 bundles are unchanged local production assets, also used by isolated
+synthetic-image SDK probes. Redistribution is **OK** under Apache-2.0: the official
+[BlazePose GHUM card](https://storage.googleapis.com/mediapipe-assets/Model%20Card%20BlazePose%20GHUM%203D.pdf),
+[Face Mesh V2 card](https://storage.googleapis.com/mediapipe-assets/Model%20Card%20MediaPipe%20Face%20Mesh%20V2.pdf),
+[BlazeFace short-range card](https://storage.googleapis.com/mediapipe-assets/MediaPipe%20BlazeFace%20Model%20Card%20(Short%20Range).pdf)
+and [Blendshape V2 card](https://storage.googleapis.com/mediapipe-assets/Model%20Card%20Blendshape%20V2.pdf)
+state Apache-2.0. Blendshapes would be disabled, but their bundled weights were also checked.
+All files remain unmodified. Code-license text from MediaPipe v0.10.32 has SHA256
+`8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8`.
+
+| Official model URL | SHA256 | SHIP / packaging |
+| --- | --- | --- |
+| https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task | 59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a | OK; packaged |
+| https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task | 5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1 | OK; packaged |
+| https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task | 64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff | OK; packaged |
+
+Stock Tasks SDK 0.10.32 has Apache-2.0 code licensing but fails the separate privacy gate because of
+remote telemetry/DataTransport; see `docs/phase-2-sdk-audit.md`. No stock SDK or associated network
+component ships. The unmodified upstream Core build with default dummy logger and unchanged official
+Vision artifact is integrated as option C; Apache-2.0 redistribution **OK**. Exact binary/source
+provenance and reproduction are in `third_party/mediapipe/README.md`. Runtime graph now has 107
+unique components; previous versions are unchanged. Flogger 0.6 is Apache-2.0, protobuf-javalite
+4.28.3 is BSD-3-Clause (upstream v28.3 LICENSE retained), checker-compat-qual 2.5.3 annotations are
+MIT per the retained upstream license (not the GPL checker compiler). Required upstream texts are
+packaged by the existing offline notice generator. Native source dependency notices were collected
+from the successful unmodified upstream build (Actions 37481571058), with FFT2D's exact notice
+retained from the pinned TensorFlow tree. Redistribution **OK with retained notices**: Apache-2.0,
+BSD, MIT, zlib, Ooura's permissive original-package terms, and Eigen MPL-2.0 with its compatible
+portions. Eigen's exact source archive and MPL text/source availability are included in the offline
+notice asset; this does not license the larger application under MPL. No native source is modified
+by AI Photographer. This conservative notice inventory is not a claim that every upstream target
+executes at runtime. Provenance is in `MediaPipe-Native-Sources-NOTICE.txt`.
+No project-wide license is added. Model provenance does not grant approval for telemetry.

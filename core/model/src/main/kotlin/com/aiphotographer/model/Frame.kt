@@ -8,18 +8,27 @@ data class FrameGeometry(
     val width: Int, val height: Int, val rotationDegrees: Int, val isMirrored: Boolean,
     val primaryCameraFacing: CameraFacing, val analysisResolution: AnalysisResolution,
     val aspectRatio: Double = width.toDouble() / height,
-)
+) {
+    init {
+        require(width > 0 && height > 0 && aspectRatio.isFinite() && aspectRatio > 0)
+        require(rotationDegrees == 0 || rotationDegrees == 90 || rotationDegrees == 180 || rotationDegrees == 270)
+    }
+}
 data class DeviceState(
     val tier: DeviceTier, val rollDegrees: Double? = null, val imuStability: Double? = null,
     val thermalStatus: ThermalStatus = ThermalStatus.UNKNOWN,
 )
 data class SourceQuality(val ageMs: Long, val latencyMsP50: Double? = null, val stale: Boolean = false)
 data class AnalysisQuality(val sources: Map<String, SourceQuality>, val droppedFrameRatio: Double, val degradationLevel: Int = 0)
-data class Landmark(val id: String, val x: Double, val y: Double, val z: Double? = null, val visibility: Double? = null, val presence: Double? = null)
+data class Landmark(val id: String, val x: Double, val y: Double, val z: Double? = null, val visibility: Double? = null, val presence: Double? = null, val smoothed: Boolean = false)
 data class BoundingBox(val left: Double, val top: Double, val right: Double, val bottom: Double)
 enum class ShotType { HEADSHOT, CLOSE_PORTRAIT, HALF_BODY, THREE_QUARTER, FULL_BODY, UNKNOWN }
-/** Required schema fields only; Phase 1 always emits an empty list. */
-data class Subject(val trackId: Int, val landmarks: List<Landmark>, val bbox: BoundingBox, val visibleFraction: Double, val shotType: ShotType)
+data class HeadPose(val yawDegrees: Double, val pitchDegrees: Double, val rollDegrees: Double)
+data class FaceObservation(val landmarks: List<Landmark>, val bbox: BoundingBox, val headPose: HeadPose? = null, val blinkScore: Double? = null)
+data class Subject(
+    val trackId: Int, val landmarks: List<Landmark>, val bbox: BoundingBox, val visibleFraction: Double, val shotType: ShotType,
+    val worldLandmarks: List<Landmark>? = null, val face: FaceObservation? = null, val shotTypeConfidence: Double = 0.0,
+)
 data class FrameAnalysis(
     val timestampMs: Long, val frame: FrameGeometry, val device: DeviceState,
     val subjects: List<Subject> = emptyList(), val quality: AnalysisQuality,
