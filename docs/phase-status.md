@@ -3289,3 +3289,56 @@ literal reading (200 ns/frame) is not physically meaningful.
 
 BLOCKERS: none technical. Product/acceptance blockers unchanged: the guarded 30-second Face-only physical
 gate, the owner's calibration protocol for every `CALIBRATION_REQUIRED` constant, and PR #3 still Draft.
+
+---
+### Phase 2 harness (partial) - project task cleanup before the camera-off preflight, 2026-10-29
+
+PHASE: 2, harness only. STATUS: fixed and host tested; **no device contact, camera launch or ADB
+command in this session**, so the fix is NOT VERIFIED on hardware and the aborted 2026-10-29
+Face-only attempt remains INCOMPLETE. No acceptance gate is claimed or re-scored.
+
+Branch `codex/phase-2-task-cleanup-harness`, worktree `.tools/phase2-harness`, based on `a7ecedf` so
+the harness matches the build that was under test. `codex/phase-2-pose-face-detection` (`6ecc863`),
+`codex/phase-5-smart-framing-engine` (`a7ecedf`) and the main worktree keep their previous HEADs and
+their uncommitted Codex documentation untouched. PR #3 stays Draft and unmerged.
+
+ROOT CAUSE: `am force-stop` is a process stop, not a task cleanup. The retained log shows the manual
+launch at 19:02:44 creating the app task, `am force-stop` at 19:05:18 killing PID 25243 while the
+task record survived, and at 19:06:22.230 the platform starting `proc 30236` "for next-top-activity"
+for the surviving `MainActivity` task, which tripped the strict zero-project-PID preflight. Camera
+ownership was `[]` in every sample and no thermal guard fired, so this was a harness/model mismatch,
+not a camera leak or a heat event; whether the platform would also have resumed the task without the
+second force-stop is not established by the retained lines.
+
+FILES (harness and documentation only; no production source): new
+`tools/phase2_tasks.py`, `tools/test_phase2_tasks.py`, `tools/test_phase2_runner.py`,
+`docs/phase-2-task-cleanup-review.md`; modified `tools/run-phase2-solo.py` and
+`docs/phase-2-physical-verification.md`.
+
+BEHAVIOUR NOW: session start is `am force-stop` of the three project packages, then an `am task`
+capability probe, then a verified `am task remove <id>` only for tasks whose root package is an
+exact project package, then two separated clean samples requiring both zero project task and zero
+project process, then the unchanged 30-second NORMAL observation, bounded stable-idle wait, countdown
+and single launch. Both the mid-session stop path and the final cleanup now leave no project task
+behind, so a later session does not inherit one, and a preliminary manual launch is no longer needed
+or allowed. Zero-PID, zero-camera-client, thermal, foreground, countdown and no-retry invariants are
+unchanged and were strengthened, never relaxed; the thermal guard still receives the plain
+force-stop path. `am stack remove` is deliberately not used (different id space, wider scope).
+
+MEASURED: host only. `python -m unittest test_phase2_camera_idle test_phase2_thermal
+test_phase2_tasks test_phase2_cleanup test_phase2_collection test_phase2_framing
+test_phase2_runner` = 86 tests, 0 failures (25 new). No device FPS, latency, memory or thermal number
+was taken; nothing about SM-S918B hardware is established here.
+
+DEVIATIONS FROM SPEC: none. BLOCKERS: the next physical session needs separate owner authorization,
+a rebuilt APK with recorded SHA-256 and a real face in frame.
+
+QUESTIONS: whether Android API 37 on SM-S918B documents `am task remove` is answered at run time by
+the probe; if it documents none, the session refuses before observing anything and the preflight
+needs a different, separately approved mechanism.
+
+NEXT PROPOSED: one guarded rear-portrait Face-only 30-second session following
+`docs/phase-2-task-cleanup-review.md` section 7, expected to confirm the probe and reach the countdown
+without a preliminary manual launch. Separately, and only with owner approval, a debug-only
+change-gated Smart Framing diagnostic line would make runtime engine output observable; today a
+healthy run logs nothing.

@@ -1155,3 +1155,31 @@ locally under
 Phase 2 worktree. No further camera run is authorized by this one-run Ready.
 Preserve all thresholds, prior evidence, Draft PR status and Phase 2 owner
 acceptance boundary.
+
+## Task cleanup before the camera-off preflight - 2026-10-29 (HOST ONLY)
+
+`am force-stop` stops the process but leaves the package's task behind. On 2026-10-29 the platform
+resumed that surviving task (`Start proc 30236 ... for next-top-activity`) inside the preflight
+window and aborted the Face-only attempt. The harness now removes only tasks whose root package is
+an exact project package, verifies every removal, and requires two clean separated samples
+afterwards; a project task or process reappearing after cleanup still stops the session. See
+[task cleanup review](phase-2-task-cleanup-review.md).
+
+No ADB command, device contact, camera launch, installation or physical retry occurred in this
+change, and the 2026-10-29 attempt remains INCOMPLETE. The runner can now start from a clean
+camera-off state without a preliminary manual launch, so the procedure no longer needs one before a
+session. Exact next procedure: rebuild the debug APK from the target branch and record its SHA-256,
+confirm the serial/model/API, then run ONE guarded command, for example
+
+```
+python tools/run-phase2-solo.py --adb <adb> --serial <serial> \
+  --configuration rear-portrait --face-only --aspect 4:3 --seconds 30 \
+  --output device-evidence/phase2/physical/<new-directory>
+```
+
+and expect, in order: `am force-stop` of the three project packages, the `am task` capability probe,
+a verified `am task remove <id>` only if a project task exists, two clean post-cleanup samples, the
+unchanged 30-second NORMAL observation, the unchanged bounded stable-idle wait, the 15-second
+countdown, one launch and one 30-second collection. A build that documents no `am task remove` stops
+before any observation instead of improvising, and no automatic retry is ever performed. Full gates,
+abort conditions and the Smart Framing observation limits are in the review document.
