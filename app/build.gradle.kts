@@ -136,6 +136,10 @@ tasks.configureEach {
 dependencies {
     implementation(project(":feature:camera"))
     implementation(project(":perception:mediapipe"))
+    // Phase 5: the Smart Framing engine is a plain JVM module; :app only calls it and never re-implements
+    // framing maths (docs/architecture.md ADR-027).
+    implementation(project(":core:photography"))
+    implementation(libs.coroutines.android)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)

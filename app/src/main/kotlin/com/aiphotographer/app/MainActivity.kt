@@ -35,6 +35,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aiphotographer.app.framing.SmartFramingController
+import com.aiphotographer.app.framing.SmartFramingSettings
 import com.aiphotographer.camera.*
 import com.aiphotographer.model.*
 import com.aiphotographer.perception.mediapipe.MediaPipePipelineFactory
@@ -99,6 +101,9 @@ class MainActivity : ComponentActivity() {
     var generation by remember { mutableIntStateOf(0) }
     var rgbBenchmark by rememberSaveable { mutableStateOf(benchmarkRgbAtLaunch) }
     var session by remember { mutableStateOf<CameraSession?>(null) }
+    // Smart Framing backend (Phase 5). The overlay UI is owned by the UI model; this only keeps the
+    // controller alive next to its camera and disposes it. See docs/ui-integration-contract.md.
+    val framingScope = rememberCoroutineScope()
     Column(Modifier.fillMaxSize().safeDrawingPadding()) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
           val viewAspect = if (landscape) 1f / aspect else aspect
@@ -112,6 +117,11 @@ class MainActivity : ComponentActivity() {
                 val monitor = remember { DeviceMonitor(context) }
                 val camera = remember { CameraSession(context, owner, preview, monitor, facing, resolution, rgbBenchmark, launchNs,
                     if (framingOnly) null else MediaPipePipelineFactory.create(context, monitor.capability, faceOnly = faceOnly), previewOnly = framingOnly) }
+                val framingSettings = remember { SmartFramingSettings(context) }
+                val framing = remember(camera) {
+                    SmartFramingController(camera.perception, framingSettings, framingScope)
+                }
+                DisposableEffect(framing) { onDispose { framing.close() } }
                 DisposableEffect(camera) {
                     session = camera
                     val observer = androidx.lifecycle.Observer<PreviewView.StreamState> { if (it == PreviewView.StreamState.STREAMING) camera.previewStreaming() }
