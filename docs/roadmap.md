@@ -146,8 +146,12 @@ manual capture (auto-capture implemented but off).
 
 **Deliverables**
 
-1. `:core:photography` rules: framing set + advisory composition set, with thresholds from
+1. `:core:photography` rules: the **framing set only** (`FRAME_*`), with thresholds from
    `specs/rules/mvp-rules.json` (calibration-required values gated out of user-visible hard errors).
+   The advisory composition set (`COMP_*`) is **not** part of Phase 5: `specs/rules/mvp-rules.json`
+   schedules it in Phase 6, and the JSON wins (owner decision 2026-10-29, D1). The `FRAME_*`/
+   `COMP_*` separation and the reason the evaluation order is not a schedule are recorded in
+   `composition-engine.md` §3.1.
 2. Head-top estimator + headroom rules calibrated on local captures.
 3. `:core:guidance` arbiter, dwell/cooldown, resolution-compatibility table, `GuidanceState` emission.
 4. Readiness state machine + manual capture flow (and auto-capture behind a setting, default OFF).
@@ -169,6 +173,10 @@ manual capture (auto-capture implemented but off).
 ## Phase 6 — Pose library + recommendations
 
 **Goal:** more than a single template: a curated, validated library with ranking.
+
+This is also the phase that owns the advisory **composition** rule set (`COMP_EYE_LINE_PLACEMENT`,
+`COMP_LEAD_ROOM` and the remaining `COMP_*`), because `specs/rules/mvp-rules.json` gives them
+`phase: 6`. They are advisory-only (`composition-engine.md` §8) and never blocking.
 
 **Deliverables:** validated templates (`VALIDATED` provenance), difficulty levels, shot-type/context tags,
 thumbnail generation from geometry, user selection UI, ranking by scene tags (Phase 7) and shot type,

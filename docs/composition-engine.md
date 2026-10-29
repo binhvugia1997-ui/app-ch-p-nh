@@ -75,6 +75,10 @@ data class CompositionSummary(
 `overallBand` is **display only** and must never be presented as a "score out of 10". A single-word band
 plus the one active instruction is the whole composition UI in the MVP.
 
+The band carries no text here. Its Vietnamese/English wording lives in the message catalog as the
+`label.band.good`, `label.band.acceptable` and `label.band.needs_work` keys (`specs/i18n/messages.json`).
+Those are `label.*` keys: display-only labels, never emitted as a `GuidanceInstruction` (AGENTS.md §13).
+
 ---
 
 ## 3. Pipeline
@@ -89,10 +93,11 @@ FrameAnalysis
      │       policy: if user intent exists and detected type disagrees by one step → treat as intent
      │               (people frame slightly looser than they say); two steps → surface intent mismatch
      │
-     ├─► FramingRules            (FRAME_*)
-     │       gate: subjects present, visibleFraction ≥ 0.5, staleness < 200 ms
+     ├─► FramingRules            (FRAME_*)                            — Phase 5
+     │       gate: subjects present, visibleFraction ≥ V_min, source staleness < 200 ms
+     │             (values, owners and precedence: §3.2)
      │
-     ├─► CompositionRules        (COMP_*) — advisory only
+     ├─► CompositionRules        (COMP_*) — advisory only              — Phase 6
      │
      ├─► LightingRules           (LIGHT_*) — see lighting-engine.md (separate module, same contract)
      │
@@ -117,6 +122,39 @@ FrameAnalysis
 10. remaining `COMP_*` (as they become available)
 
 Ordering matters only for the *dev screen* and for deterministic unit tests; the arbiter re-sorts.
+
+**Ordering is not phase ownership.** The numbering above is evaluation order inside one frame; it says
+nothing about when a rule ships. Phase ownership is owned solely by `specs/rules/mvp-rules.json`
+(`phase` field): every `FRAME_*` rule is Phase 5, every `COMP_*` rule is Phase 6 (owner decision
+2026-10-29, D1). Steps 9–10 of the list are therefore *implemented last*, and the worked example in §6
+shows `COMP_EYE_LINE_PLACEMENT` only to illustrate the conflict machinery, not to schedule it.
+
+### 3.2 Gate, confidence and freshness contract (owner decision 2026-10-29, C3)
+
+Four different numbers are easy to confuse because they all look like "how much of the subject do we
+need, and how old may the data be". They answer different questions, none of them substitutes for
+another, and they have different owners:
+
+| Quantity | Value | Answers | Owner (single source of truth) | Not to be confused with |
+| --- | --- | --- | --- | --- |
+| `visibleFraction ≥ 0.5` | 0.5 | "Is this body scoreable at all?" (pose scoring hard gate) | `pose-system.md` §4.1.1 | The framing gate: 0.5 does **not** make a subject usable for framing advice |
+| `V_min` | 0.55, enter below / exit at 0.60 | "Is the subject complete enough for a framing rule to speak?" (rule eligibility + prominence) | `specs/rules/mvp-rules.json` → `FRAME_SUBJECT_PRESENT` | A quality judgement about the photo |
+| `confidence ≥ 0.5` | 0.5 | "Is this candidate strong enough to be arbitrated at all?" | `guidance-engine.md` §5.2 | Not a geometry gate; not a threshold the composition engine sets |
+| staleness `< 200 ms` | 200 ms | "Is the measurement still describing the current frame?" (rule freshness budget; full confidence credit) | `photography-rules.md` §4 | The `500 ms` source-expiry of `PerceptionFreshness` |
+| `PerceptionFreshness.MAX_AGE_MS` | 500 ms `CALIBRATION_REQUIRED` | "Must this source be treated as stale at the source layer?" (diagnostic/source expiry, also used to hide stale overlays) | `perception/api/.../SubjectAssembler.kt` | Not a rule budget: a source may be "fresh" at 200 ms and still be too old for a rule at 300 ms |
+
+Consequences that implementations must respect:
+
+* **Ordering:** 0.5 (scoreable) → 0.55 (framing-eligible, exit 0.60) → 0.5 confidence (arbitrable) → 200 ms
+  (fresh enough for a rule) → 500 ms (source declared stale). A subject between 0.50 and 0.55 is
+  scoreable by the pose engine but **must not** produce a framing instruction.
+* **`confidenceCap` is a ceiling, not a floor.** A rule's `confidenceCap` (e.g. `0.95`) can only lower
+  `confidence`; the arbiter's 0.5 floor is applied after the cap (`guidance-engine.md` §5.2).
+* **Two staleness roles, one name is a bug.** Rule code asks "is `now − timestampMs` within the 200 ms
+  budget?"; the perception layer asks "has this source produced anything within `MAX_AGE_MS`?". Neither
+  layer may reuse the other's constant.
+* **No production value changes here.** `V_min`, the exit value, `N_absent` and `MAX_AGE_MS` all remain
+  `CALIBRATION_REQUIRED` hypotheses; this section only fixes *who owns which number*.
 
 ---
 
@@ -193,6 +231,9 @@ headroom" wants more space above the head. Both are satisfied by *stepping back 
 camera down*, which is exactly what a human photographer would do. This is why the engine emits
 **semantic actions**, and the guidance layer is responsible for finding the compatible mapping
 (`guidance-engine.md` §5.4).
+
+This example is a single-frame trace, not a delivery schedule: `COMP_EYE_LINE_PLACEMENT` appears here
+because the arbiter must handle it, and it ships in Phase 6 (`mvp-rules.json`), not Phase 5.
 
 ---
 
