@@ -3192,3 +3192,51 @@ gates. NEXT PROPOSED: resume from the checkpoint and prepare one guarded,
 uninterrupted rear-portrait 480p 4:3 60-second Pose/Face measurement; require a
 fresh camera-off preflight and new explicit owner Ready before launch. PR #3
 must remain Draft and unmerged; do not begin Phase 3.
+
+### Landmark overlay gated to debug builds; C1 closed - 2026-10-29 (HOST + EMULATOR)
+
+The diagnostic Pose/Face landmark overlay was reachable from `profile` and `release`: `MainActivity`
+`src/main` called `PerceptionOverlay(camera)` unconditionally and that composable drew
+`PoseLandmarks.bones` plus 478 Face dots from `main`. This violated the approved invariant that raw
+landmarks are a development instrument only. The fix follows the module's existing source-set
+convention (`DeveloperOverlay`/`DeveloperControls` are declared per build type) instead of a runtime
+`BuildConfig` check, so `profile` cannot accidentally enable diagnostics:
+
+* `app/src/main/.../PerceptionOverlayProjection.kt` (new) keeps the pure `analysisToPreview`
+  projection, which is shared by any overlay and is unit tested; it contains no drawing.
+* `app/src/debug/.../DiagnosticLandmarkOverlay.kt` (new) draws the skeleton and Face dots.
+* `app/src/profile/...` and `app/src/release/.../DiagnosticLandmarkOverlay.kt` (new) declare the same
+  composable as a no-op.
+* `MainActivity` calls `DiagnosticLandmarkOverlay(camera)`; the ambiguous `PerceptionOverlay` name is
+  gone from `main`. `PerceptionOverlay.kt` was removed from `main`.
+* `app/src/test/.../DiagnosticOverlayVariantTest.kt` (new, 4 tests) asserts that `main` draws no
+  landmarks, that `debug` still owns the drawing, that `profile`/`release` stubs reference no
+  `Canvas`/`PoseLandmarks`/`CrosshairRenderer`, and that the call-site uses the diagnostic name.
+
+No camera, capture, MediaPipe scheduling, coordinate transform, thermal guard or threshold changed;
+the perception pipeline itself is untouched and still runs in every build.
+
+Host validation: `:app:testDebugUnitTest` BUILD SUCCESSFUL with the 4 new tests green; `:app:lint`
+BUILD SUCCESSFUL (warningsAsErrors is on); `:app:assembleDebug`, `:app:assembleProfile` and
+`:app:assembleRelease` succeed; offline spec validator 0 errors / 0 warnings. Build-variant proof by
+`javap` on `DiagnosticLandmarkOverlayKt`: `debug` 14 159 bytes referencing `Canvas` and
+`PoseLandmarks.bones`, `profile` and `release` 3 005 bytes with no such references.
+
+Emulator validation (AVD `HanNgu_Codex_API37`, serial `emulator-5554`, `ro.build.version.sdk=37`,
+`ro.kernel.qemu=1`): debug APK installs, launches, streams the virtual camera, captures one still
+(MediaStore insert success), survives HOME then resume with the camera released and re-opened by the
+same PID, and survives a rotation to landscape and back with no `FATAL EXCEPTION`. The profile APK
+also installs and launches; its UI hierarchy contains only "Camera ready", "Switch camera",
+"Take photo" and "Licences" - the "Phase 2 diagnostics" control and the resolution/aspect/RGB controls
+are absent. Evidence kept locally under `device-evidence/phase2/emulator/20261029-c1-variant-check/`.
+
+Limitations, stated plainly: the emulator scene contains no human, so no Pose or Face detection ran
+there. The absence of landmark drawing on emulator is therefore proven from classes and UI hierarchy,
+not from a person on screen, and it is NOT physical evidence. Emulator runs say nothing about
+SM-S918B FPS, thermal behaviour or Phase 2 acceptance; the guarded 30-second Face-only physical gate
+remains pending with the unchanged guards. `app-release-unsigned.apk` cannot be installed, so release
+was verified by compile, R8 and bytecode inspection only. Not measured: any latency or FPS number.
+
+NEXT PROPOSED: none for the landmark fix. The remaining Phase 2 work is still the single guarded
+rear-portrait Face-only continuity measurement, which needs separate owner authorization, a fresh
+camera-off preflight and a new explicit Ready. PR #3 stays Draft and unmerged.

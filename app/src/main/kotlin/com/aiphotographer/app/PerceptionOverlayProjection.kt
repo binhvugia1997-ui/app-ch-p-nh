@@ -1,23 +1,19 @@
 package com.aiphotographer.app
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aiphotographer.camera.CameraSession
 import com.aiphotographer.geometry.Coordinates
 import com.aiphotographer.geometry.Point
 import com.aiphotographer.model.ImageSnapshot
 import com.aiphotographer.model.LandmarkUsability
-import com.aiphotographer.model.PoseLandmarks
 import com.aiphotographer.perception.PerceptionFreshness
 import com.aiphotographer.perception.PerceptionSnapshot
 
+/**
+ * Pure projection of the current analysis onto preview pixels.
+ *
+ * This lives in `main` on purpose: it is the single coordinate transform used by any overlay
+ * (the debug diagnostic overlay today, media/guidance overlays later) and it is unit-tested
+ * without Android. Drawing diagnostics is gated per build type; projection is not.
+ */
 internal data class ProjectedPerception(val pose: Map<String, Point>, val face: List<Point>)
 
 internal object PerceptionOverlayProjection {
@@ -44,21 +40,5 @@ internal object PerceptionOverlayProjection {
             observed?.landmarks.orEmpty().mapNotNull { point(it.x, it.y) }
         } else emptyList()
         return ProjectedPerception(pose, face)
-    }
-}
-
-@Composable internal fun PerceptionOverlay(camera: CameraSession) {
-    val image by camera.router.snapshot.collectAsStateWithLifecycle()
-    val diagnostic = camera.perception?.state?.collectAsStateWithLifecycle()?.value?.snapshot
-    Canvas(Modifier.fillMaxSize()) {
-        val projected = PerceptionOverlayProjection.project(image, diagnostic, size.width.toInt(), size.height.toInt())
-        fun offset(point: Point) = Offset(point.x.toFloat(), point.y.toFloat())
-        PoseLandmarks.bones.forEach { (start, end) ->
-            val from = projected.pose[PoseLandmarks.ids[start]]
-            val to = projected.pose[PoseLandmarks.ids[end]]
-            if (from != null && to != null) drawLine(Color.Green, offset(from), offset(to), strokeWidth = 2.dp.toPx())
-        }
-        projected.pose.values.forEach { drawCircle(Color.Yellow, 3.dp.toPx(), offset(it)) }
-        projected.face.forEach { drawCircle(Color.Cyan, 1.dp.toPx(), offset(it)) }
     }
 }
